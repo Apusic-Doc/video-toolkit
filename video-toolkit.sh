@@ -230,7 +230,7 @@ compose() {
         ffmpeg -i "$rec" -i "$dub" \
             -c:v libx264 -preset fast -crf 23 \
             -c:a aac -map 0:v:0 -map 1:a:0 \
-            -vf "subtitles=$srt:force_style='FontSize=22,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2'" \
+            -vf "subtitles=$srt:force_style='FontSize=22,PrimaryColour=\&H00FFFFFF,OutlineColour=\&H00000000,Outline=2'" \
             -shortest "$out" -y
     else
         # 无字幕：仅替换音频
@@ -452,7 +452,7 @@ compose_en() {
         ffmpeg -i "$rec" -i "$dub" \
             -c:v libx264 -preset fast -crf 23 \
             -c:a aac -map 0:v:0 -map 1:a:0 \
-            -vf "subtitles=$srt:force_style='FontSize=22,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2'" \
+            -vf "subtitles=$srt:force_style='FontSize=22,PrimaryColour=\&H00FFFFFF,OutlineColour=\&H00000000,Outline=2'" \
             -shortest "$out" -y
     else
         ffmpeg -i "$rec" -i "$dub" \
