@@ -277,7 +277,7 @@ combined = " ||| ".join(texts)
 
 # 调用 DeepSeek API
 data = json.dumps({
-    "model": "deepseek-chat",
+    "model": "deepseek-v4-flash",
     "messages": [
         {"role": "system", "content": "你是一个技术文档翻译专家。将以下中文逐句翻译成英文。每句用 ||| 分隔，保持原有顺序。只返回译文，不要解释。"},
         {"role": "user", "content": combined}
