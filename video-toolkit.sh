@@ -33,6 +33,23 @@ warn() { echo -e "${YELLOW}⚠️${NC} $1"; }
 err()  { echo -e "${RED}❌${NC} $1"; }
 info() { echo -e "${CYAN}➜${NC} $1"; }
 
+# 旋转等待动画
+spinner() {
+  local pid=$1 msg="${2:-处理中...}"
+  local spin='⣾⣽⣻⢿⡿⣟⣯⣷'
+  local i=0
+  while kill -0 "$pid" 2>/dev/null; do
+    local c=${spin:$((i % 8)):1}
+    echo -ne "\r  ${c} ${msg} ${i}s"
+    sleep 1
+    ((i++))
+  done
+  wait "$pid" 2>/dev/null
+  local rc=$?
+  echo -ne "\r                      \r"
+  return $rc
+}
+
 # ==================== 依赖检查 ====================
 check_env() {
     local missing=""
@@ -98,6 +115,7 @@ extract_srt() {
     info "提取音频 → Whisper 识别 → 字幕"
     ffmpeg -i "$rec" -vn -acodec pcm_s16le -ar 16000 -ac 1 "$dir/_tmp.wav" -y 2>/dev/null
     
+    (
     python3 - "$dir/_tmp.wav" "$srt" << 'PYEOF'
 import sys
 audio_file = sys.argv[1]
@@ -125,6 +143,9 @@ with open(srt_file, "w") as f:
         f.write(f"{i}\n{fmt(seg['start'])} --> {fmt(seg['end'])}\n{seg['text']}\n\n")
 print(f"{len(segments)} 条字幕")
 PYEOF
+) &
+pid=$!
+spinner $pid "Whisper 识别中..."
     
     rm -f "$dir/_tmp.wav"
     ok "字幕已生成: subtitles.srt"
@@ -236,6 +257,9 @@ with open(out_file, "w") as f:
 
 print(f"  翻译完成: {len(en_texts)} 条")
 PYEOF
+) &
+pid=$!
+spinner $pid "DeepSeek 翻译中..."
     
     ok "英文字幕: subtitles_en.srt"
 }
