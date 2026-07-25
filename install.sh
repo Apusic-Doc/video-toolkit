@@ -76,6 +76,7 @@ case "${1:-}" in
   --update|update|upgrade)
     echo "🔄 更新 Video Toolkit..."
     cd "$INSTALL_DIR"
+    rm -f VERSION   # 清理旧版本文件
     git pull 2>&1 | tail -1
     echo "✅ 更新完成 ($(cat VERSION 2>/dev/null || echo '?'))"
     exit 0 ;;
