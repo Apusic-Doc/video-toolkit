@@ -24,7 +24,7 @@ fi
 # ============================================================
 set -e
 
-BASE="$(cd "$(dirname "$0")/.." && pwd)"  # 默认搜索上级目录的 feature-*
+BASE="${VIDEO_FEATURES_DIR:-$PWD}"  # 默认搜索当前目录，可设 VIDEO_FEATURES_DIR
 TOOLKIT="$(cd "$(dirname "$0")" && pwd)"
 VOICE="zh-CN-XiaoxiaoNeural"    # 微软神经语音（最自然）
 VOICE_EN="en-US-AvaNeural"        # 美式英文，清晰亲和
