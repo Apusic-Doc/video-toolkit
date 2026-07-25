@@ -17,7 +17,16 @@
 ## 📦 安装
 
 ```bash
-git clone https://github.com/Apusic-Doc/video-toolkit.git
+curl -sSf https://video-toolkit.bitey.ai/install.sh | bash
+```
+
+安装后全局可用：
+
+```bash
+video-toolkit all 05
+```
+
+手动安装：
 cd video-toolkit
 
 # Prerequisites: Python 3.10+ (pre-installed on macOS)
