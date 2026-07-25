@@ -67,7 +67,7 @@ mkdir -p "$HOME/.local/bin"
 cat > "$HOME/.local/bin/video-toolkit" << 'WRAPPER'
 #!/bin/bash
 INSTALL_DIR="${VIDEO_TOOLKIT_HOME:-$HOME/.video-toolkit}"
-cd "$INSTALL_DIR"
+export VIDEO_FEATURES_DIR="${VIDEO_FEATURES_DIR:-$PWD}"
 
 case "${1:-}" in
   --version|-v|version)
@@ -76,12 +76,13 @@ case "${1:-}" in
   --update|update|upgrade)
     echo "🔄 更新 Video Toolkit..."
     cd "$INSTALL_DIR"
-    rm -f VERSION   # 清理旧版本文件
+    rm -f VERSION
     git pull 2>&1 | tail -1
     echo "✅ 更新完成 ($(cat VERSION 2>/dev/null || echo '?'))"
     exit 0 ;;
 esac
 
+cd "$INSTALL_DIR"
 source .venv/bin/activate 2>/dev/null
 exec bash "$INSTALL_DIR/video-toolkit.sh" "$@"
 WRAPPER
