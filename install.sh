@@ -61,9 +61,6 @@ done
 wait $pid
 echo -e "\r  ${GREEN}✅${NC} 依赖安装完成"
 
-# ── 版本号 ──
-echo "1.0.0" > "$INSTALL_DIR/VERSION"
-
 # ── 创建全局命令 ──
 mkdir -p "$HOME/.local/bin"
 
