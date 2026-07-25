@@ -413,20 +413,46 @@ footer {
   <h2 class="section-title" data-zh="常见问题" data-en="FAQ">常见问题</h2>
   
   <div class="card" style="margin-bottom:12px">
-    <h4>⚠️ "Warning: You are sending unauthenticated requests to the HF Hub"</h4>
-    <p style="color:var(--text2);margin-top:4px">Whisper 模型托管在 HuggingFace，不影响功能，只下载一次后缓存。可设 <code>export HF_TOKEN=hf_xxx</code> 提速。</p>
+    <h4 data-zh='⚠️ "Warning: You are sending unauthenticated requests to the HF Hub"' 
+        data-en='⚠️ "Warning: You are sending unauthenticated requests to the HF Hub"'>⚠️ "Warning: You are sending unauthenticated requests to the HF Hub"</h4>
+    <p style="color:var(--text2);margin-top:4px" 
+       data-zh="Whisper 模型托管在 HuggingFace，不影响功能，只下载一次后缓存。可设 <code>export HF_TOKEN=hf_xxx</code> 提速。"
+       data-en="Whisper models are hosted on HuggingFace. This warning is harmless — models cache after first download. Set <code>export HF_TOKEN=hf_xxx</code> to speed up.">Whisper 模型托管在 HuggingFace，不影响功能，只下载一次后缓存。可设 <code>export HF_TOKEN=hf_xxx</code> 提速。</p>
   </div>
   <div class="card" style="margin-bottom:12px">
-    <h4>🔧 faster-whisper / edge-tts 不可用</h4>
-    <p style="color:var(--text2);margin-top:4px"><code>pip3 install faster-whisper</code> 或 <code>python3 -m venv .venv && .venv/bin/pip install edge-tts</code></p>
+    <h4 data-zh="🔧 faster-whisper / edge-tts 不可用"
+        data-en="🔧 faster-whisper / edge-tts not found">🔧 faster-whisper / edge-tts 不可用</h4>
+    <p style="color:var(--text2);margin-top:4px" 
+       data-zh="<code>pip3 install faster-whisper</code> 或 <code>python3 -m venv .venv && .venv/bin/pip install edge-tts</code>"
+       data-en="<code>pip3 install faster-whisper</code> or <code>python3 -m venv .venv && .venv/bin/pip install edge-tts</code>"><code>pip3 install faster-whisper</code> 或 <code>python3 -m venv .venv && .venv/bin/pip install edge-tts</code></p>
   </div>
   <div class="card" style="margin-bottom:12px">
-    <h4>🎯 中文识别不够准确</h4>
-    <p style="color:var(--text2);margin-top:4px">编辑 <code>video-toolkit.sh</code>，将 Whisper 模型从 <code>small</code> 改为 <code>medium</code> 或 <code>large</code>。</p>
+    <h4 data-zh="🎯 中文识别不够准确"
+        data-en="🎯 Chinese recognition accuracy">🎯 中文识别不够准确</h4>
+    <p style="color:var(--text2);margin-top:4px" 
+       data-zh='设置 <code>vt config VIDEO_ASR=funasr</code> 切换 SenseVoice，或编辑 <code>video-toolkit.sh</code> 将 Whisper 模型从 <code>small</code> 改为 <code>medium</code>。'
+       data-en='Set <code>vt config VIDEO_ASR=funasr</code> for SenseVoice, or edit <code>video-toolkit.sh</code> to change Whisper model from <code>small</code> to <code>medium</code>.'>设置 <code>vt config VIDEO_ASR=funasr</code> 切换 SenseVoice，或编辑 <code>video-toolkit.sh</code> 将 Whisper 模型从 <code>small</code> 改为 <code>medium</code>。</p>
   </div>
   <div class="card" style="margin-bottom:12px">
-    <h4>🔑 DeepSeek API Key 配置</h4>
-    <p style="color:var(--text2);margin-top:4px"><code>echo 'sk-xxx' &gt; ~/.aas_deepseek_key && chmod 600 ~/.aas_deepseek_key</code></p>
+    <h4 data-zh="🔑 DeepSeek API Key 配置"
+        data-en="🔑 DeepSeek API Key setup">🔑 DeepSeek API Key 配置</h4>
+    <p style="color:var(--text2);margin-top:4px" 
+       data-zh="<code>vt config DEEPSEEK_API_KEY=sk-xxx</code>"
+       data-en="<code>vt config DEEPSEEK_API_KEY=sk-xxx</code>"><code>vt config DEEPSEEK_API_KEY=sk-xxx</code></p>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <h4 data-zh="▶️ 如何试听 AI 配音？"
+        data-en="▶️ How to preview AI voice?">▶️ 如何试听 AI 配音？</h4>
+    <p style="color:var(--text2);margin-top:4px" 
+       data-zh="<code>vt play 01 dub</code>"
+       data-en="<code>vt play 01 dub</code>"><code>vt play 01 dub</code></p>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <h4 data-zh="📹 字幕没有烧录到视频"
+        data-en="📹 Subtitles not burned into video">📹 字幕没有烧录到视频</h4>
+    <p style="color:var(--text2);margin-top:4px" 
+       data-zh="当前 ffmpeg 默认不含 libass。字幕以 <code>.srt</code> 外挂文件，QuickTime/VLC 自动加载。"
+       data-en="Brew ffmpeg lacks libass. Subtitles are external <code>.srt</code> files — QuickTime/VLC auto-load them.">当前 ffmpeg 默认不含 libass。字幕以 <code>.srt</code> 外挂文件，QuickTime/VLC 自动加载。</p>
   </div>
 </section>
 
