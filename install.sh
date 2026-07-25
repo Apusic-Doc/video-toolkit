@@ -129,9 +129,10 @@ case "${1:-}" in
     if [ -z "${1:-}" ]; then
       echo "用法: vt play <feature> <target>"
       echo "       vt play 01 dub        播放 feature-01 中文配音"
-      echo "       vt play 01 en-dub     播放 feature-01 英文配音"
+      echo "       vt play 01 dub        播放 feature-01 中文配音"
+      echo "       vt play 01 dub-en     播放 feature-01 英文配音"
       echo "       vt play 01 final      播放 feature-01 中文成片"
-      echo "       vt play 01 en-final   播放 feature-01 英文成片"
+      echo "       vt play 01 final-en   播放 feature-01 英文成片"
       exit 0
     fi
     FEAT="$1"; TARGET="${2:-}"
@@ -145,11 +146,11 @@ case "${1:-}" in
     fi
     [ -z "$DIR" ] && { echo "❌ 找不到 feature: $FEAT"; exit 1; }
     case "$TARGET" in
-      dub)   FILE="$DIR/ai_dub.wav"; TYPE="audio" ;;
-      en-dub|dub-en) FILE="$DIR/ai_dub_en.wav"; TYPE="audio" ;;
+      dub) FILE="$DIR/ai_dub.wav"; TYPE="audio" ;;
+      dub-en) FILE="$DIR/ai_dub_en.wav"; TYPE="audio" ;;
       final) FILE="$DIR/final.mp4"; TYPE="video" ;;
-      en-final|final-en) FILE="$DIR/final_en.mp4"; TYPE="video" ;;
-      *) echo "用法: vt play $FEAT <dub|en-dub|final|en-final>"; exit 1 ;;
+      final-en) FILE="$DIR/final_en.mp4"; TYPE="video" ;;
+      *) echo "用法: vt play $FEAT <dub|dub-en|final|final-en>"; exit 1 ;;
     esac
     [ ! -f "$FILE" ] && { echo "❌ 文件不存在: $FILE"; exit 1; }
     echo "▶️ $FILE"

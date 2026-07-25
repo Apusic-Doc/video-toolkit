@@ -589,10 +589,10 @@ case "${1:-}" in
       dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }
       case "${3:-}" in
         dub)     afplay "$dir/ai_dub.wav" 2>/dev/null || err "播放失败" ;;
-        en-dub)  afplay "$dir/ai_dub_en.wav" 2>/dev/null || err "播放失败" ;;
+        dub-en)  afplay "$dir/ai_dub_en.wav" 2>/dev/null || err "播放失败" ;;
         final)   open "$dir/final.mp4" 2>/dev/null || xdg-open "$dir/final.mp4" 2>/dev/null || err "播放失败" ;;
-        en-final) open "$dir/final_en.mp4" 2>/dev/null || xdg-open "$dir/final_en.mp4" 2>/dev/null || err "播放失败" ;;
-        *) fail "用法: video-toolkit play <feature> <dub|en-dub|final|en-final>" ;;
+        final-en) open "$dir/final_en.mp4" 2>/dev/null || xdg-open "$dir/final_en.mp4" 2>/dev/null || err "播放失败" ;;
+        *) fail "用法: video-toolkit play <feature> <dub|dub-en|final|final-en>" ;;
       esac ;;  
     status) cmd_status "${2:-}" ;;
     *)
