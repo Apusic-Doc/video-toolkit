@@ -386,6 +386,7 @@ with open(concat, "w") as cl:
         seg_num = int(idx)
         seg_start = to_sec(t1)
         seg_end = to_sec(t2)
+        target_dur = seg_end - seg_start
         
         # 段间静默：保持时间轴对齐
         gap = seg_start - prev_end
@@ -407,7 +408,11 @@ with open(concat, "w") as cl:
         os.remove(mp3)
         
         cl.write(f"file '{wav}'\n")
-        prev_end = seg_end
+        # 获取 AI 配音实际时长
+        result = subprocess.run(["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+                                "-of", "csv=p=0", wav], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        actual_dur = float(result.stdout.strip() or target_dur)
+        prev_end = prev_end + (gap if gap > 0.3 else 0) + actual_dur
         print(f"  [{seg_num}/{len(matches)}] {text[:40]}...", flush=True)
 
 subprocess.run(["ffmpeg", "-f", "concat", "-safe", "0", "-i", concat, "-c", "copy", out_wav, "-y"],
