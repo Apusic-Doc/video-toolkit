@@ -208,6 +208,7 @@ translate_srt() {
     
     info "DeepSeek 翻译: 中文 → 英文"
     
+    (
     python3 - "$zh_srt" "$en_srt" "$DEEPSEEK_KEY" << 'PYEOF'
 import sys, re, json, urllib.request
 
@@ -292,6 +293,7 @@ srt_to_dub_core() {
         return
     fi
     
+    (
     python3 - "$srt" "$dub" "$voice" "$edge" << 'PYEOF'
 import sys, re, os, subprocess, tempfile
 srt_file = sys.argv[1]; out_wav = sys.argv[2]; voice = sys.argv[3]; edge = sys.argv[4]
@@ -341,6 +343,9 @@ subprocess.run(["ffmpeg", "-f", "concat", "-safe", "0", "-i", concat, "-c", "cop
               capture_output=True, stderr=subprocess.DEVNULL)
 import shutil; shutil.rmtree(tmpdir, ignore_errors=True)
 PYEOF
+) &
+pid=$!
+spinner $pid "AI 配音生成中..."
 }
 
 # say 回退（edge-tts 不可用时）
