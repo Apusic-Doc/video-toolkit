@@ -333,29 +333,34 @@ footer {
   <div class="section-label" data-zh="快速开始" data-en="Quick Start">快速开始</div>
   <h2 class="section-title" data-zh="两分钟上手" data-en="Up and running in 2 minutes">两分钟上手</h2>
 
-  <h4 style="margin:32px 0 10px;color:var(--text3);font-size:0.82rem;text-transform:uppercase;letter-spacing:1px" data-zh="安装" data-en="Install">安装</h4>
+  <h4 style="margin:24px 0 10px;color:var(--text3);font-size:0.82rem;text-transform:uppercase;letter-spacing:1px" data-zh="1. 配置" data-en="1. Config">1. 配置</h4>
   <div class="code-box">
-    <span class="cmt"># Clone repo</span><br>
-    git clone https://github.com/Apusic-Doc/video-toolkit.git<br>
-    cd video-toolkit<br><br>
-    <span class="cmt"># Prerequisites: Python 3.10+ (pre-installed on macOS)</span><br><br>
-    <span class="cmt"># Install dependencies</span><br>
-    brew install ffmpeg<br>
-    pip3 install faster-whisper<br><br>
-    <span class="cmt"># Set up edge-tts neural TTS engine</span><br>
-    python3 -m venv .venv<br>
-    .venv/bin/pip install edge-tts
+    <span class="cmt" data-zh="# 设置 DeepSeek Key（翻译功能）" data-en="# Set DeepSeek Key (translation)"># 设置 DeepSeek Key（翻译功能）</span><br>
+    <span class="cmd">vt</span> config DEEPSEEK_API_KEY=sk-xxx<br>
+    <span class="cmt" data-zh="# 查看全部配置" data-en="# View all config"># 查看全部配置</span><br>
+    <span class="cmd">vt</span> config
   </div>
 
-  <h4 style="margin:32px 0 10px;color:var(--text3);font-size:0.82rem;text-transform:uppercase;letter-spacing:1px" data-zh="使用" data-en="Usage">使用</h4>
+  <h4 style="margin:24px 0 10px;color:var(--text3);font-size:0.82rem;text-transform:uppercase;letter-spacing:1px" data-zh="2. 目录结构" data-en="2. Directory">2. 目录结构</h4>
+  <p style="color:var(--text2);font-size:0.88rem;margin-bottom:8px" 
+     data-zh='按 <code>feature-XX-name/</code> 格式创建目录，放入录屏文件 <code>recording.mov</code>'
+     data-en='Create dirs as <code>feature-XX-name/</code> with <code>recording.mov</code>'>按 <code>feature-XX-name/</code> 格式创建目录，放入录屏文件 <code>recording.mov</code></p>
   <div class="code-box">
-    <span class="cmt"># 1. Record screen + narrate (Cmd+Shift+5)</span><br>
-    <span class="cmt">#    Save to feature dir: recording.mov</span><br><br>
-    <span class="cmt"># 2. One command to final cut</span><br>
-    <span class="cmd">./video-toolkit.sh</span> all 05<br><br>
-    <span class="cmt"># 3. Edit subtitles & re-compose</span><br>
-    <span class="cmd">./video-toolkit.sh</span> dub 05 &nbsp;<span class="cmt"># AI dub (preview)</span><br>
-    <span class="cmd">./video-toolkit.sh</span> mix 05 &nbsp;<span class="cmt"># Compose video</span>
+    feature-01-ipv6-http2-websocket/<br>
+    └── recording.mov &nbsp;<span class="cmt" data-zh="← 你的录屏" data-en="← your recording">← 你的录屏</span>
+  </div>
+
+  <h4 style="margin:24px 0 10px;color:var(--text3);font-size:0.82rem;text-transform:uppercase;letter-spacing:1px" data-zh="3. 运行" data-en="3. Run">3. 运行</h4>
+  <p style="color:var(--text2);font-size:0.88rem;margin-bottom:8px" 
+     data-zh="feature 参数支持三种写法：编号 <code>01</code> / 全名 <code>feature-01-ipv6-http2-websocket</code> / 路径"
+     data-en="feature accepts: number <code>01</code> / full name <code>feature-01-ipv6-http2-websocket</code> / path">feature 参数支持三种写法：编号 <code>01</code> / 全名 <code>feature-01-ipv6-http2-websocket</code> / 路径</p>
+  <div class="code-box">
+    <span class="cmt"># 录制（Cmd+Shift+5）→ feature 目录: recording.mov</span><br><br>
+    <span class="cmt"># 一键出片</span><br>
+    <span class="cmd">vt</span> all 01<br><br>
+    <span class="cmt"># 调整字幕后</span><br>
+    <span class="cmd">vt</span> dub 01 &nbsp;<span class="cmt"># AI 配音</span><br>
+    <span class="cmd">vt</span> mix 01 &nbsp;<span class="cmt"># 合成</span>
   </div>
 </section>
 
