@@ -95,8 +95,8 @@ case "${1:-}" in
   --update|update|upgrade)
     echo "🔄 更新 Video Toolkit..."
     cd "$INSTALL_DIR"
-    rm -f VERSION
-    git pull 2>&1 | tail -1
+    git fetch origin 2>&1 | tail -1
+    git reset --hard origin/main 2>&1 | tail -1
     echo "✅ 更新完成 ($(cat VERSION 2>/dev/null || echo '?'))"
     exit 0 ;;
   config)
