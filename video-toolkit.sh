@@ -231,7 +231,7 @@ compose() {
         ffmpeg -i "$rec" -i "$dub" \
             -c:v libx264 -preset fast -crf 23 \
             -c:a aac -map 0:v:0 -map 1:a:0 \
-            -vf "subtitles=/tmp/_vt_sub.srt" \
+            -vf "subtitles=filename=/tmp/_vt_sub.srt" \
             -shortest "$out" -y
         rm -f /tmp/_vt_sub.srt
     else
@@ -455,7 +455,7 @@ compose_en() {
         ffmpeg -i "$rec" -i "$dub" \
             -c:v libx264 -preset fast -crf 23 \
             -c:a aac -map 0:v:0 -map 1:a:0 \
-            -vf "subtitles=/tmp/_vt_sub_en.srt" \
+            -vf "subtitles=filename=/tmp/_vt_sub_en.srt" \
             -shortest "$out" -y
         rm -f /tmp/_vt_sub_en.srt
     else
