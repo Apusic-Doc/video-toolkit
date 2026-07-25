@@ -119,22 +119,31 @@ case "${1:-}" in
     fi
     exit 0 ;;
   play)
-    shift; DIR="$VIDEO_FEATURES_DIR"; TARGET="${1:-}"
-    if [ ! -d "$DIR" ]; then echo "❌ 找不到目录: $DIR"; exit 1; fi
+    shift
+    if [ -z "${1:-}" ]; then
+      echo "用法: vt play <feature> <target>"
+      echo "       vt play 01 dub        播放 feature-01 中文配音"
+      echo "       vt play 01 en-dub     播放 feature-01 英文配音"
+      echo "       vt play 01 final      播放 feature-01 中文成片"
+      echo "       vt play 01 en-final   播放 feature-01 英文成片"
+      exit 0
+    fi
+    FEAT="$1"; TARGET="${2:-}"
+    # resolve feature dir same as main script
+    if [ -d "$FEAT" ] && [[ "$FEAT" == */* ]]; then
+      DIR="$FEAT"
+    elif [ -d "$VIDEO_FEATURES_DIR/$FEAT" ]; then
+      DIR="$VIDEO_FEATURES_DIR/$FEAT"
+    else
+      DIR=$(ls -d "$VIDEO_FEATURES_DIR"/feature-${FEAT#feature-}* 2>/dev/null | head -1)
+    fi
+    [ -z "$DIR" ] && { echo "❌ 找不到 feature: $FEAT"; exit 1; }
     case "$TARGET" in
       dub)   FILE="$DIR/ai_dub.wav"; TYPE="audio" ;;
       en-dub|dub-en) FILE="$DIR/ai_dub_en.wav"; TYPE="audio" ;;
       final) FILE="$DIR/final.mp4"; TYPE="video" ;;
       en-final|final-en) FILE="$DIR/final_en.mp4"; TYPE="video" ;;
-      "")
-        echo "用法: vt play <target>"
-        echo ""
-        echo "  dub       播放中文 AI 配音 (ai_dub.wav)"
-        echo "  en-dub    播放英文 AI 配音 (ai_dub_en.wav)"
-        echo "  final     播放中文成片 (final.mp4)"
-        echo "  en-final  播放英文成片 (final_en.mp4)"
-        exit 0 ;;
-      *) echo "❌ 未知目标: $TARGET"; exit 1 ;;
+      *) echo "用法: vt play $FEAT <dub|en-dub|final|en-final>"; exit 1 ;;
     esac
     [ ! -f "$FILE" ] && { echo "❌ 文件不存在: $FILE"; exit 1; }
     echo "▶️ $FILE"
