@@ -348,21 +348,10 @@ with open(concat, "w") as cl:
         # edge-tts 生成 mp3
         subprocess.run([edge, "--voice", voice, "--text", text, "--write-media", mp3],
                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        # 转 wav + atempo 调速
+        # 转 wav（自然语速，不调整）
         subprocess.run(["ffmpeg", "-i", mp3, wav, "-y"],
                       stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         os.remove(mp3)
-        
-        result = subprocess.run(["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
-                                "-of", "csv=p=0", wav], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        ai_dur = float(result.stdout.strip() or 2.0)
-        
-        if abs(ai_dur - target_dur) > 0.5 and ai_dur > 0:
-            tempo = max(min(ai_dur / target_dur, 2.0), 0.5)
-            tmp_wav = os.path.join(tmpdir, "_adj.wav")
-            subprocess.run(["ffmpeg", "-i", wav, "-filter:a", f"atempo={tempo:.3f}", tmp_wav, "-y"],
-                          stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-            os.rename(tmp_wav, wav)
         
         cl.write(f"file '{wav}'\n")
         print(f"  [{seg_num}/{len(matches)}] {text[:40]}...", flush=True)
@@ -407,16 +396,6 @@ with open(concat, "w") as cl:
         subprocess.run(["say", "-v", voice, "-o", aiff, text], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         subprocess.run(["ffmpeg", "-i", aiff, wav, "-y"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         os.remove(aiff)
-        result = subprocess.run(["afinfo", wav], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        ai_dur = 2.0
-        for line in result.stdout.split('\n'):
-            if 'duration:' in line: ai_dur = float(line.split(':')[1].strip()); break
-        if abs(ai_dur - target_dur) > 0.3 and ai_dur > 0:
-            tempo = max(min(ai_dur / target_dur, 2.0), 0.5)
-            tmp_wav = os.path.join(tmpdir, "_adj.wav")
-            subprocess.run(["ffmpeg", "-i", wav, "-filter:a", f"atempo={tempo:.3f}", tmp_wav, "-y"],
-                          stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-            os.rename(tmp_wav, wav)
         cl.write(f"file '{wav}'\n")
         print(f"  [{seg_num}/{len(matches)}] {text[:30]}...", flush=True)
 
