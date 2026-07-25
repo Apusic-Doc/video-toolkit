@@ -146,6 +146,14 @@ https://video-toolkit.bitey.ai
 
 ## ❓ FAQ
 
+### 如何不烧录字幕到视频？
+
+```bash
+VIDEO_BURN_SUB=0 ./video-toolkit.sh mix XX
+```
+
+字幕文件 `subtitles.srt` 保留在目录中，可单独使用或上传平台。
+
 ### 如何试听 AI 配音效果？
 
 ```bash

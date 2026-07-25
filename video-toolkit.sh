@@ -207,7 +207,7 @@ compose() {
     
     info "合成最终视频..."
     
-    if [ -f "$srt" ]; then
+    if [ -f "$srt" ] && [ "${VIDEO_BURN_SUB:-1}" != "0" ]; then
         # 有字幕：烧录进去
         ffmpeg -i "$rec" -i "$dub" \
             -c:v libx264 -preset fast -crf 23 \
@@ -546,6 +546,7 @@ case "${1:-}" in
         echo "  export VIDEO_ASR=faster-whisper    ASR 引擎（默认）"
         echo "              =openai-whisper        OpenAI Whisper"
         echo "              =funasr                SenseVoice (需先安装)"
+        echo "  export VIDEO_BURN_SUB=0            不烧录字幕到视频"
         echo ""
         echo "约定文件名（每个 feature 目录下）:"
         echo "  recording.mov      原始录屏"
