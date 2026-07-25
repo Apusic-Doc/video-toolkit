@@ -41,7 +41,10 @@ python3 -m venv .venv
 # 2. 一键出片
 ./video-toolkit.sh all 05
 
-# 3. 调整字幕后重新合成
+# 3. 试听 AI 配音
+afplay ../feature-05-name/ai_dub.wav
+
+# 4. 调整字幕后重新合成
 ./video-toolkit.sh dub 05   # 重生成 AI 配音（试听）
 ./video-toolkit.sh mix 05   # 合成最终视频
 ```
@@ -142,6 +145,14 @@ https://video-toolkit.bitey.ai
 ```
 
 ## ❓ FAQ
+
+### 如何试听 AI 配音效果？
+
+```bash
+afplay feature-XX-name/ai_dub.wav
+```
+
+不满意可调整 `subtitles.srt` 后重新生成：`./video-toolkit.sh dub XX`
 
 ### "Warning: You are sending unauthenticated requests to the HF Hub"
 
