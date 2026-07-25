@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video Toolkit — 产品演示录屏自动化工具链</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --orange: #d2991d;
+    --purple: #a371f7;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { 
+    background: var(--bg); color: var(--text); 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    text-align: center; padding: 100px 24px 60px;
+    background: linear-gradient(180deg, #0d1117 0%, #161b22 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  .hero h1 { font-size: 3rem; font-weight: 800; letter-spacing: -0.5px; }
+  .hero h1 span { background: linear-gradient(135deg, var(--accent), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero p { font-size: 1.2rem; color: var(--muted); margin-top: 16px; max-width: 600px; margin-left: auto; margin-right: auto; }
+
+  .cta { margin-top: 36px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .cta a {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 28px; border-radius: 8px; font-size: 1rem; font-weight: 600;
+    text-decoration: none; transition: all .2s;
+  }
+  .cta .primary { background: var(--accent); color: #fff; }
+  .cta .primary:hover { background: #4090e0; }
+  .cta .secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+  .cta .secondary:hover { border-color: var(--accent); }
+
+  /* ── Container ── */
+  .container { max-width: 960px; margin: 0 auto; padding: 60px 24px; }
+
+  /* ── Features Grid ── */
+  .section-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 32px; text-align: center; }
+  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+  .feature {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 28px; transition: border-color .2s;
+  }
+  .feature:hover { border-color: var(--accent); }
+  .feature .icon { font-size: 1.8rem; margin-bottom: 12px; }
+  .feature h3 { font-size: 1.1rem; margin-bottom: 8px; }
+  .feature p { color: var(--muted); font-size: 0.95rem; }
+
+  /* ── Architecture ── */
+  .arch { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 36px; text-align: center; }
+  .arch-flow { 
+    display: flex; align-items: center; justify-content: center; flex-wrap: wrap; 
+    gap: 12px; font-family: "SF Mono", "Fira Code", monospace; font-size: 0.9rem;
+  }
+  .arch-box { 
+    background: #0d1117; border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 18px; white-space: nowrap;
+  }
+  .arch-arrow { color: var(--muted); font-size: 1.2rem; }
+  .arch-box.accent { border-color: var(--accent); }
+
+  /* ── Code Block ── */
+  .code-block {
+    background: #0d1117; border: 1px solid var(--border); border-radius: 10px;
+    padding: 24px; overflow-x: auto; font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 0.9rem; line-height: 1.7;
+  }
+  .code-block .c { color: var(--muted); }
+  .code-block .cmd { color: var(--accent); }
+
+  /* ── Table ── */
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 10px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  td code { background: var(--bg); padding: 2px 8px; border-radius: 4px; font-size: 0.88rem; }
+  .cmd-tag {
+    display: inline-block; font-family: "SF Mono", "Fira Code", monospace;
+    background: #1a3a5c; color: var(--accent); padding: 2px 10px; border-radius: 4px;
+    font-size: 0.85rem;
+  }
+
+  /* ── Voice Grid ── */
+  .voice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 600px) { .voice-grid { grid-template-columns: 1fr; } }
+  .voice-card { 
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px;
+  }
+  .voice-card h4 { margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .voice-card .badge { 
+    font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; 
+    background: #1a3a5c; color: var(--accent);
+  }
+  .voice-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+  .voice-row:last-child { border: none; }
+  .voice-row .st { color: var(--green); }
+
+  /* ── Footer ── */
+  footer { border-top: 1px solid var(--border); padding: 40px 24px; text-align: center; color: var(--muted); font-size: 0.88rem; }
+  footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ Hero ═══════════ -->
+<section class="hero">
+  <h1><span>Video Toolkit</span></h1>
+  <p>从原始录屏到多语言成片，一键完成。<br>Whisper 语音识别 · 微软神经 TTS · DeepSeek 翻译 · ffmpeg 合成</p>
+  <div class="cta">
+    <a href="#quickstart" class="primary">🚀 快速开始</a>
+    <a href="https://github.com/Apusic-Doc/video-toolkit" class="secondary">⭐ GitHub</a>
+  </div>
+</section>
+
+<!-- ═══════════ Features ═══════════ -->
+<section class="container">
+  <h2 class="section-title">✨ 核心功能</h2>
+  <div class="features">
+    <div class="feature">
+      <div class="icon">🎙️</div>
+      <h3>语音识别</h3>
+      <p>Whisper 自动提取录屏中的语音，生成带毫秒级时间戳的 SRT 字幕</p>
+    </div>
+    <div class="feature">
+      <div class="icon">🤖</div>
+      <h3>AI 配音</h3>
+      <p>微软神经语音 edge-tts，中文/英文自然度接近真人，替换原声毫无违和感</p>
+    </div>
+    <div class="feature">
+      <div class="icon">🌐</div>
+      <h3>多语言</h3>
+      <p>DeepSeek API 自动翻译字幕，一键生成英文版演示视频，字幕 + 配音全替换</p>
+    </div>
+    <div class="feature">
+      <div class="icon">🔧</div>
+      <h3>模块化</h3>
+      <p>字幕提取、AI 配音、视频合成各自独立，灵活编排，适应各种后期工作流</p>
+    </div>
+    <div class="feature">
+      <div class="icon">⚡</div>
+      <h3>语速对齐</h3>
+      <p>自动检测 AI 配音与原始语音的时差，通过 atempo 精准调速，画面与声音完美同步</p>
+    </div>
+    <div class="feature">
+      <div class="icon">📊</div>
+      <h3>状态管理</h3>
+      <p>一键查看所有功能的录制和出片进度，批量管理多个演示视频的制作状态</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ Quick Start ═══════════ -->
+<section class="container" id="quickstart">
+  <h2 class="section-title">🚀 快速开始</h2>
+
+  <h3 style="margin-bottom:14px;color:var(--muted);font-size:0.95rem;text-transform:uppercase;letter-spacing:0.5px">安装</h3>
+  <div class="code-block">
+    <span class="c"># 克隆仓库</span><br>
+    git clone https://github.com/Apusic-Doc/video-toolkit.git<br>
+    cd video-toolkit<br><br>
+    <span class="c"># 安装依赖</span><br>
+    brew install ffmpeg<br>
+    pip3 install faster-whisper<br>
+    <span class="c"># edge-tts 已预配在 .venv/ 中</span>
+  </div>
+
+  <h3 style="margin:32px 0 14px;color:var(--muted);font-size:0.95rem;text-transform:uppercase;letter-spacing:0.5px">使用</h3>
+  <div class="code-block">
+    <span class="c"># 1. Mac Cmd+Shift+5 录制屏幕 + 自然讲解</span><br>
+    <span class="c">#    保存到 feature 目录: recording.mov</span><br><br>
+    <span class="c"># 2. 一键出片</span><br>
+    <span class="cmd">./video-toolkit.sh</span> all 05<br><br>
+    <span class="c"># 3. 调整字幕后重新合成</span><br>
+    <span class="cmd">./video-toolkit.sh</span> dub 05  <span class="c"># 重生成 AI 配音（试听）</span><br>
+    <span class="cmd">./video-toolkit.sh</span> mix 05  <span class="c"># 合成最终视频</span>
+  </div>
+</section>
+
+<!-- ═══════════ Commands ═══════════ -->
+<section class="container">
+  <h2 class="section-title">📋 命令一览</h2>
+  <table>
+    <thead><tr><th>命令</th><th>说明</th><th>依赖</th></tr></thead>
+    <tbody>
+      <tr><td><code>all 05</code></td><td>全流程: 字幕 → AI配音 → 合成</td><td>ffmpeg + whisper</td></tr>
+      <tr><td><code>srt 05</code></td><td>仅提取字幕</td><td>whisper</td></tr>
+      <tr><td><code>dub 05</code></td><td>仅生成 AI 配音（试听）</td><td>edge-tts / say</td></tr>
+      <tr><td><code>mix 05</code></td><td>仅合成视频</td><td>ffmpeg</td></tr>
+      <tr><td><code>trans 05</code></td><td>翻译字幕: 中文 → 英文</td><td>DeepSeek API</td></tr>
+      <tr><td><code>en 05</code></td><td><strong>英文全流程</strong></td><td>whisper + DeepSeek + edge-tts</td></tr>
+      <tr><td><code>dub-en 05</code></td><td>仅生成英文配音</td><td>edge-tts</td></tr>
+      <tr><td><code>mix-en 05</code></td><td>仅合成英文视频</td><td>ffmpeg</td></tr>
+      <tr><td><code>status 05</code></td><td>查看单个功能状态</td><td>—</td></tr>
+      <tr><td><code>status --all</code></td><td>查看全部功能状态</td><td>—</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════ Architecture ═══════════ -->
+<section class="container">
+  <h2 class="section-title">🏗️ 处理流程</h2>
+  <div class="arch">
+    <div class="arch-flow">
+      <div class="arch-box">recording.mov</div>
+      <span class="arch-arrow">→</span>
+      <div class="arch-box">Whisper</div>
+      <span class="arch-arrow">→</span>
+      <div class="arch-box accent">subtitles.srt</div>
+      <span class="arch-arrow">→</span>
+      <div class="arch-box">edge-tts</div>
+      <span class="arch-arrow">→</span>
+      <div class="arch-box">ai_dub.wav</div>
+      <span class="arch-arrow">→</span>
+      <div class="arch-box accent">ffmpeg</div>
+      <span class="arch-arrow">→</span>
+      <div class="arch-box" style="border-color:var(--green)">final.mp4 ✨</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ Voices ═══════════ -->
+<section class="container">
+  <h2 class="section-title">🎙️ AI 语音</h2>
+  <p style="text-align:center;color:var(--muted);margin-bottom:28px">基于微软神经 TTS，自然度接近真人</p>
+  <div class="voice-grid">
+    <div class="voice-card">
+      <h4>🇨🇳 中文 <span class="badge">edge-tts</span></h4>
+      <div class="voice-row"><span>Xiaoxiao</span><span class="st">★ 温暖清晰</span></div>
+      <div class="voice-row"><span>Yunyang</span><span>专业可靠</span></div>
+      <div class="voice-row"><span>Yunjian</span><span>激情有力</span></div>
+      <div class="voice-row"><span>Yunxi</span><span>活泼阳光</span></div>
+      <div class="voice-row"><span>Xiaoyi</span><span>可爱轻快</span></div>
+    </div>
+    <div class="voice-card">
+      <h4>🇺🇸 英文 <span class="badge">edge-tts</span></h4>
+      <div class="voice-row"><span>Ava</span><span class="st">★ 清晰亲和</span></div>
+      <div class="voice-row"><span>Aria</span><span>自信</span></div>
+      <div class="voice-row"><span>Christopher</span><span>权威</span></div>
+      <div class="voice-row"><span>Sonia (UK)</span><span>英式女声</span></div>
+      <div class="voice-row"><span>Ryan (UK)</span><span>英式男声</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ DeepSeek ═══════════ -->
+<section class="container">
+  <h2 class="section-title">🔑 翻译配置</h2>
+  <div class="code-block">
+    <span class="c"># 设置 DeepSeek API Key（仅本机）</span><br>
+    echo 'sk-xxxxxxxxxxxxx' &gt; ~/.aas_deepseek_key<br>
+    chmod 600 ~/.aas_deepseek_key<br><br>
+    <span class="c"># 一键英文版</span><br>
+    <span class="cmd">./video-toolkit.sh</span> en 05
+  </div>
+  <p style="color:var(--muted);margin-top:12px;font-size:0.9rem">⚡ 无需额外配置，脚本自动从 <code>~/.aas_deepseek_key</code> 或环境变量 <code>DEEPSEEK_API_KEY</code> 读取</p>
+</section>
+
+<!-- ═══════════ Footer ═══════════ -->
+<footer>
+  <p>Video Toolkit · <a href="https://github.com/Apusic-Doc/video-toolkit">GitHub</a> · Apache 2.0 License</p>
+  <p style="margin-top:8px"><code>video-toolkit.bitey.ai</code></p>
+</footer>
+
+</body>
+</html>
