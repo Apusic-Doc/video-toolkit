@@ -412,28 +412,18 @@ function toggleLang(){
 }
 function applyLang(l){
   document.querySelectorAll('[data-zh]').forEach(el => {
-    const text = el.getAttribute(l === 'zh' ? 'data-zh' : 'data-en');
-    if(text && el.children.length === 0) el.innerHTML = text;
-    else if(text && el.children.length > 0) {
-      // for elements with nested spans (like h1)
+    const key = l === 'zh' ? 'data-zh' : 'data-en';
+    const text = el.getAttribute(key);
+    if (!text) return;
+    // 如果元素内只有纯文本（无子元素标签），直接用 textContent 替换
+    if (el.children.length === 0) {
+      el.textContent = text;
+    } else {
+      // 有子元素：替换整个 innerHTML（保留 span 等嵌套结构）
       el.innerHTML = text;
     }
   });
-  // Update attributes for table cells
-  document.querySelectorAll('[data-zh][data-en]').forEach(el => {
-    if(el.children.length === 0) {
-      el.innerHTML = l === 'zh' ? el.getAttribute('data-zh') : el.getAttribute('data-en');
-    }
-  });
   document.querySelector('.lang-btn').textContent = l === 'zh' ? 'EN' : '中文';
-  // Update nav links
-  document.querySelectorAll('nav a[data-zh]').forEach(a => {
-    a.textContent = l === 'zh' ? a.getAttribute('data-zh') : a.getAttribute('data-en');
-  });
-  // Update section labels
-  document.querySelectorAll('.section-label').forEach(s => {
-    s.textContent = l === 'zh' ? s.getAttribute('data-zh') : s.getAttribute('data-en');
-  });
 }
 </script>
 </body>
