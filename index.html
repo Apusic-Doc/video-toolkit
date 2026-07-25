@@ -225,7 +225,7 @@ footer {
   </div>
   <p style="margin-top:24px">
     <code id="install-cmd" style="background:var(--code-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 20px;font-size:0.88rem;display:inline-block;cursor:pointer;position:relative" 
-          onclick="navigator.clipboard.writeText('curl -sSf https://video-toolkit.bitey.ai/install.sh | bash').then(()=>{var t=document.getElementById('copy-toast');t.style.opacity=1;setTimeout(()=>t.style.opacity=0,1500)})"
+          onclick="navigator.clipboard.writeText('curl -sSf https://video-toolkit.bitey.ai/install.sh | bash').then(()=>{var t=document.getElementById('copy-toast');if(t)t.style.opacity=1;setTimeout(()=>{if(t)t.style.opacity=0},1500)})"
           title="点击复制" data-zh="curl -sSf https://video-toolkit.bitey.ai/install.sh | bash"
           data-en="curl -sSf https://video-toolkit.bitey.ai/install.sh | bash">
       curl -sSf https://video-toolkit.bitey.ai/install.sh | bash
