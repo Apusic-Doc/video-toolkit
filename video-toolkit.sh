@@ -231,7 +231,7 @@ compose() {
         ffmpeg -i "$rec" -i "$dub" \
             -c:v libx264 -preset fast -crf 23 \
             -c:a aac -map 0:v:0 -map 1:a:0 \
-            -vf "ass=/tmp/_vt_sub.ass" \
+            -vf "ass=filename=/tmp/_vt_sub.ass" \
             -shortest "$out" -y
         rm -f /tmp/_vt_sub.ass
     else
