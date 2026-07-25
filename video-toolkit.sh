@@ -26,6 +26,7 @@ TOOLKIT="$(cd "$(dirname "$0")" && pwd)"
 VOICE="zh-CN-XiaoxiaoNeural"    # 微软神经语音（最自然）
 VOICE_EN="en-US-AvaNeural"        # 美式英文，清晰亲和
 EDGE_TTS="$TOOLKIT/.venv/bin/edge-tts"  # edge-tts 路径
+ASR_ENGINE="${VIDEO_ASR:-faster-whisper}"   # faster-whisper | openai-whisper | funasr
 DEEPSEEK_KEY="${DEEPSEEK_API_KEY:-}"   # 优先环境变量
 # 其次从 ~/.aas_deepseek_key 读取（仅本机）
 [ -z "$DEEPSEEK_KEY" ] && [ -f "$HOME/.aas_deepseek_key" ] && DEEPSEEK_KEY=$(cat "$HOME/.aas_deepseek_key" 2>/dev/null)
@@ -116,29 +117,38 @@ extract_srt() {
     
     [ ! -f "$rec" ] && { err "找不到 $rec"; return 1; }
     
-    info "提取音频 → Whisper 识别 → 字幕"
-    info "首次运行需下载模型 (~500MB)，请耐心等待 2-5 分钟"
-    echo -ne "  ${YELLOW}⏳${NC} 下载中..."
-    ffmpeg -i "$rec" -vn -acodec pcm_s16le -ar 16000 -ac 1 "$dir/_tmp.wav" -y 2>/dev/null
+    info "识别引擎: $ASR_ENGINE"
     
     (
-    python3 - "$dir/_tmp.wav" "$srt" << 'PYEOF'
+    python3 - "$dir/_tmp.wav" "$srt" "$ASR_ENGINE" << 'PYEOF'
 import sys
 audio_file = sys.argv[1]
 srt_file = sys.argv[2]
+engine = sys.argv[3]
 
-try:
-    from faster_whisper import WhisperModel
-    model = WhisperModel("small", device="cpu", compute_type="int8")
-    segs, _ = model.transcribe(audio_file, language="zh")
-    segments = [{"start": s.start, "end": s.end, "text": s.text.strip()} for s in segs]
-    print("[faster-whisper]", end=" ")
-except ImportError:
+if engine == "funasr":
+    from funasr_onnx import SenseVoiceSmall
+    import soundfile as sf
+    m = SenseVoiceSmall(model_dir="iic/SenseVoiceSmall")
+    audio, sr = sf.read(audio_file)
+    result = m(audio, language="zh", use_itn=True)
+    segments = []
+    for seg in result[0].get("timestamp", []):
+        if seg:
+            segments.append({"start": seg[0]/1000, "end": seg[1]/1000, "text": seg[2]})
+    print("[SenseVoice]", end=" ")
+elif engine == "openai-whisper":
     import whisper
     model = whisper.load_model("small")
     result = model.transcribe(audio_file, language="zh", verbose=False)
     segments = [{"start": s["start"], "end": s["end"], "text": s["text"].strip()} for s in result["segments"]]
     print("[openai-whisper]", end=" ")
+else:
+    from faster_whisper import WhisperModel
+    model = WhisperModel("small", device="cpu", compute_type="int8")
+    segs, _ = model.transcribe(audio_file, language="zh")
+    segments = [{"start": s.start, "end": s.end, "text": s.text.strip()} for s in segs]
+    print("[faster-whisper]", end=" ")
 
 with open(srt_file, "w") as f:
     for i, seg in enumerate(segments, 1):
@@ -540,6 +550,9 @@ case "${1:-}" in
         echo ""
         echo "环境变量:"
         echo "  export DEEPSEEK_API_KEY=sk-xxx    （trans/en 必需）"
+        echo "  export VIDEO_ASR=faster-whisper    ASR 引擎（默认）"
+        echo "              =openai-whisper        OpenAI Whisper"
+        echo "              =funasr                SenseVoice (需先安装)"
         echo ""
         echo "约定文件名（每个 feature 目录下）:"
         echo "  recording.mov      原始录屏"
