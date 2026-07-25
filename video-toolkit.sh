@@ -553,6 +553,15 @@ case "${1:-}" in
     en)     dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_en "$dir" ;;
     dub-en) dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_dub_en "$dir" ;;
     mix-en) dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_mix_en "$dir" ;;
+    play)
+      dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }
+      case "${3:-}" in
+        dub)     afplay "$dir/ai_dub.wav" 2>/dev/null || err "播放失败" ;;
+        en-dub)  afplay "$dir/ai_dub_en.wav" 2>/dev/null || err "播放失败" ;;
+        final)   open "$dir/final.mp4" 2>/dev/null || xdg-open "$dir/final.mp4" 2>/dev/null || err "播放失败" ;;
+        en-final) open "$dir/final_en.mp4" 2>/dev/null || xdg-open "$dir/final_en.mp4" 2>/dev/null || err "播放失败" ;;
+        *) fail "用法: video-toolkit play <feature> <dub|en-dub|final|en-final>" ;;
+      esac ;;  
     status) cmd_status "${2:-}" ;;
     *)
         echo "录屏处理工具"
