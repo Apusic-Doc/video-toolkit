@@ -373,11 +373,28 @@ def to_sec(t):
 tmpdir = tempfile.mkdtemp()
 concat = os.path.join(tmpdir, "concat.txt")
 
+# 生成静默模板
+silence_tpl = os.path.join(tmpdir, "_silence.wav")
+subprocess.run(["ffmpeg", "-f", "lavfi", "-i", "anullsrc=r=24000:cl=mono", "-t", "0.1", silence_tpl, "-y"],
+              stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+
+prev_end = 0.0
 with open(concat, "w") as cl:
     for m in matches:
         idx, t1, t2, text = m
         text = text.strip().replace('\n', ' ')
-        seg_num = int(idx); target_dur = to_sec(t2) - to_sec(t1)
+        seg_num = int(idx)
+        seg_start = to_sec(t1)
+        seg_end = to_sec(t2)
+        
+        # 段间静默：保持时间轴对齐
+        gap = seg_start - prev_end
+        if gap > 0.3:
+            gap_wav = os.path.join(tmpdir, f"gap_{seg_num:03d}.wav")
+            subprocess.run(["ffmpeg", "-f", "lavfi", "-i", f"anullsrc=r=24000:cl=mono", "-t", f"{gap:.2f}", gap_wav, "-y"],
+                          stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            cl.write(f"file '{gap_wav}'\n")
+        
         mp3 = os.path.join(tmpdir, f"seg_{seg_num:03d}.mp3")
         wav = os.path.join(tmpdir, f"seg_{seg_num:03d}.wav")
         
@@ -390,6 +407,7 @@ with open(concat, "w") as cl:
         os.remove(mp3)
         
         cl.write(f"file '{wav}'\n")
+        prev_end = seg_end
         print(f"  [{seg_num}/{len(matches)}] {text[:40]}...", flush=True)
 
 subprocess.run(["ffmpeg", "-f", "concat", "-safe", "0", "-i", concat, "-c", "copy", out_wav, "-y"],
