@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="dark">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Video Toolkit — 录屏到成片，一键完成</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%236c5ce7'/><stop offset='100%' style='stop-color:%2300d2a0'/></linearGradient></defs><rect x='2' y='10' width='32' height='28' rx='4' fill='url(%23g)'/><polygon points='34,16 46,22 46,26 34,32' fill='url(%23g)'/><circle cx='18' cy='24' r='7' fill='white' opacity='0.9'/><circle cx='18' cy='24' r='3' fill='%2300d2a0'/></svg>">
+<title>Video Toolkit — From recording to final cut, one command.</title>
 <style>
 :root {
   --radius: 10px;
@@ -167,11 +168,11 @@ footer a { color: var(--accent); text-decoration: none; }
 <nav>
   <div class="logo">🎬 <span>Video Toolkit</span></div>
   <div class="nav-r">
-    <a href="#features" data-zh="特性" data-en="Features">特性</a>
-    <a href="#quickstart" data-zh="快速开始" data-en="Quick Start">快速开始</a>
+    <a href="#features" data-zh="特性" data-en="Features">Features</a>
+    <a href="#quickstart" data-zh="快速开始" data-en="Quick Start">Quick Start</a>
     <a href="https://github.com/Apusic-Doc/video-toolkit" data-zh="GitHub">GitHub</a>
     <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme">☀</button>
-    <button class="lang-btn" onclick="toggleLang()">EN</button>
+    <button class="lang-btn" onclick="toggleLang()">中文</button>
   </div>
 </nav>
 
@@ -180,11 +181,11 @@ footer a { color: var(--accent); text-decoration: none; }
   <div class="badge">Whisper · edge-tts · DeepSeek · ffmpeg</div>
   <h1 data-zh="从<span>录屏</span>到<span>成片</span>，<br>一键完成。" 
       data-en="From <span>recording</span> to <span>final cut</span>,<br>one command.">
-    从<span>录屏</span>到<span>成片</span>，<br>一键完成。
+    From <span>recording</span> to <span>final cut</span>,<br>one command.
   </h1>
   <p data-zh="语音识别提取字幕 → AI 神经语音合成配音 → 自动翻译多语言版本。<br>全程本地处理，免费、开源、企业级品质。"
      data-en="Speech-to-text subtitles → neural TTS dubbing → auto-translate for multilingual output.<br>100% local, free, open-source, enterprise-ready.">
-    语音识别提取字幕 → AI 神经语音合成配音 → 自动翻译多语言版本。<br>全程本地处理，免费、开源、企业级品质。
+    Speech-to-text subtitles → neural TTS dubbing → auto-translate for multilingual output.<br>100% local, free, open-source, enterprise-ready.
   </p>
   <div class="cta">
     <a href="#quickstart" class="cta-prim" data-zh="🚀 快速开始" data-en="🚀 Get Started">🚀 快速开始</a>
@@ -397,7 +398,7 @@ function updateThemeBtn(t){
 }
 
 // Lang toggle
-let lang = localStorage.getItem('vt-lang') || 'zh';
+let lang = localStorage.getItem('vt-lang') || 'en';
 applyLang(lang);
 
 function toggleLang(){
