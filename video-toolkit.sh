@@ -276,24 +276,36 @@ texts = [m[1].strip().replace('\n', ' ') for m in matches]
 combined = " ||| ".join(texts)
 
 # 调用 DeepSeek API
+data = json.dumps({
+    "model": "deepseek-chat",
+    "messages": [
+        {"role": "system", "content": "你是一个技术文档翻译专家。将以下中文逐句翻译成英文。每句用 ||| 分隔，保持原有顺序。只返回译文，不要解释。"},
+        {"role": "user", "content": combined}
+    ],
+    "temperature": 0.3
+}).encode()
+
+if len(sys.argv) > 4 and sys.argv[4] == "--verbose":
+    print(f"  [DEBUG] API Key: {api_key[:10]}...{api_key[-4:]}")
+    print(f"  [DEBUG] Texts: {len(texts)} sentences")
+    print(f"  [DEBUG] Body size: {len(data)} bytes")
+
 req = urllib.request.Request(
     "https://api.deepseek.com/v1/chat/completions",
-    data=json.dumps({
-        "model": "deepseek-chat",
-        "messages": [
-            {"role": "system", "content": "你是一个技术文档翻译专家。将以下中文逐句翻译成英文。每句用 ||| 分隔，保持原有顺序。只返回译文，不要解释。"},
-            {"role": "user", "content": combined}
-        ],
-        "temperature": 0.3
-    }).encode(),
+    data=data,
     headers={
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
 )
 
-resp = json.loads(urllib.request.urlopen(req).read())
-translated = resp["choices"][0]["message"]["content"].strip()
+try:
+    resp = json.loads(urllib.request.urlopen(req).read())
+    translated = resp["choices"][0]["message"]["content"].strip()
+except urllib.error.HTTPError as e:
+    body = e.read().decode()
+    print(f"  [ERROR] HTTP {e.code}: {body[:500]}", file=sys.stderr)
+    raise
 
 # 拆分回逐句
 en_texts = [t.strip() for t in translated.split("|||")]
