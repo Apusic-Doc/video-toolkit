@@ -221,10 +221,13 @@ footer {
     <a href="#quickstart" class="cta-prim" data-zh="🚀 快速开始" data-en="🚀 Get Started">🚀 快速开始</a>
     <a href="https://github.com/Apusic-Doc/video-toolkit" class="cta-sec" data-zh="⭐ GitHub" data-en="⭐ GitHub">⭐ GitHub</a>
   </div>
-  <p style="margin-top:20px;font-family:var(--mono);font-size:0.9rem;color:var(--text3)" 
-     data-zh="一行安装: curl -sSf https://video-toolkit.bitey.ai/install.sh | bash"
-     data-en="One-liner: curl -sSf https://video-toolkit.bitey.ai/install.sh | bash">
-    一行安装: curl -sSf https://video-toolkit.bitey.ai/install.sh | bash
+  <p style="margin-top:24px">
+    <code style="background:var(--code-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 20px;font-size:0.88rem;display:inline-block;cursor:pointer" 
+          onclick="navigator.clipboard.writeText('curl -sSf https://video-toolkit.bitey.ai/install.sh | bash').then(()=>{this.style.borderColor='var(--green)';setTimeout(()=>this.style.borderColor='var(--border)',1500)})"
+          title="点击复制" data-zh="curl -sSf https://video-toolkit.bitey.ai/install.sh | bash"
+          data-en="curl -sSf https://video-toolkit.bitey.ai/install.sh | bash">
+      curl -sSf https://video-toolkit.bitey.ai/install.sh | bash
+    </code>
   </p>
 </section>
 
