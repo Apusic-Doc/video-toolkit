@@ -79,8 +79,14 @@ VIDEO_ASR=faster-whisper
 VIDEO_VOICE=zh-CN-XiaoxiaoNeural
 VIDEO_VOICE_EN=en-US-AvaNeural
 
-# 是否烧录字幕 (1=是 0=否)
-VIDEO_BURN_SUB=1
+# 是否烧录字幕 (1=是 0=否，默认关闭需 ffmpeg --enable-libass)
+VIDEO_BURN_SUB=0
+
+# 字幕样式（仅在 ffmpeg 支持 libass 时生效）
+VIDEO_SUB_FONTSIZE=18
+VIDEO_SUB_COLOR=&H00FFFFFF
+VIDEO_SUB_OUTLINE=&H00000000
+VIDEO_SUB_OUTLINE_W=2
 CONF
 fi
 
