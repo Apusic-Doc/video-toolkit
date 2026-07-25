@@ -200,6 +200,9 @@ footer {
     <a href="#quickstart" data-zh="快速开始" data-en="Quick Start">Quick Start</a>
     <a href="#commands" data-zh="命令" data-en="Commands">Commands</a>
     <a href="#voices" data-zh="语音" data-en="Voices">Voices</a>
+    <a href="#faq" data-zh="常见问题" data-en="FAQ">FAQ</a>
+    <a href="#commands" data-zh="命令" data-en="Commands">Commands</a>
+    <a href="#voices" data-zh="语音" data-en="Voices">Voices</a>
     <a href="https://github.com/Apusic-Doc/video-toolkit" data-zh="GitHub">GitHub</a>
     <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme">☀</button>
     <button class="lang-btn" onclick="toggleLang()" title="Switch language">🌐</button>
@@ -387,59 +390,24 @@ footer {
   <div class="vgrid">
     <div class="vcard">
       <h4>🇨🇳 <span data-zh="中文" data-en="Chinese">中文</span> <span class="tag">edge-tts</span></h4>
-      <div class="vrow"><span>Xiaoxiao</span><span class="st">★ Warm &amp; clear</span></div>
-      <div class="vrow"><span>Yunyang</span><span>Professional</span></div>
-      <div class="vrow"><span>Yunjian</span><span>Passionate</span></div>
-      <div class="vrow"><span>Yunxi</span><span>Lively</span></div>
-      <div class="vrow"><span>Xiaoyi</span><span>Cute</span></div>
+      <div class="vrow"><span>Xiaoxiao</span><span class="st" data-zh="★ 温暖清晰" data-en="★ Warm &amp; clear">★ Warm &amp; clear</span></div>
+      <div class="vrow"><span>Yunyang</span><span data-zh="专业可靠" data-en="Professional">Professional</span></div>
+      <div class="vrow"><span>Yunjian</span><span data-zh="激情有力" data-en="Passionate">Passionate</span></div>
+      <div class="vrow"><span>Yunxi</span><span data-zh="活泼阳光" data-en="Lively">Lively</span></div>
+      <div class="vrow"><span>Xiaoyi</span><span data-zh="可爱轻快" data-en="Cute">Cute</span></div>
     </div>
     <div class="vcard">
       <h4>🇺🇸 <span data-zh="英文" data-en="English">英文</span> <span class="tag">edge-tts</span></h4>
-      <div class="vrow"><span>Ava</span><span class="st">★ Clear &amp; friendly</span></div>
-      <div class="vrow"><span>Aria</span><span>Confident</span></div>
-      <div class="vrow"><span>Christopher</span><span>Authoritative</span></div>
-      <div class="vrow"><span>Sonia (UK)</span><span>British female</span></div>
-      <div class="vrow"><span>Ryan (UK)</span><span>British male</span></div>
+      <div class="vrow"><span>Ava</span><span class="st" data-zh="★ 清晰亲和" data-en="★ Clear &amp; friendly">★ Clear &amp; friendly</span></div>
+      <div class="vrow"><span>Aria</span><span data-zh="自信" data-en="Confident">Confident</span></div>
+      <div class="vrow"><span>Christopher</span><span data-zh="权威" data-en="Authoritative">Authoritative</span></div>
+      <div class="vrow"><span>Sonia (UK)</span><span data-zh="英式女声" data-en="British female">British female</span></div>
+      <div class="vrow"><span>Ryan (UK)</span><span data-zh="英式男声" data-en="British male">British male</span></div>
     </div>
   </div>
 </section>
 
 <!-- ═══════════ Footer ═══════════ -->
-<footer>
-  <div class="footer-grid">
-    <div class="footer-brand">
-      <div class="logo-text">🎬 <span>Video Toolkit</span></div>
-      <p class="tagline" data-zh="从原始录屏到多语言成片，全自动流水线。" data-en="From raw recording to multilingual final cut — a fully automated pipeline.">From raw recording to multilingual final cut — a fully automated pipeline.</p>
-      <p class="tech">Whisper · edge-tts · DeepSeek · ffmpeg · macOS</p>
-    </div>
-    <div class="footer-col">
-      <h5 data-zh="产品" data-en="Product">Product</h5>
-      <a href="#features" data-zh="特性" data-en="Features">Features</a>
-      <a href="#pipeline" data-zh="流程" data-en="Pipeline">Pipeline</a>
-      <a href="#commands" data-zh="命令" data-en="Commands">Commands</a>
-      <a href="#voices" data-zh="语音" data-en="Voices">Voices</a>
-    </div>
-    <div class="footer-col">
-      <h5 data-zh="资源" data-en="Resources">Resources</h5>
-      <a href="#quickstart" data-zh="快速开始" data-en="Quick Start">Quick Start</a>
-      <a href="#faq" data-zh="常见问题" data-en="FAQ">FAQ</a>
-      <a href="https://github.com/Apusic-Doc/video-toolkit" data-zh="GitHub 仓库" data-en="GitHub Repo">GitHub Repo</a>
-      <a href="https://github.com/openai/whisper" target="_blank">OpenAI Whisper</a>
-    </div>
-    <div class="footer-col">
-      <h5 data-zh="技术栈" data-en="Stack">Stack</h5>
-      <a href="https://ffmpeg.org" target="_blank">FFmpeg</a>
-      <a href="https://platform.deepseek.com" target="_blank">DeepSeek API</a>
-      <a href="https://brew.sh" target="_blank">Homebrew</a>
-      <a href="https://www.python.org" target="_blank">Python 3.10+</a>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <span>© 2026 Video Toolkit · Apache 2.0</span>
-    <span class="domain">video-toolkit.bitey.ai</span>
-  </div>
-</footer>
-
 <!-- ═══════════ FAQ ═══════════ -->
 <section class="container" id="faq">
   <h2 class="section-title" data-zh="常见问题" data-en="FAQ">常见问题</h2>
@@ -514,5 +482,42 @@ function applyLang(l){
   });
 }
 </script>
+
+
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="logo-text">🎬 <span>Video Toolkit</span></div>
+      <p class="tagline" data-zh="从原始录屏到多语言成片，全自动流水线。" data-en="From raw recording to multilingual final cut — a fully automated pipeline.">From raw recording to multilingual final cut — a fully automated pipeline.</p>
+      <p class="tech">Whisper · edge-tts · DeepSeek · ffmpeg · macOS</p>
+    </div>
+    <div class="footer-col">
+      <h5 data-zh="产品" data-en="Product">Product</h5>
+      <a href="#features" data-zh="特性" data-en="Features">Features</a>
+      <a href="#pipeline" data-zh="流程" data-en="Pipeline">Pipeline</a>
+      <a href="#commands" data-zh="命令" data-en="Commands">Commands</a>
+      <a href="#voices" data-zh="语音" data-en="Voices">Voices</a>
+    </div>
+    <div class="footer-col">
+      <h5 data-zh="资源" data-en="Resources">Resources</h5>
+      <a href="#quickstart" data-zh="快速开始" data-en="Quick Start">Quick Start</a>
+      <a href="#faq" data-zh="常见问题" data-en="FAQ">FAQ</a>
+      <a href="https://github.com/Apusic-Doc/video-toolkit" data-zh="GitHub 仓库" data-en="GitHub Repo">GitHub Repo</a>
+      <a href="https://github.com/openai/whisper" target="_blank">OpenAI Whisper</a>
+    </div>
+    <div class="footer-col">
+      <h5 data-zh="技术栈" data-en="Stack">Stack</h5>
+      <a href="https://ffmpeg.org" target="_blank">FFmpeg</a>
+      <a href="https://platform.deepseek.com" target="_blank">DeepSeek API</a>
+      <a href="https://brew.sh" target="_blank">Homebrew</a>
+      <a href="https://www.python.org" target="_blank">Python 3.10+</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Video Toolkit · Apache 2.0</span>
+    <span class="domain">video-toolkit.bitey.ai</span>
+  </div>
+</footer>
+
 </body>
 </html>
