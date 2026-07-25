@@ -117,6 +117,15 @@ extract_srt() {
     
     [ ! -f "$rec" ] && { err "找不到 $rec"; return 1; }
     
+    # 检查模型是否已缓存
+    local model_cached=0
+    case "$ASR_ENGINE" in
+      funasr)
+        [ -d ~/.cache/modelscope/hub/iic/SenseVoiceSmall ] && model_cached=1 ;;
+      openai-whisper|*)
+        [ -f ~/.cache/whisper/small.pt ] && model_cached=1 ;;
+    esac
+    [ "$model_cached" -eq 0 ] && info "首次运行需下载模型 (~500MB)，请耐心等待 2-5 分钟"
     info "识别引擎: $ASR_ENGINE"
     
     (
