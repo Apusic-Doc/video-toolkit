@@ -41,8 +41,28 @@ fi
 echo ""
 echo -e "  ${CYAN}➜${NC} 配置 Python 虚拟环境..."
 cd "$INSTALL_DIR"
+echo -ne "  ⏳ 安装中..."
+
 python3 -m venv .venv 2>/dev/null || true
+
+# 后台安装 + 旋转等待
+(
 .venv/bin/pip install -q edge-tts faster-whisper 2>/dev/null
+) &
+pid=$!
+spin='⣾⣽⣻⢿⡿⣟⣯⣷'
+i=0
+while kill -0 "$pid" 2>/dev/null; do
+  c=${spin:$((i % 8)):1}
+  echo -ne "\r  ${c} 安装依赖中..."
+  sleep 0.5
+  ((i++))
+done
+wait $pid
+echo -e "\r  ${GREEN}✅${NC} 依赖安装完成"
+
+# ── 版本号 ──
+echo "1.0.0" > "$INSTALL_DIR/VERSION"
 
 # ── 创建全局命令 ──
 mkdir -p "$HOME/.local/bin"
@@ -51,10 +71,20 @@ cat > "$HOME/.local/bin/video-toolkit" << 'WRAPPER'
 #!/bin/bash
 INSTALL_DIR="${VIDEO_TOOLKIT_HOME:-$HOME/.video-toolkit}"
 cd "$INSTALL_DIR"
+
+case "${1:-}" in
+  --version|-v|version)
+    cat "$INSTALL_DIR/VERSION" 2>/dev/null || echo "unknown"
+    exit 0 ;;
+esac
+
 source .venv/bin/activate 2>/dev/null
 exec bash "$INSTALL_DIR/video-toolkit.sh" "$@"
 WRAPPER
 chmod +x "$HOME/.local/bin/video-toolkit"
+
+# ── vt 别名 ──
+ln -sf "$HOME/.local/bin/video-toolkit" "$HOME/.local/bin/vt"
 
 # ── PATH 检测 ──
 if ! echo "$PATH" | grep -q "$HOME/.local/bin"; then
@@ -82,6 +112,6 @@ echo "  ASR 引擎 (默认 faster-whisper):"
 echo "    pip3 install funasr-onnx modelscope  # 可选：SenseVoice"
 echo "    export VIDEO_ASR=funasr"
 echo ""
-echo "  更新: video-toolkit 命令自动 git pull"
-echo "  卸载: rm -rf $INSTALL_DIR ~/.local/bin/video-toolkit"
+echo "  更新: curl -sSf https://video-toolkit.bitey.ai/install.sh | bash"
+echo "  卸载: rm -rf $INSTALL_DIR ~/.local/bin/video-toolkit ~/.local/bin/vt"
 echo "========================================"
