@@ -226,12 +226,14 @@ compose() {
     info "合成最终视频..."
     
     if [ -f "$srt" ] && [ "${VIDEO_BURN_SUB:-1}" != "0" ]; then
-        # 有字幕：烧录进去
+        # 有字幕：烧录进去（路径中的 - 会干扰 ffmpeg，复制到 /tmp）
+        cp "$srt" /tmp/_vt_sub.srt
         ffmpeg -i "$rec" -i "$dub" \
             -c:v libx264 -preset fast -crf 23 \
             -c:a aac -map 0:v:0 -map 1:a:0 \
-            -vf "subtitles=$srt" \
+            -vf "subtitles=/tmp/_vt_sub.srt" \
             -shortest "$out" -y
+        rm -f /tmp/_vt_sub.srt
     else
         # 无字幕：仅替换音频
         ffmpeg -i "$rec" -i "$dub" \
@@ -449,11 +451,13 @@ compose_en() {
     info "合成英文视频..."
     
     if [ -f "$srt" ]; then
+        cp "$srt" /tmp/_vt_sub_en.srt
         ffmpeg -i "$rec" -i "$dub" \
             -c:v libx264 -preset fast -crf 23 \
             -c:a aac -map 0:v:0 -map 1:a:0 \
-            -vf "subtitles=$srt" \
+            -vf "subtitles=/tmp/_vt_sub_en.srt" \
             -shortest "$out" -y
+        rm -f /tmp/_vt_sub_en.srt
     else
         ffmpeg -i "$rec" -i "$dub" \
             -c:v libx264 -preset fast -crf 23 \
