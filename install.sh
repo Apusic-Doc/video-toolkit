@@ -61,6 +61,25 @@ done
 wait $pid
 echo -e "\r  ${GREEN}✅${NC} 依赖安装完成"
 
+# ── 配置文件 ──
+CONFIG_DIR="$HOME/.config/video-toolkit"
+mkdir -p "$CONFIG_DIR"
+if [ ! -f "$CONFIG_DIR/config" ]; then
+  cat > "$CONFIG_DIR/config" << 'CONF'
+# Video Toolkit 配置文件
+# 用法: vt config [KEY=value]
+
+# DeepSeek API Key（翻译功能）
+DEEPSEEK_API_KEY=
+
+# ASR 引擎: faster-whisper | openai-whisper | funasr
+VIDEO_ASR=faster-whisper
+
+# 是否烧录字幕 (1=是 0=否)
+VIDEO_BURN_SUB=1
+CONF
+fi
+
 # ── 创建全局命令 ──
 mkdir -p "$HOME/.local/bin"
 
@@ -80,7 +99,25 @@ case "${1:-}" in
     git pull 2>&1 | tail -1
     echo "✅ 更新完成 ($(cat VERSION 2>/dev/null || echo '?'))"
     exit 0 ;;
+  config)
+    CONFIG="$HOME/.config/video-toolkit/config"
+    shift
+    if [ -z "${1:-}" ]; then
+      cat "$CONFIG" 2>/dev/null || echo "无配置"
+    else
+      KEY="${1%%=*}"; VAL="${1#*=}"
+      if grep -q "^$KEY=" "$CONFIG" 2>/dev/null; then
+        sed -i '' "s/^$KEY=.*/$KEY=$VAL/" "$CONFIG" 2>/dev/null || sed -i "s/^$KEY=.*/$KEY=$VAL/" "$CONFIG"
+      else
+        echo "$KEY=$VAL" >> "$CONFIG"
+      fi
+      echo "✅ $KEY=$VAL"
+    fi
+    exit 0 ;;
 esac
+
+# 加载配置
+[ -f "$HOME/.config/video-toolkit/config" ] && export $(grep -v '^#' "$HOME/.config/video-toolkit/config" | grep -v '^$' | xargs)
 
 cd "$INSTALL_DIR"
 source .venv/bin/activate 2>/dev/null

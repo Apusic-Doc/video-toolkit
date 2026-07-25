@@ -558,6 +558,8 @@ case "${1:-}" in
         echo "  video-toolkit status  --all        查看全部 feature 状态"
         echo "  video-toolkit --version            查看版本"
         echo "  video-toolkit --update             自动更新"
+        echo "  video-toolkit config              查看配置"
+        echo "  video-toolkit config KEY=value    设置配置"
         echo ""
         echo "环境变量:"
         echo "  export DEEPSEEK_API_KEY=sk-xxx    （trans/en 必需）"
