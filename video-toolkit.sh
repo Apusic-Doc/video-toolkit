@@ -231,13 +231,13 @@ compose() {
             -c:v libx264 -preset fast -crf 23 \
             -c:a aac -map 0:v:0 -map 1:a:0 \
             -vf "subtitles=$srt:force_style='FontSize=22,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2'" \
-            -shortest "$out" -y 2>/dev/null
+            -shortest "$out" -y
     else
         # 无字幕：仅替换音频
         ffmpeg -i "$rec" -i "$dub" \
             -c:v libx264 -preset fast -crf 23 \
             -c:a aac -map 0:v:0 -map 1:a:0 \
-            -shortest "$out" -y 2>/dev/null
+            -shortest "$out" -y
     fi
     
     ok "成片: final.mp4"
@@ -453,12 +453,12 @@ compose_en() {
             -c:v libx264 -preset fast -crf 23 \
             -c:a aac -map 0:v:0 -map 1:a:0 \
             -vf "subtitles=$srt:force_style='FontSize=22,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2'" \
-            -shortest "$out" -y 2>/dev/null
+            -shortest "$out" -y
     else
         ffmpeg -i "$rec" -i "$dub" \
             -c:v libx264 -preset fast -crf 23 \
             -c:a aac -map 0:v:0 -map 1:a:0 \
-            -shortest "$out" -y 2>/dev/null
+            -shortest "$out" -y
     fi
     
     ok "英文成片: final_en.mp4"
