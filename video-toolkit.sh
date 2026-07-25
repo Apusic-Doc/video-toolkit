@@ -277,7 +277,7 @@ combined = " ||| ".join(texts)
 
 # 调用 DeepSeek API
 req = urllib.request.Request(
-    "https://api.deepseek.com/chat/completions",
+    "https://api.deepseek.com/v1/chat/completions",
     data=json.dumps({
         "model": "deepseek-chat",
         "messages": [
