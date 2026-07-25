@@ -76,6 +76,11 @@ case "${1:-}" in
   --version|-v|version)
     cat "$INSTALL_DIR/VERSION" 2>/dev/null || echo "unknown"
     exit 0 ;;
+  --update|update|upgrade)
+    echo "🔄 更新 Video Toolkit..."
+    cd "$INSTALL_DIR"
+    git pull --rebase 2>/dev/null && echo "✅ 更新完成 ($(cat VERSION 2>/dev/null))" || echo "⚠️ 更新失败，请手动 git pull"
+    exit 0 ;;
 esac
 
 source .venv/bin/activate 2>/dev/null

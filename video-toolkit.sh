@@ -543,6 +543,8 @@ case "${1:-}" in
         echo ""
         echo "  $0 status  <feature>    查看状态"
         echo "  $0 status  --all        查看全部 feature 状态"
+        echo "  $0 --version            查看版本"
+        echo "  $0 --update             自动更新"
         echo ""
         echo "环境变量:"
         echo "  export DEEPSEEK_API_KEY=sk-xxx    （trans/en 必需）"
