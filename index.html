@@ -198,11 +198,10 @@ footer {
     <a href="#features" data-zh="特性" data-en="Features">Features</a>
     <a href="#pipeline" data-zh="流程" data-en="Pipeline">Pipeline</a>
     <a href="#quickstart" data-zh="快速开始" data-en="Quick Start">Quick Start</a>
+    <a href="#config" data-zh="配置" data-en="Config">Config</a>
     <a href="#commands" data-zh="命令" data-en="Commands">Commands</a>
     <a href="#voices" data-zh="语音" data-en="Voices">Voices</a>
     <a href="#faq" data-zh="常见问题" data-en="FAQ">FAQ</a>
-    <a href="#commands" data-zh="命令" data-en="Commands">Commands</a>
-    <a href="#voices" data-zh="语音" data-en="Voices">Voices</a>
     <a href="https://github.com/Apusic-Doc/video-toolkit" data-zh="GitHub">GitHub</a>
     <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme">☀</button>
     <button class="lang-btn" onclick="toggleLang()" title="Switch language">🌐</button>
@@ -362,6 +361,26 @@ footer {
     <span class="cmd">vt</span> dub 01 &nbsp;<span class="cmt"># AI 配音</span><br>
     <span class="cmd">vt</span> mix 01 &nbsp;<span class="cmt"># 合成</span>
   </div>
+</section>
+
+<!-- ═══════════ Config ═══════════ -->
+<section id="config">
+  <div class="section-label" data-zh="配置" data-en="Config">配置</div>
+  <h2 class="section-title" data-zh="配置文件" data-en="Configuration">配置文件</h2>
+  <p class="section-sub" data-zh="所有配置存储在 <code>~/.config/video-toolkit/config</code>，不受 git 管理。通过 <code>vt config</code> 命令读写。" 
+     data-en="All config stored in <code>~/.config/video-toolkit/config</code>, not tracked by git. Use <code>vt config</code> to read/write.">所有配置存储在 <code>~/.config/video-toolkit/config</code>，不受 git 管理。通过 <code>vt config</code> 命令读写。</p>
+  <table class="tbl">
+    <thead><tr><th data-zh="配置项" data-en="Key">配置项</th><th data-zh="默认值" data-en="Default">默认值</th><th data-zh="说明" data-en="Description">说明</th></tr></thead>
+    <tbody>
+      <tr><td><code>DEEPSEEK_API_KEY</code></td><td>—</td><td data-zh="DeepSeek API Key（翻译功能）" data-en="DeepSeek API Key (translation)">DeepSeek API Key（翻译功能）</td></tr>
+      <tr><td><code>VIDEO_ASR</code></td><td>faster-whisper</td><td data-zh="ASR 引擎: faster-whisper / openai-whisper / funasr" data-en="ASR engine: faster-whisper / openai-whisper / funasr">ASR 引擎: faster-whisper / openai-whisper / funasr</td></tr>
+      <tr><td><code>VIDEO_VOICE</code></td><td>zh-CN-XiaoxiaoNeural</td><td data-zh="中文 AI 配音语音" data-en="Chinese AI voice">中文 AI 配音语音</td></tr>
+      <tr><td><code>VIDEO_VOICE_EN</code></td><td>en-US-AvaNeural</td><td data-zh="英文 AI 配音语音" data-en="English AI voice">英文 AI 配音语音</td></tr>
+      <tr><td><code>VIDEO_BURN_SUB</code></td><td>0</td><td data-zh="字幕烧录开关 (0=关闭 1=开启)" data-en="Subtitle burn-in (0=off 1=on)">字幕烧录开关 (0=关闭 1=开启)</td></tr>
+      <tr><td><code>VIDEO_SUB_FONTSIZE</code></td><td>18</td><td data-zh="字幕字号" data-en="Subtitle font size">字幕字号</td></tr>
+      <tr><td><code>VIDEO_SUB_COLOR</code></td><td>&am;H00FFFFFF</td><td data-zh="字幕颜色" data-en="Subtitle color">字幕颜色</td></tr>
+    </tbody>
+  </table>
 </section>
 
 <!-- ═══════════ Commands ═══════════ -->
