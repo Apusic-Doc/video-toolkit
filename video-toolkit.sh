@@ -33,6 +33,8 @@ ASR_ENGINE="${VIDEO_ASR:-faster-whisper}"   # faster-whisper | openai-whisper | 
 DEEPSEEK_KEY="${DEEPSEEK_API_KEY:-}"   # 优先环境变量
 # 其次从 ~/.aas_deepseek_key 读取（仅本机）
 [ -z "$DEEPSEEK_KEY" ] && [ -f "$HOME/.aas_deepseek_key" ] && DEEPSEEK_KEY=$(cat "$HOME/.aas_deepseek_key" 2>/dev/null)
+# 再次从 config 读取
+[ -z "$DEEPSEEK_KEY" ] && [ -f "$HOME/.config/video-toolkit/config" ] && DEEPSEEK_KEY=$(grep '^DEEPSEEK_API_KEY=' "$HOME/.config/video-toolkit/config" 2>/dev/null | cut -d= -f2-)
 
 # ==================== 颜色 ====================
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
