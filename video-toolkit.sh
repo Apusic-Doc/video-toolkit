@@ -2,6 +2,10 @@
 # ============================================================
 # 录屏处理工具 — 一键从录屏到成片
 # ============================================================
+# 自动启用 .venv
+if [ -z "$VIRTUAL_ENV" ] && [ -f "$(dirname "$0")/.venv/bin/activate" ]; then
+  source "$(dirname "$0")/.venv/bin/activate"
+fi
 # 约定文件名（每个 feature 目录下）:
 #   recording.mov   原始录屏（你录制的）
 #   subtitles.srt   字幕（自动生成或手写）
