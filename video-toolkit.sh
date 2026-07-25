@@ -225,22 +225,25 @@ compose() {
     
     info "合成最终视频..."
     
+    # 后台执行 ffmpeg + 旋转等待
+    (
     if [ -f "$srt" ] && [ "${VIDEO_BURN_SUB:-1}" != "0" ] && ffmpeg -filters 2>/dev/null | grep -qE " ass |libass"; then
-        # 有字幕 + 开关打开 + ffmpeg 支持 libass
         ffmpeg -i "$srt" /tmp/_vt_sub.ass -y 2>/dev/null
         ffmpeg -i "$rec" -i "$dub" \
             -c:v libx264 -preset fast -crf 23 \
             -c:a aac -map 0:v:0 -map 1:a:0 \
             -vf "ass=filename=/tmp/_vt_sub.ass" \
-            -shortest "$out" -y
+            -shortest "$out" -y 2>/dev/null
         rm -f /tmp/_vt_sub.ass
     else
-        # 无字幕：仅替换音频
         ffmpeg -i "$rec" -i "$dub" \
             -c:v libx264 -preset fast -crf 23 \
             -c:a aac -map 0:v:0 -map 1:a:0 \
-            -shortest "$out" -y
+            -shortest "$out" -y 2>/dev/null
     fi
+    ) &
+    pid=$!
+    spinner $pid "视频合成中..."
     
     if [ -f "$srt" ] && ! ffmpeg -filters 2>/dev/null | grep -qE " ass |libass"; then warn "字幕未烧录 (ffmpeg 无 libass，用 brew install ffmpeg 目前不支持 libass，请用手动方式内嵌字幕)"; fi
     ok "成片: final.mp4"
@@ -451,20 +454,25 @@ compose_en() {
     
     info "合成英文视频..."
     
+    # 后台执行 ffmpeg + 旋转等待
+    (
     if [ -f "$srt" ] && [ "${VIDEO_BURN_SUB:-1}" != "0" ] && ffmpeg -filters 2>/dev/null | grep -qE " ass |libass"; then
         ffmpeg -i "$srt" /tmp/_vt_sub_en.ass -y 2>/dev/null
         ffmpeg -i "$rec" -i "$dub" \
             -c:v libx264 -preset fast -crf 23 \
             -c:a aac -map 0:v:0 -map 1:a:0 \
             -vf "ass=filename=/tmp/_vt_sub_en.ass" \
-            -shortest "$out" -y
+            -shortest "$out" -y 2>/dev/null
         rm -f /tmp/_vt_sub_en.ass
     else
         ffmpeg -i "$rec" -i "$dub" \
             -c:v libx264 -preset fast -crf 23 \
             -c:a aac -map 0:v:0 -map 1:a:0 \
-            -shortest "$out" -y
+            -shortest "$out" -y 2>/dev/null
     fi
+    ) &
+    pid=$!
+    spinner $pid "视频合成中..."
     
     if [ -f "$srt" ] && ! ffmpeg -filters 2>/dev/null | grep -qE " ass |libass"; then warn "字幕未烧录 (ffmpeg 无 libass)"; fi
     ok "英文成片: final_en.mp4"
