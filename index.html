@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%236c5ce7'/><stop offset='100%' style='stop-color:%2300d2a0'/></linearGradient></defs><rect x='2' y='10' width='32' height='28' rx='4' fill='url(%23g)'/><polygon points='34,16 46,22 46,26 34,32' fill='url(%23g)'/><circle cx='18' cy='24' r='7' fill='white' opacity='0.9'/><circle cx='18' cy='24' r='3' fill='%2300d2a0'/></svg>">
+<link rel="icon" type="image/png" href="/favicon.png">
 <title>Video Toolkit — From recording to final cut, one command.</title>
 <style>
 :root {
@@ -169,6 +170,9 @@ footer a { color: var(--accent); text-decoration: none; }
   <div class="logo">🎬 <span>Video Toolkit</span></div>
   <div class="nav-r">
     <a href="#features" data-zh="特性" data-en="Features">Features</a>
+    <a href="#pipeline" data-zh="流程" data-en="Pipeline">Pipeline</a>
+    <a href="#commands" data-zh="命令" data-en="Commands">Commands</a>
+    <a href="#voices" data-zh="语音" data-en="Voices">Voices</a>
     <a href="#quickstart" data-zh="快速开始" data-en="Quick Start">Quick Start</a>
     <a href="https://github.com/Apusic-Doc/video-toolkit" data-zh="GitHub">GitHub</a>
     <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme">☀</button>
@@ -254,7 +258,7 @@ footer a { color: var(--accent); text-decoration: none; }
 </section>
 
 <!-- ═══════════ Pipeline ═══════════ -->
-<section>
+<section id="pipeline">
   <div class="section-label" data-zh="流程" data-en="Pipeline">流程</div>
   <h2 class="section-title" data-zh="一条命令穿透全流程" data-en="One command through the entire pipeline">一条命令穿透全流程</h2>
   <p class="section-sub" data-zh="每一步都可拆解、可替换、可跳过。完全掌控后期制作。" 
@@ -315,7 +319,7 @@ footer a { color: var(--accent); text-decoration: none; }
 </section>
 
 <!-- ═══════════ Commands ═══════════ -->
-<section>
+<section id="commands">
   <div class="section-label" data-zh="命令" data-en="Commands">命令</div>
   <h2 class="section-title" data-zh="完整命令列表" data-en="Full Command Reference">完整命令列表</h2>
   <table class="tbl">
@@ -336,7 +340,7 @@ footer a { color: var(--accent); text-decoration: none; }
 </section>
 
 <!-- ═══════════ Voices ═══════════ -->
-<section>
+<section id="voices">
   <div class="section-label" data-zh="语音" data-en="Voices">语音</div>
   <h2 class="section-title" data-zh="AI 语音引擎" data-en="AI Voice Engine">AI 语音引擎</h2>
   <p class="section-sub" data-zh="微软神经 TTS，自然度逼近真人。支持多种风格，编辑脚本顶部变量即可切换。" 
