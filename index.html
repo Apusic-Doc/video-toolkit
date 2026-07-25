@@ -281,7 +281,7 @@ footer a { color: var(--accent); text-decoration: none; }
     <div class="arch-box" style="border-color:var(--green);color:var(--green);font-weight:700">final.mp4 ✨</div>
   </div>
   <div class="arch" style="flex-wrap:wrap;gap:8px;margin-top:12px">
-    <span style="color:var(--text3);font-size:0.82rem;font-family:var(--mono)">DeepSeek 翻译 →</span>
+    <span style="color:var(--text3);font-size:0.82rem;font-family:var(--mono)" data-zh="DeepSeek 翻译 →" data-en="DeepSeek Translate →">DeepSeek 翻译 →</span>
     <div class="arch-box" style="border-color:var(--orange);color:var(--orange)">subtitles_en.srt</div>
     <span class="arch-arrow">→</span>
     <div class="arch-box">edge-tts EN</div>
@@ -297,24 +297,24 @@ footer a { color: var(--accent); text-decoration: none; }
 
   <h4 style="margin:32px 0 10px;color:var(--text3);font-size:0.82rem;text-transform:uppercase;letter-spacing:1px" data-zh="安装" data-en="Install">安装</h4>
   <div class="code-box">
-    <span class="cmt"># 克隆仓库</span><br>
+    <span class="cmt" data-zh="# 克隆仓库" data-en="# Clone repo"># 克隆仓库</span><br>
     git clone https://github.com/Apusic-Doc/video-toolkit.git<br>
     cd video-toolkit<br><br>
-    <span class="cmt"># 安装依赖</span><br>
+    <span class="cmt" data-zh="# 安装依赖" data-en="# Install dependencies"># 安装依赖</span><br>
     brew install ffmpeg<br>
     pip3 install faster-whisper<br>
-    <span class="cmt"># edge-tts 已预配在 .venv/ 中</span>
+    <span class="cmt" data-zh="# edge-tts 已预配在 .venv/ 中" data-en="# edge-tts pre-configured in .venv/"># edge-tts 已预配在 .venv/ 中</span>
   </div>
 
   <h4 style="margin:32px 0 10px;color:var(--text3);font-size:0.82rem;text-transform:uppercase;letter-spacing:1px" data-zh="使用" data-en="Usage">使用</h4>
   <div class="code-box">
-    <span class="cmt"># 1. Mac Cmd+Shift+5 录制屏幕 + 自然讲解</span><br>
-    <span class="cmt">#    保存到 feature 目录: recording.mov</span><br><br>
-    <span class="cmt"># 2. 一键出片</span><br>
+    <span class="cmt" data-zh="# 1. Mac Cmd+Shift+5 录制屏幕 + 自然讲解" data-en="# 1. Record screen + narrate (Cmd+Shift+5)"># 1. Mac Cmd+Shift+5 录制屏幕 + 自然讲解</span><br>
+    <span class="cmt" data-zh="#    保存到 feature 目录: recording.mov" data-en="#    Save to feature dir: recording.mov">#    保存到 feature 目录: recording.mov</span><br><br>
+    <span class="cmt" data-zh="# 2. 一键出片" data-en="# 2. One command to final cut"># 2. 一键出片</span><br>
     <span class="cmd">./video-toolkit.sh</span> all 05<br><br>
-    <span class="cmt"># 3. 调整字幕后重新合成</span><br>
-    <span class="cmd">./video-toolkit.sh</span> dub 05 &nbsp;<span class="cmt"># AI 配音（试听）</span><br>
-    <span class="cmd">./video-toolkit.sh</span> mix 05 &nbsp;<span class="cmt"># 合成视频</span>
+    <span class="cmt" data-zh="# 3. 调整字幕后重新合成" data-en="# 3. Edit subtitles & re-compose"># 3. 调整字幕后重新合成</span><br>
+    <span class="cmd">./video-toolkit.sh</span> dub 05 &nbsp;<span class="cmt" data-zh="# AI 配音（试听）" data-en="# AI dub (preview)"># AI 配音（试听）</span><br>
+    <span class="cmd">./video-toolkit.sh</span> mix 05 &nbsp;<span class="cmt" data-zh="# 合成视频" data-en="# Compose video"># 合成视频</span>
   </div>
 </section>
 
