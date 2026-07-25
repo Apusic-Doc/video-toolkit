@@ -26,8 +26,8 @@ set -e
 
 BASE="${VIDEO_FEATURES_DIR:-$PWD}"  # 默认搜索当前目录，可设 VIDEO_FEATURES_DIR
 TOOLKIT="$(cd "$(dirname "$0")" && pwd)"
-VOICE="zh-CN-XiaoxiaoNeural"    # 微软神经语音（最自然）
-VOICE_EN="en-US-AvaNeural"        # 美式英文，清晰亲和
+VOICE="${VIDEO_VOICE:-zh-CN-XiaoxiaoNeural}"    # 微软神经语音（最自然）
+VOICE_EN="${VIDEO_VOICE_EN:-en-US-AvaNeural}"        # 美式英文，清晰亲和
 EDGE_TTS="$TOOLKIT/.venv/bin/edge-tts"  # edge-tts 路径
 ASR_ENGINE="${VIDEO_ASR:-faster-whisper}"   # faster-whisper | openai-whisper | funasr
 DEEPSEEK_KEY="${DEEPSEEK_API_KEY:-}"   # 优先环境变量

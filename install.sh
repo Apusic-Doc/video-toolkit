@@ -75,6 +75,10 @@ DEEPSEEK_API_KEY=
 # ASR 引擎: faster-whisper | openai-whisper | funasr
 VIDEO_ASR=faster-whisper
 
+# AI 配音语音
+VIDEO_VOICE=zh-CN-XiaoxiaoNeural
+VIDEO_VOICE_EN=en-US-AvaNeural
+
 # 是否烧录字幕 (1=是 0=否)
 VIDEO_BURN_SUB=1
 CONF
