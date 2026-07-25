@@ -128,6 +128,8 @@ extract_srt() {
     [ "$model_cached" -eq 0 ] && info "首次运行需下载模型 (~500MB)，请耐心等待 2-5 分钟"
     info "识别引擎: $ASR_ENGINE"
     
+    ffmpeg -i "$rec" -vn -acodec pcm_s16le -ar 16000 -ac 1 "$dir/_tmp.wav" -y 2>/dev/null
+    
     (
     python3 - "$dir/_tmp.wav" "$srt" "$ASR_ENGINE" << 'PYEOF'
 import sys
