@@ -230,14 +230,14 @@ compose() {
     if [ -f "$srt" ] && [ "${VIDEO_BURN_SUB:-1}" != "0" ] && ffmpeg -filters 2>/dev/null | grep -qE " ass |libass"; then
         ffmpeg -i "$srt" /tmp/_vt_sub.ass -y 2>/dev/null
         ffmpeg -i "$rec" -i "$dub" \
-            -c:v libx264 -preset fast -crf 23 \
+            -c:v libx264 -preset fast -crf 23 -vf "scale=1920:-2" \
             -c:a aac -map 0:v:0 -map 1:a:0 \
-            -vf "ass=filename=/tmp/_vt_sub.ass" \
+            -vf "scale=1920:-2,ass=filename=/tmp/_vt_sub.ass" \
             -shortest "$out" -y 2>/dev/null
         rm -f /tmp/_vt_sub.ass
     else
         ffmpeg -i "$rec" -i "$dub" \
-            -c:v libx264 -preset fast -crf 23 \
+            -c:v libx264 -preset fast -crf 23 -vf "scale=1920:-2" \
             -c:a aac -map 0:v:0 -map 1:a:0 \
             -shortest "$out" -y 2>/dev/null
     fi
@@ -459,14 +459,14 @@ compose_en() {
     if [ -f "$srt" ] && [ "${VIDEO_BURN_SUB:-1}" != "0" ] && ffmpeg -filters 2>/dev/null | grep -qE " ass |libass"; then
         ffmpeg -i "$srt" /tmp/_vt_sub_en.ass -y 2>/dev/null
         ffmpeg -i "$rec" -i "$dub" \
-            -c:v libx264 -preset fast -crf 23 \
+            -c:v libx264 -preset fast -crf 23 -vf "scale=1920:-2" \
             -c:a aac -map 0:v:0 -map 1:a:0 \
-            -vf "ass=filename=/tmp/_vt_sub_en.ass" \
+            -vf "scale=1920:-2,ass=filename=/tmp/_vt_sub.ass" \
             -shortest "$out" -y 2>/dev/null
         rm -f /tmp/_vt_sub_en.ass
     else
         ffmpeg -i "$rec" -i "$dub" \
-            -c:v libx264 -preset fast -crf 23 \
+            -c:v libx264 -preset fast -crf 23 -vf "scale=1920:-2" \
             -c:a aac -map 0:v:0 -map 1:a:0 \
             -shortest "$out" -y 2>/dev/null
     fi
