@@ -226,14 +226,14 @@ compose() {
     info "合成最终视频..."
     
     if [ -f "$srt" ] && [ "${VIDEO_BURN_SUB:-1}" != "0" ]; then
-        # 有字幕：烧录进去（路径中的 - 会干扰 ffmpeg，复制到 /tmp）
-        cp "$srt" /tmp/_vt_sub.srt
+        # 有字幕：SRT→ASS 转换后烧录 (ffmpeg 8.x 无 subtitles 滤镜)
+        ffmpeg -i "$srt" /tmp/_vt_sub.ass -y 2>/dev/null
         ffmpeg -i "$rec" -i "$dub" \
             -c:v libx264 -preset fast -crf 23 \
             -c:a aac -map 0:v:0 -map 1:a:0 \
-            -vf "subtitles=filename=/tmp/_vt_sub.srt" \
+            -vf "ass=/tmp/_vt_sub.ass" \
             -shortest "$out" -y
-        rm -f /tmp/_vt_sub.srt
+        rm -f /tmp/_vt_sub.ass
     else
         # 无字幕：仅替换音频
         ffmpeg -i "$rec" -i "$dub" \
