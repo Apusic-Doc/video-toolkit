@@ -225,8 +225,8 @@ compose() {
     
     info "合成最终视频..."
     
-    if [ -f "$srt" ] && [ "${VIDEO_BURN_SUB:-1}" != "0" ]; then
-        # 有字幕：SRT→ASS 转换后烧录 (ffmpeg 8.x 无 subtitles 滤镜)
+    if [ -f "$srt" ] && [ "${VIDEO_BURN_SUB:-1}" != "0" ] && ffmpeg -filters 2>/dev/null | grep -q "ass"; then
+        # 有字幕 + 开关打开 + ffmpeg 支持 libass
         ffmpeg -i "$srt" /tmp/_vt_sub.ass -y 2>/dev/null
         ffmpeg -i "$rec" -i "$dub" \
             -c:v libx264 -preset fast -crf 23 \
@@ -242,6 +242,7 @@ compose() {
             -shortest "$out" -y
     fi
     
+    if [ -f "$srt" ] && ! ffmpeg -filters 2>/dev/null | grep -q "ass"; then warn "字幕未烧录 (ffmpeg 无 libass，用 brew install ffmpeg --with-libass)"; fi
     ok "成片: final.mp4"
 }
 
@@ -465,6 +466,7 @@ compose_en() {
             -shortest "$out" -y
     fi
     
+    if [ -f "$srt" ] && ! ffmpeg -filters 2>/dev/null | grep -q "ass"; then warn "字幕未烧录 (ffmpeg 无 libass)"; fi
     ok "英文成片: final_en.mp4"
 }
 
