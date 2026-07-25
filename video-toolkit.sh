@@ -113,6 +113,8 @@ extract_srt() {
     [ ! -f "$rec" ] && { err "找不到 $rec"; return 1; }
     
     info "提取音频 → Whisper 识别 → 字幕"
+    info "首次运行需下载模型 (~500MB)，请耐心等待 2-5 分钟"
+    echo -ne "  ${YELLOW}⏳${NC} 下载中..."
     ffmpeg -i "$rec" -vn -acodec pcm_s16le -ar 16000 -ac 1 "$dir/_tmp.wav" -y 2>/dev/null
     
     (
