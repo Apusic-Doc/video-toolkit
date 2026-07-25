@@ -574,6 +574,7 @@ case "${1:-}" in
         echo "  video-toolkit --update             自动更新"
         echo "  video-toolkit config              查看配置"
         echo "  video-toolkit config KEY=value    设置配置"
+        echo "  video-toolkit play <target>        播放配音或成片"
         echo ""
         echo "环境变量:"
         echo "  export DEEPSEEK_API_KEY=sk-xxx    （trans/en 必需）"

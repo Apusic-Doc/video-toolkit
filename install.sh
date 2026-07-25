@@ -118,6 +118,32 @@ case "${1:-}" in
       echo "✅ $KEY=$VAL"
     fi
     exit 0 ;;
+  play)
+    shift; DIR="$VIDEO_FEATURES_DIR"; TARGET="${1:-}"
+    if [ ! -d "$DIR" ]; then echo "❌ 找不到目录: $DIR"; exit 1; fi
+    case "$TARGET" in
+      dub)   FILE="$DIR/ai_dub.wav"; TYPE="audio" ;;
+      en-dub|dub-en) FILE="$DIR/ai_dub_en.wav"; TYPE="audio" ;;
+      final) FILE="$DIR/final.mp4"; TYPE="video" ;;
+      en-final|final-en) FILE="$DIR/final_en.mp4"; TYPE="video" ;;
+      "")
+        echo "用法: vt play <target>"
+        echo ""
+        echo "  dub       播放中文 AI 配音 (ai_dub.wav)"
+        echo "  en-dub    播放英文 AI 配音 (ai_dub_en.wav)"
+        echo "  final     播放中文成片 (final.mp4)"
+        echo "  en-final  播放英文成片 (final_en.mp4)"
+        exit 0 ;;
+      *) echo "❌ 未知目标: $TARGET"; exit 1 ;;
+    esac
+    [ ! -f "$FILE" ] && { echo "❌ 文件不存在: $FILE"; exit 1; }
+    echo "▶️ $FILE"
+    if [ "$TYPE" = "audio" ]; then
+      afplay "$FILE" 2>/dev/null || echo "❌ 播放失败"
+    else
+      open "$FILE" 2>/dev/null || xdg-open "$FILE" 2>/dev/null || echo "❌ 播放失败"
+    fi
+    exit 0 ;;
 esac
 
 # 加载配置
