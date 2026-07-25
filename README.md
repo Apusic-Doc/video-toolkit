@@ -20,12 +20,15 @@
 git clone https://github.com/Apusic-Doc/video-toolkit.git
 cd video-toolkit
 
-# 依赖安装
+# Prerequisites: Python 3.10+ (pre-installed on macOS)
+
+# Install dependencies
 brew install ffmpeg
 pip3 install faster-whisper
 
-# edge-tts 虚拟环境（已预配 .venv，也可手动安装）
-python3 -m venv .venv && .venv/bin/pip install edge-tts
+# Set up edge-tts neural TTS engine
+python3 -m venv .venv
+.venv/bin/pip install edge-tts
 ```
 
 ## 🚀 快速开始

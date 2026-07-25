@@ -326,10 +326,13 @@ footer {
     <span class="cmt"># Clone repo</span><br>
     git clone https://github.com/Apusic-Doc/video-toolkit.git<br>
     cd video-toolkit<br><br>
+    <span class="cmt"># Prerequisites: Python 3.10+ (pre-installed on macOS)</span><br><br>
     <span class="cmt"># Install dependencies</span><br>
     brew install ffmpeg<br>
-    pip3 install faster-whisper<br>
-    <span class="cmt"># edge-tts pre-configured in .venv/</span>
+    pip3 install faster-whisper<br><br>
+    <span class="cmt"># Set up edge-tts neural TTS engine</span><br>
+    python3 -m venv .venv<br>
+    .venv/bin/pip install edge-tts
   </div>
 
   <h4 style="margin:32px 0 10px;color:var(--text3);font-size:0.82rem;text-transform:uppercase;letter-spacing:1px" data-zh="使用" data-en="Usage">使用</h4>
