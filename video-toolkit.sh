@@ -245,7 +245,7 @@ compose() {
     pid=$!
     spinner $pid "视频合成中..."
     
-    if [ -f "$srt" ] && ! ffmpeg -filters 2>/dev/null | grep -qE " ass |libass"; then warn "字幕未烧录 (ffmpeg 无 libass，用 brew install ffmpeg 目前不支持 libass，请用手动方式内嵌字幕)"; fi
+    if [ "${VIDEO_BURN_SUB:-0}" = "1" ] && [ -f "$srt" ] && ! ffmpeg -filters 2>/dev/null | grep -qE " ass |libass"; then warn "字幕未烧录 (ffmpeg 无 libass，字幕未烧录)"; fi
     ok "成片: final.mp4"
 }
 
@@ -492,7 +492,7 @@ compose_en() {
     pid=$!
     spinner $pid "视频合成中..."
     
-    if [ -f "$srt" ] && ! ffmpeg -filters 2>/dev/null | grep -qE " ass |libass"; then warn "字幕未烧录 (ffmpeg 无 libass)"; fi
+    if [ "${VIDEO_BURN_SUB:-0}" = "1" ] && [ -f "$srt" ] && ! ffmpeg -filters 2>/dev/null | grep -qE " ass |libass"; then warn "字幕未烧录 (ffmpeg 无 libass)"; fi
     ok "英文成片: final_en.mp4"
 }
 
