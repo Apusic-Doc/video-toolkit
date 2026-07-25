@@ -225,11 +225,12 @@ footer {
     <a href="https://github.com/Apusic-Doc/video-toolkit" class="cta-sec" data-zh="⭐ GitHub" data-en="⭐ GitHub">⭐ GitHub</a>
   </div>
   <p style="margin-top:24px">
-    <code style="background:var(--code-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 20px;font-size:0.88rem;display:inline-block;cursor:pointer" 
-          onclick="navigator.clipboard.writeText('curl -sSf https://video-toolkit.bitey.ai/install.sh | bash').then(()=>{this.style.borderColor='var(--green)';setTimeout(()=>this.style.borderColor='var(--border)',1500)})"
+    <code id="install-cmd" style="background:var(--code-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 20px;font-size:0.88rem;display:inline-block;cursor:pointer;position:relative" 
+          onclick="navigator.clipboard.writeText('curl -sSf https://video-toolkit.bitey.ai/install.sh | bash').then(()=>{var t=document.getElementById('copy-toast');t.style.opacity=1;setTimeout(()=>t.style.opacity=0,1500)})"
           title="点击复制" data-zh="curl -sSf https://video-toolkit.bitey.ai/install.sh | bash"
           data-en="curl -sSf https://video-toolkit.bitey.ai/install.sh | bash">
       curl -sSf https://video-toolkit.bitey.ai/install.sh | bash
+      <span id="copy-toast" style="position:absolute;top:-28px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:2px 10px;border-radius:4px;font-size:0.75rem;opacity:0;transition:opacity .3s;pointer-events:none">Copied!</span>
     </code>
   </p>
 </section>
