@@ -75,16 +75,29 @@ check_env() {
 # ==================== 解析 feature 目录 ====================
 resolve_dir() {
     local name="$1"
-    # 支持: feature-05-cli-offline-config 或 feature-05 或完整路径
+    # 1. 绝对/相对路径 → 直接使用
+    if [ -d "$name" ] && [[ "$name" == */* ]]; then
+        echo "$(cd "$name" && pwd)"
+        return
+    fi
+    # 2. 当前目录精确匹配
+    if [ -d "$BASE/$name" ]; then
+        echo "$BASE/$name"
+        return
+    fi
+    # 3. 编号简写: 01 → feature-01-*
+    local pattern="$BASE/feature-${name#feature-}*"
+    local matches=($pattern)
+    if [ -d "${matches[0]}" ]; then
+        echo "${matches[0]}"
+        return
+    fi
+    # 4. 在当前目录也搜一次（如果是纯编号）
     if [ -d "$name" ]; then
         echo "$(cd "$name" && pwd)"
-    elif [ -d "$BASE/$name" ]; then
-        echo "$BASE/$name"
-    else
-        # 模糊匹配
-        local match=$(ls -d "$BASE"/feature-"${name#feature-}"* 2>/dev/null | head -1)
-        [ -n "$match" ] && echo "$match" || echo ""
+        return
     fi
+    echo ""
 }
 
 # ==================== 状态检查 ====================
