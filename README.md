@@ -141,6 +141,35 @@ export DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxx
 https://video-toolkit.bitey.ai
 ```
 
+## ❓ FAQ
+
+### "Warning: You are sending unauthenticated requests to the HF Hub"
+
+Whisper 模型托管在 HuggingFace。这个警告不影响功能，只是下载速度稍慢。两种处理方式：
+
+1. **忽略**（推荐）— 模型只下载一次，缓存后不再出现
+2. **设 Token** — `export HF_TOKEN=hf_xxxxxxxx` 提升速率
+
+### "faster-whisper not found" / edge-tts 不可用
+
+```bash
+pip3 install faster-whisper
+python3 -m venv .venv && .venv/bin/pip install edge-tts
+```
+
+### 中文识别不够准确
+
+在 `video-toolkit.sh` 中将 Whisper 模型从 `small` 改为 `medium` 或 `large`（更准但更慢、更占内存）。
+
+### DeepSeek API Key 在哪设置
+
+```bash
+echo 'sk-xxxxxxxxxxxxx' > ~/.aas_deepseek_key
+chmod 600 ~/.aas_deepseek_key
+```
+
+脚本自动读取，不需要每次设环境变量。
+
 ## 📄 License
 
 Apache 2.0
