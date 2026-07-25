@@ -383,6 +383,7 @@ with open(concat, "w") as cl:
     for m in matches:
         idx, t1, t2, text = m
         text = text.strip().replace('\n', ' ')
+        if not text: continue   # 跳过空字幕行
         seg_num = int(idx)
         seg_start = to_sec(t1)
         seg_end = to_sec(t2)
