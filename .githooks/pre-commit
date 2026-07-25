@@ -1,0 +1,12 @@
+#!/bin/bash
+# 自动更新版本号和时间戳
+VFILE="$(git rev-parse --show-toplevel)/VERSION"
+VER=$(cat "$VFILE" 2>/dev/null | head -1 | grep -o '[0-9.]*' || echo "1.0.0")
+MAJOR=$(echo $VER | cut -d. -f1)
+MINOR=$(echo $VER | cut -d. -f2)
+PATCH=$(echo $VER | cut -d. -f3)
+NEW="$MAJOR.$MINOR.$((PATCH+1))"
+TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+echo "$NEW ($TS)" > "$VFILE"
+git add "$VFILE"
+echo "📦 v$NEW"
