@@ -7,17 +7,20 @@ if [ -z "$VIRTUAL_ENV" ] && [ -f "$(dirname "$0")/.venv/bin/activate" ]; then
   source "$(dirname "$0")/.venv/bin/activate"
 fi
 # 约定文件名（每个 feature 目录下）:
-#   recording.mov   原始录屏（你录制的）
-#   subtitles.srt   字幕（自动生成或手写）
-#   ai_dub.wav      AI 配音
-#   final.mp4       最终成片
+#   feature-XX-name/
+#   ├── recording.mov   原始录屏
+#   ├── subtitles.srt   字幕（自动生成或手写）
+#   ├── ai_dub.wav      AI 配音
+#   └── final.mp4       最终成片
 #
 # 用法:
-#   ./video-toolkit.sh all    feature-05-cli-offline-config    全流程
-#   ./video-toolkit.sh srt    feature-05-cli-offline-config    仅提取字幕
-#   ./video-toolkit.sh dub    feature-05-cli-offline-config    仅生成AI配音+合成
-#   ./video-toolkit.sh status feature-05-cli-offline-config    查看状态
-#   ./video-toolkit.sh status --all                           查看全部 feature 状态
+#   curl -sSf https://video-toolkit.bitey.ai/install.sh | bash   安装
+#   video-toolkit all    <feature>    全流程
+#   video-toolkit srt    <feature>    仅提取字幕
+#   video-toolkit dub    <feature>    仅生成AI配音
+#   video-toolkit mix    <feature>    仅合成视频
+#   video-toolkit en     <feature>    英文全流程
+#   video-toolkit status <feature>    查看状态
 # ============================================================
 set -e
 
@@ -549,12 +552,20 @@ case "${1:-}" in
         echo "  export VIDEO_BURN_SUB=0            不烧录字幕到视频"
         echo ""
         echo "约定文件名（每个 feature 目录下）:"
-        echo "  recording.mov      原始录屏"
-        echo "  subtitles.srt      中文字幕"
-        echo "  subtitles_en.srt   英文字幕"
-        echo "  ai_dub.wav         中文 AI 配音"
-        echo "  ai_dub_en.wav      英文 AI 配音"
-        echo "  final.mp4          中文成片"
-        echo "  final_en.mp4       英文成片"
+        echo ""
+        echo "  目录结构:"
+        echo "    feature-XX-name/                  ← 按此格式命名"
+        echo "    ├── recording.mov                 ← 原始录屏"
+        echo "    ├── subtitles.srt                 ← 中文字幕"
+        echo "    ├── subtitles_en.srt              ← 英文字幕 (可选)"
+        echo "    ├── ai_dub.wav                    ← 中文 AI 配音"
+        echo "    ├── ai_dub_en.wav                 ← 英文 AI 配音 (可选)"
+        echo "    ├── final.mp4                     ← 中文成片"
+        echo "    └── final_en.mp4                  ← 英文成片 (可选)"
+        echo ""
+        echo "  feature 参数简写:"
+        echo "    XX                    匹配 feature-XX-* 目录"
+        echo "    feature-XX-name       精确目录名"
+        echo "    ../path/to/feature     完整相对路径"
         ;;
 esac
