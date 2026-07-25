@@ -122,7 +122,10 @@ extract_srt() {
     case "$ASR_ENGINE" in
       funasr)
         [ -d ~/.cache/modelscope/hub/iic/SenseVoiceSmall ] && model_cached=1 ;;
-      openai-whisper|*)
+      openai-whisper)
+        [ -f ~/.cache/whisper/small.pt ] && model_cached=1 ;;
+      *)
+        [ -d ~/.cache/huggingface/hub/models--Systran--faster-whisper-small ] && model_cached=1
         [ -f ~/.cache/whisper/small.pt ] && model_cached=1 ;;
     esac
     [ "$model_cached" -eq 0 ] && info "首次运行需下载模型 (~500MB)，请耐心等待 2-5 分钟"
