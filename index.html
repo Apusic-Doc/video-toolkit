@@ -61,7 +61,8 @@ nav .btn-primary { background: var(--accent); color:#fff; border-color:var(--acc
   padding: 4px 10px; cursor: pointer; font-size: 0.82rem; color: var(--text2);
   transition: all .2s; font-family: var(--font);
 }
-.theme-btn:hover, .lang-btn:hover { border-color: var(--border-hover); color: var(--text); }
+.theme-btn:hover, .lang-btn { font-size: 1rem; line-height: 1; }
+.lang-btn:hover { border-color: var(--border-hover); color: var(--text); }
 .mobile-menu { display: none; cursor: pointer; background: none; border: none; color: var(--text); font-size: 1.3rem; }
 
 /* ── Hero ── */
@@ -201,7 +202,7 @@ footer {
     <a href="#quickstart" data-zh="快速开始" data-en="Quick Start">Quick Start</a>
     <a href="https://github.com/Apusic-Doc/video-toolkit" data-zh="GitHub">GitHub</a>
     <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme">☀</button>
-    <button class="lang-btn" onclick="toggleLang()">中文</button>
+    <button class="lang-btn" onclick="toggleLang()" title="Switch language">🌐</button>
   </div>
 </nav>
 
@@ -478,7 +479,6 @@ function applyLang(l){
       el.innerHTML = text;
     }
   });
-  document.querySelector('.lang-btn').textContent = l === 'zh' ? 'EN' : '中文';
 }
 </script>
 </body>
