@@ -147,11 +147,36 @@ section { max-width: 1040px; margin: 0 auto; padding: 80px 24px; }
 .tag { font-size: 0.72rem; padding: 2px 8px; border-radius: 10px; background: rgba(108,92,231,0.15); color: var(--accent); font-weight: 600; }
 
 /* ── Footer ── */
+/* ── Footer ── */
 footer {
-  border-top: 1px solid var(--border); padding: 48px 24px;
-  text-align: center; color: var(--text2); font-size: 0.88rem;
+  border-top: 1px solid var(--border); padding: 64px 24px 40px;
+  background: var(--bg2);
 }
-footer a { color: var(--accent); text-decoration: none; }
+.footer-grid {
+  max-width: 1040px; margin: 0 auto;
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 40px;
+}
+@media (max-width: 768px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .footer-grid { grid-template-columns: 1fr; }
+}
+.footer-brand .logo-text { font-weight: 800; font-size: 1.1rem; margin-bottom: 8px; }
+.footer-brand .logo-text span { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.footer-brand .tagline { color: var(--text2); font-size: 0.88rem; margin-bottom: 16px; }
+.footer-brand .tech { color: var(--text3); font-size: 0.78rem; font-family: var(--mono); }
+.footer-col h5 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); margin-bottom: 16px; }
+.footer-col a { display: block; color: var(--text2); text-decoration: none; font-size: 0.9rem; padding: 4px 0; transition: color .2s; }
+.footer-col a:hover { color: var(--text); }
+.footer-bottom {
+  max-width: 1040px; margin: 40px auto 0; padding-top: 24px;
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 12px; font-size: 0.82rem; color: var(--text3);
+}
+.footer-bottom .domain { font-family: var(--mono); color: var(--text2); }
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
@@ -369,8 +394,38 @@ footer a { color: var(--accent); text-decoration: none; }
 
 <!-- ═══════════ Footer ═══════════ -->
 <footer>
-  <p>Video Toolkit · <a href="https://github.com/Apusic-Doc/video-toolkit">GitHub</a> · Apache 2.0</p>
-  <p style="margin-top:6px"><code>video-toolkit.bitey.ai</code></p>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="logo-text">🎬 <span>Video Toolkit</span></div>
+      <p class="tagline" data-zh="从原始录屏到多语言成片，全自动流水线。" data-en="From raw recording to multilingual final cut — a fully automated pipeline.">From raw recording to multilingual final cut — a fully automated pipeline.</p>
+      <p class="tech">Whisper · edge-tts · DeepSeek · ffmpeg · macOS</p>
+    </div>
+    <div class="footer-col">
+      <h5 data-zh="产品" data-en="Product">Product</h5>
+      <a href="#features" data-zh="特性" data-en="Features">Features</a>
+      <a href="#pipeline" data-zh="流程" data-en="Pipeline">Pipeline</a>
+      <a href="#commands" data-zh="命令" data-en="Commands">Commands</a>
+      <a href="#voices" data-zh="语音" data-en="Voices">Voices</a>
+    </div>
+    <div class="footer-col">
+      <h5 data-zh="资源" data-en="Resources">Resources</h5>
+      <a href="#quickstart" data-zh="快速开始" data-en="Quick Start">Quick Start</a>
+      <a href="https://github.com/Apusic-Doc/video-toolkit" data-zh="GitHub 仓库" data-en="GitHub Repo">GitHub Repo</a>
+      <a href="https://github.com/openai/whisper" target="_blank">OpenAI Whisper</a>
+      <a href="https://github.com/rany2/edge-tts" target="_blank">edge-tts</a>
+    </div>
+    <div class="footer-col">
+      <h5 data-zh="技术栈" data-en="Stack">Stack</h5>
+      <a href="https://ffmpeg.org" target="_blank">FFmpeg</a>
+      <a href="https://platform.deepseek.com" target="_blank">DeepSeek API</a>
+      <a href="https://brew.sh" target="_blank">Homebrew</a>
+      <a href="https://www.python.org" target="_blank">Python 3.10+</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Video Toolkit · Apache 2.0</span>
+    <span class="domain">video-toolkit.bitey.ai</span>
+  </div>
 </footer>
 
 <script>
