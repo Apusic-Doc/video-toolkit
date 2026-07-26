@@ -87,7 +87,11 @@ for p in pages:
     if [ -n "$text" ] && [ "$text" != "None" ]; then
       # 有解说：配音 + 图片
       local mp3="$tmp/_speech_$(printf '%03d' $num).mp3"
-      "$EDGE" --voice "$voice" --text "$text" --write-media "$mp3" 2>/dev/null
+      if [ "${DEBUG:-0}" = "1" ]; then
+        "$EDGE" --voice "$voice" --text "$text" --write-media "$mp3"
+      else
+        "$EDGE" --voice "$voice" --text "$text" --write-media "$mp3" 2>/dev/null
+      fi
 
       if [ -f "$mp3" ]; then
         local speech_dur=$(ffprobe -v quiet -show_entries format=duration -of csv=p=0 "$mp3" 2>/dev/null || echo 3)
@@ -97,7 +101,11 @@ for p in pages:
           -t "$total_dur" -pix_fmt yuv420p "$clip" -y 2>/dev/null
         rm -f "$mp3"
       else
-        warn "配音失败: $image 使用静默"
+        if [ "${DEBUG:-0}" = "1" ]; then
+          warn "edge-tts 失败，尝试: $EDGE --voice $voice --text '${text:0:30}...'"
+        else
+          warn "配音失败: $image 使用静默"
+        fi
         ffmpeg -loop 1 -i "$slide_dir/$image" \
           -c:v libx264 -preset ultrafast -crf 23 \
           -t "${pd:-3}" -pix_fmt yuv420p -an "$clip" -y 2>/dev/null
