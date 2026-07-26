@@ -1,0 +1,46 @@
+{
+  "type": "slide",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "resolution": "1920x1080",
+  "slides": {
+    "page_padding": 1.5,
+    "pages": [
+      {
+        "image": "001-overview.png",
+        "text": "欢迎了解 Video Toolkit，一款开源免费的录屏自动化处理工具。一行命令安装，从原始录屏到多语言成片全自动完成。支持 Whisper 语音识别、edge-tts 神经语音合成、DeepSeek 智能翻译，以及 ffmpeg 硬件加速视频合成，让产品演示视频制作效率提升十倍。"
+      },
+      {
+        "image": "002-features.png",
+        "text": "Video Toolkit 提供六大核心能力，覆盖录屏处理全流程。语音识别自动提取字幕、微软神经语音合成 AI 配音、DeepSeek API 一键翻译多语言版本、幻灯片截图自动生成演示视频、全新的 meta.json 配置系统支持三级灵活覆盖、硬件加速编码让两分钟视频十五秒出片。"
+      },
+      {
+        "image": "003-pipeline.png",
+        "text": "Video Toolkit 采用统一合成器架构设计。无论是录屏模式还是幻灯片模式，都先各自生成内容段，然后统一进入 compose_final 合成器。合成器负责处理封面图片、封底视频、背景音乐混音和字幕叠加，确保两种模式的输出品质完全一致，零重复代码。"
+      },
+      {
+        "image": "004-quick-start-slide.png",
+        "text": "幻灯片模式极其简单，只需在 slides 目录下放入截图和一段解说文本即可。图片按文件名排序，narration.txt 中每行文字对应一张图。运行 vt slide 命令，系统自动为每张图生成 AI 配音，按解说时长自动控制切换节奏，最终合成完整的演示视频。"
+      },
+      {
+        "image": "005-quick-start-video.png",
+        "text": "录屏处理同样简单高效。用 Mac 自带的 Cmd 加 Shift 加五录制屏幕操作和语音讲解，保存为 recording.mov 放入 feature 目录。运行 vt all 命令，工具自动完成语音识别提取字幕、AI 配音替换原声、视频合成输出成片，全程无需人工介入。"
+      },
+      {
+        "image": "006-config.png",
+        "text": "Video Toolkit 提供灵活的配置管理功能。通过 vt config 命令可以查看和设置所有配置项，包括 DeepSeek API Key、ASR 语音识别引擎、中英文 AI 配音语音选择、字幕烧录开关等。配置文件存储在用户目录下，不受 Git 版本管理，安全可靠。"
+      },
+      {
+        "image": "007-command.png",
+        "text": "工具提供十多个命令覆盖全流程，操作简单直观。vt all 一键出片、vt srt 提取字幕、vt dub 生成配音、vt mix 合成视频、vt slide 幻灯片模式、vt trans 翻译字幕、vt en 英文全流程、vt play 播放成品、vt status 查看状态，每个命令都支持 feature 编号简写。"
+      },
+      {
+        "image": "008-voice.png",
+        "text": "基于微软 edge-tts 神经语音引擎，AI 配音自然度接近真人。中文提供晓晓温暖清晰、云扬专业可靠、云健激情有力、云希活泼阳光等多种风格。英文提供 Ava 清晰亲和、Aria 自信干练、Christopher 权威庄重、Sonia 英式优雅等多国口音，一行命令即可切换。"
+      },
+      {
+        "image": "009-faq.png",
+        "text": "Video Toolkit 提供完善的常见问题解答，覆盖安装配置、模型下载、字幕处理、语音对齐等高频问题。AI 配音严格按 SRT 时间轴对齐、无重叠无错位。开源社区持续维护，版本更新一键升级，确保用户始终使用最新最稳定的功能。感谢您的关注。"
+      }
+    ]
+  }
+}
