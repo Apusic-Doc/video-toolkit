@@ -9,7 +9,7 @@ fi
 
 # TRACE 模式：生成可回放的脚本录制文件
 if [ "${TRACE:-0}" = "1" ]; then
-  TRACE_FILE="${TRACE_FILE:-$HOME/Desktop/trace-$(date +%H%M%S).sh}"
+  TRACE_FILE="${TRACE_FILE:-${VIDEO_FEATURES_DIR:-$PWD}/trace-$(date +%H%M%S).sh}"
   echo "#!/bin/bash" > "$TRACE_FILE"
   echo "# Video Toolkit trace — $(date)" >> "$TRACE_FILE"
   echo "set -e" >> "$TRACE_FILE"
