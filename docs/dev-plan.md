@@ -1,55 +1,92 @@
-# Video Toolkit v2 开发计划
+# Video Toolkit v2 开发计划（统一架构版）
 
-基于 `docs/meta-design.md` 实现。
+## 核心架构
+
+```
+Phase 1: meta 引擎
+    │
+    ├──→ video 模式 ──→ recording.mov + dub = 内容段
+    │                         │
+    └──→ slide 模式 ──→ pages[] + dub = 内容段
+                              │
+                    Phase 2: 通用合成器
+                    ┌─────────┼─────────┐
+                    │  封面    内容段    封底  │
+                    │         BGM           │
+                    │       Watermark       │
+                    └──────────────────────┘
+                              │
+                         final.mp4
+```
+
+**关键**：Phase 2 合成器 = 唯一输出入口。video/slide 只负责生成"内容段"，然后交给合成器统一处理。
+
+---
 
 ## Phase 1: meta.json 引擎
 
-- 新增 `lib/meta.sh`：`load_meta(feature_dir)` 三级合并
-- `detect_type(feature_dir, meta)` 自动检测 video/slide
-- `resolve_asset(feature_dir, meta, key)` 统一资源查找
-- 无 meta.json 时完全向后兼容
-- 预计 ~150 行
+- `lib/meta.sh`：三级合并 + type 检测 + 资源查找
+- 无 meta 时向后兼容
+- ~150 行
 
-## Phase 2: cover/outro/bgm
+## Phase 2: 通用合成器（共享核心）
 
-- 图片封面用 cover_duration 秒，视频封面用原始时长
-- BGM 循环/截断 + 音量控制
-- Watermark 图片叠加（先跳过，等 libass 方案）
-- 修改 compose() 函数，~100 行
+- `compose_final(content_segment, meta)` — 唯一输出函数
+- 输入：内容段视频 + meta 配置
+- 输出：带 cover + outro + BGM + watermark 的 final.mp4
+- 替换现有 `compose()` 和 `compose_en()`
+- ~120 行
 
-## Phase 3: 幻灯片系统
+### 2.1 内容段生成：video 模式
 
-- `build_pages(slide_dir, meta)` 自动推导 pages
-- 解说文本三级回退：配对 txt → narration.txt → warn
-- 逐页 AI 配音 + 合成片段 + 拼接
-- 先做 fade 转场，zoom 后续迭代
-- 新增 lib/slides.sh，~180 行
+- 现有 `srt_to_dub()` + `ffmpeg` 替换音频 → 内容段
+- **调整**：去掉现有 compose 中的合成逻辑，只生成"内容段"临时文件
 
-## Phase 4: 字幕增强
+### 2.2 内容段生成：slide 模式
 
-- subtitle.mode: auto / paired / null
-- subtitle_style 先跳过（等 libass 方案稳定）
-- ~30 行
+- `build_pages()` — 从 meta.pages 或文件系统推导
+- 三级解说回退（配对 txt → narration.txt → 跳过）
+- 每页：图片 + AI 配音 = 视频片段，`page_duration` 控制最短/最长
+- 拼接全部片段 → 内容段
+- ~150 行
 
-## Phase 5: 入口整合
+### 2.3 页间切换规则
 
-- `vt all` 重构：先读 meta → 检测 type → 走对应流程
-- `vt slide` / `vt mix` 增强
-- 统一错误处理：资源缺失 warn+继续，不阻断
-- ~50 行
+- 有 `text` → 解说时长 = 该页展示时长
+- 无 `text` → 用 `page_duration`（默认 3s）
+- 解说结束 + 0.5s 过渡 → 切下一页
 
-## Phase 6: 文档
+---
 
-- README + landing page 更新
-- samples 加 meta.json 示例
+## Phase 3: 字幕增强
+
+- `subtitle.mode`：auto / paired / null
+- `subtitle_style` 先跳过
+
+## Phase 4: 入口整合
+
+- `vt all` → load_meta → detect_type → 生成内容段 → compose_final
+- `vt slide` / `vt mix` 强制模式
+
+## Phase 5: 文档
+
+- README / landing page / samples
+
+---
 
 ## 不做（本期）
 
-- transition 只做 fade
-- zoom (Ken Burns) 跳过
-- logo 水印跳过
-- subtitle_style 跳过
+- transition 复杂效果（只做 cut）
+- zoom / Ken Burns
+- logo 水印
+- subtitle_style
 
-## 顺序
+---
 
-按 Phase 1 → 2 → 3 → 4 → 5 → 6 依次实现。从 Phase 1 开始。
+## 对比旧计划
+
+| | 旧 | 新 |
+|---|---|---|
+| compose 逻辑 | video/slide 各自实现 | **合成器统一**，只换内容段 |
+| 代码重叠 | cover/outro/bgm 写两遍 | **一次搞定** |
+| slide 页间切换 | 无定义 | `text 时长` / `page_duration` |
