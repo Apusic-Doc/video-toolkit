@@ -15,12 +15,12 @@ fi
 #
 # 用法:
 #   curl -sSf https://video-toolkit.bitey.ai/install.sh | bash   安装
-#   video-toolkit all    <feature>    全流程
-#   video-toolkit srt    <feature>    仅提取字幕
-#   video-toolkit dub    <feature>    仅生成AI配音
-#   video-toolkit mix    <feature>    仅合成视频
-#   video-toolkit en     <feature>    英文全流程
-#   video-toolkit status <feature>    查看状态
+#   vt all    <feature>    全流程
+#   vt srt    <feature>    仅提取字幕
+#   vt dub    <feature>    仅生成AI配音
+#   vt mix    <feature>    仅合成视频
+#   vt en     <feature>    英文全流程
+#   vt status <feature>    查看状态
 # ============================================================
 set -e
 
@@ -652,25 +652,25 @@ case "${1:-}" in
         echo "Video Toolkit — 录屏处理工具 v2"
         echo ""
         echo "用法:"
-        echo "  video-toolkit all     <feature>    全流程: 字幕→AI配音→合成 (自动检测 slide/video)"
-        echo "  video-toolkit srt     <feature>    仅提取字幕"
-        echo "  video-toolkit dub     <feature>    仅生成 AI 配音"
-        echo "  video-toolkit mix     <feature>    合成视频 + 可选 cover/outro/bgm"
+        echo "  vt all     <feature>    全流程: 字幕→AI配音→合成 (自动检测 slide/video)"
+        echo "  vt srt     <feature>    仅提取字幕"
+        echo "  vt dub     <feature>    仅生成 AI 配音"
+        echo "  vt mix     <feature>    合成视频 + 可选 cover/outro/bgm"
         echo ""
-        echo "  video-toolkit slide   <feature>    幻灯片模式 (截图+解说→视频)"
+        echo "  vt slide   <feature>    幻灯片模式 (截图+解说→视频)"
         echo ""
-        echo "  video-toolkit trans   <feature>    翻译字幕: 中文→英文 (DeepSeek)"
-        echo "  video-toolkit en      <feature>    英文全流程"
-        echo "  video-toolkit dub-en  <feature>    仅生成英文配音"
-        echo "  video-toolkit mix-en  <feature>    仅合成英文视频"
+        echo "  vt trans   <feature>    翻译字幕: 中文→英文 (DeepSeek)"
+        echo "  vt en      <feature>    英文全流程"
+        echo "  vt dub-en  <feature>    仅生成英文配音"
+        echo "  vt mix-en  <feature>    仅合成英文视频"
         echo ""
-        echo "  video-toolkit play    <feature> <dub|dub-en|final|final-en>"
-        echo "  video-toolkit status  <feature>    查看状态"
-        echo "  video-toolkit status  --all        查看全部"
-        echo "  video-toolkit config              查看配置"
-        echo "  video-toolkit config KEY=value    设置配置"
-        echo "  video-toolkit --version            版本"
-        echo "  video-toolkit --update             自动更新"
+        echo "  vt play    <feature> <dub|dub-en|final|final-en>"
+        echo "  vt status  <feature>    查看状态"
+        echo "  vt status  --all        查看全部"
+        echo "  vt config              查看配置"
+        echo "  vt config KEY=value    设置配置"
+        echo "  vt --version            版本"
+        echo "  vt --update             自动更新"
         echo ""
         echo "feature 参数:"
         echo "  01                    编号简写，匹配 feature-01-*"

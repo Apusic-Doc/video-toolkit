@@ -202,7 +202,7 @@ footer {
     <a href="#commands" data-zh="命令" data-en="Commands">Commands</a>
     <a href="#voices" data-zh="语音" data-en="Voices">Voices</a>
     <a href="#faq" data-zh="常见问题" data-en="FAQ">FAQ</a>
-    <a href="https://github.com/Apusic-Doc/video-toolkit" data-zh="GitHub">GitHub</a>
+    <a href="https://github.com/Apusic-Doc/vt" data-zh="GitHub">GitHub</a>
     <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme">☀</button>
     <button class="lang-btn" onclick="toggleLang()" title="Switch language">🌐</button>
   </div>
@@ -221,15 +221,15 @@ footer {
   </p>
   <div class="cta">
     <a href="#quickstart" class="cta-prim" data-zh="🚀 快速开始" data-en="🚀 Get Started">🚀 快速开始</a>
-    <a href="https://github.com/Apusic-Doc/video-toolkit" class="cta-sec" data-zh="⭐ GitHub" data-en="⭐ GitHub">⭐ GitHub</a>
-    <a href="https://github.com/Apusic-Doc/video-toolkit/tree/main/samples" class="cta-sec" data-zh="📂 示例体验" data-en="📂 Try Samples">📂 示例体验</a>
+    <a href="https://github.com/Apusic-Doc/vt" class="cta-sec" data-zh="⭐ GitHub" data-en="⭐ GitHub">⭐ GitHub</a>
+    <a href="https://github.com/Apusic-Doc/vt/tree/main/samples" class="cta-sec" data-zh="📂 示例体验" data-en="📂 Try Samples">📂 示例体验</a>
   </div>
   <p style="margin-top:24px">
     <code id="install-cmd" style="background:var(--code-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 20px;font-size:0.88rem;display:inline-block;cursor:pointer" 
-          onclick="var c='curl -sSf https://video-toolkit.bitey.ai/install.sh | bash';navigator.clipboard.writeText(c).then(()=>{var s=document.createElement('span');s.textContent='Copied!';s.style.cssText='position:absolute;top:-30px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:2px 10px;border-radius:4px;font-size:0.75rem;pointer-events:none;opacity:1;transition:opacity .3s';this.style.position='relative';this.appendChild(s);setTimeout(()=>s.remove(),1500)})"
-          title="点击复制" data-zh="curl -sSf https://video-toolkit.bitey.ai/install.sh | bash"
-          data-en="curl -sSf https://video-toolkit.bitey.ai/install.sh | bash">
-      curl -sSf https://video-toolkit.bitey.ai/install.sh | bash
+          onclick="var c='curl -sSf https://vt.bitey.ai/install.sh | bash';navigator.clipboard.writeText(c).then(()=>{var s=document.createElement('span');s.textContent='Copied!';s.style.cssText='position:absolute;top:-30px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:2px 10px;border-radius:4px;font-size:0.75rem;pointer-events:none;opacity:1;transition:opacity .3s';this.style.position='relative';this.appendChild(s);setTimeout(()=>s.remove(),1500)})"
+          title="点击复制" data-zh="curl -sSf https://vt.bitey.ai/install.sh | bash"
+          data-en="curl -sSf https://vt.bitey.ai/install.sh | bash">
+      curl -sSf https://vt.bitey.ai/install.sh | bash
     </code>
   </p>
 </section>
@@ -367,8 +367,8 @@ footer {
 <section id="config">
   <div class="section-label" data-zh="配置" data-en="Config">配置</div>
   <h2 class="section-title" data-zh="配置文件" data-en="Configuration">配置文件</h2>
-  <p class="section-sub" data-zh="所有配置存储在 <code>~/.config/video-toolkit/config</code>，不受 git 管理。通过 <code>vt config</code> 命令读写。" 
-     data-en="All config stored in <code>~/.config/video-toolkit/config</code>, not tracked by git. Use <code>vt config</code> to read/write.">所有配置存储在 <code>~/.config/video-toolkit/config</code>，不受 git 管理。通过 <code>vt config</code> 命令读写。</p>
+  <p class="section-sub" data-zh="所有配置存储在 <code>~/.config/vt/config</code>，不受 git 管理。通过 <code>vt config</code> 命令读写。" 
+     data-en="All config stored in <code>~/.config/vt/config</code>, not tracked by git. Use <code>vt config</code> to read/write.">所有配置存储在 <code>~/.config/vt/config</code>，不受 git 管理。通过 <code>vt config</code> 命令读写。</p>
   <table class="tbl">
     <thead><tr><th data-zh="配置项" data-en="Key">配置项</th><th data-zh="默认值" data-en="Default">默认值</th><th data-zh="说明" data-en="Description">说明</th></tr></thead>
     <tbody>
@@ -455,8 +455,8 @@ footer {
     <h4 data-zh="🎯 中文识别不够准确"
         data-en="🎯 Chinese recognition accuracy">🎯 中文识别不够准确</h4>
     <p style="color:var(--text2);margin-top:4px" 
-       data-zh='设置 <code>vt config VIDEO_ASR=funasr</code> 切换 SenseVoice，或编辑 <code>video-toolkit.sh</code> 将 Whisper 模型从 <code>small</code> 改为 <code>medium</code>。'
-       data-en='Set <code>vt config VIDEO_ASR=funasr</code> for SenseVoice, or edit <code>video-toolkit.sh</code> to change Whisper model from <code>small</code> to <code>medium</code>.'>设置 <code>vt config VIDEO_ASR=funasr</code> 切换 SenseVoice，或编辑 <code>video-toolkit.sh</code> 将 Whisper 模型从 <code>small</code> 改为 <code>medium</code>。</p>
+       data-zh='设置 <code>vt config VIDEO_ASR=funasr</code> 切换 SenseVoice，或编辑 <code>vt.sh</code> 将 Whisper 模型从 <code>small</code> 改为 <code>medium</code>。'
+       data-en='Set <code>vt config VIDEO_ASR=funasr</code> for SenseVoice, or edit <code>vt.sh</code> to change Whisper model from <code>small</code> to <code>medium</code>.'>设置 <code>vt config VIDEO_ASR=funasr</code> 切换 SenseVoice，或编辑 <code>vt.sh</code> 将 Whisper 模型从 <code>small</code> 改为 <code>medium</code>。</p>
   </div>
   <div class="card" style="margin-bottom:12px">
     <h4 data-zh="🔑 DeepSeek API Key 配置"
@@ -553,7 +553,7 @@ function applyLang(l){
       <h5 data-zh="资源" data-en="Resources">Resources</h5>
       <a href="#quickstart" data-zh="快速开始" data-en="Quick Start">Quick Start</a>
       <a href="#faq" data-zh="常见问题" data-en="FAQ">FAQ</a>
-      <a href="https://github.com/Apusic-Doc/video-toolkit" data-zh="GitHub 仓库" data-en="GitHub Repo">GitHub Repo</a>
+      <a href="https://github.com/Apusic-Doc/vt" data-zh="GitHub 仓库" data-en="GitHub Repo">GitHub Repo</a>
       <a href="https://github.com/openai/whisper" target="_blank">OpenAI Whisper</a>
     </div>
     <div class="footer-col">
@@ -566,7 +566,7 @@ function applyLang(l){
   </div>
   <div class="footer-bottom">
     <span>© 2026 Video Toolkit · Apache 2.0</span>
-    <span class="domain">video-toolkit.bitey.ai</span>
+    <span class="domain">vt.bitey.ai</span>
   </div>
 </footer>
 
