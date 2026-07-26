@@ -9,7 +9,7 @@ fi
 
 # TRACE 模式：生成可回放的脚本录制文件
 if [ "${TRACE:-0}" = "1" ]; then
-  TRACE_FILE="${TRACE_FILE:-$(pwd)/trace.sh}"
+  TRACE_FILE="${TRACE_FILE:-$(pwd)/trace-$(date +%H%M%S).sh}"
   # 记录所有后续命令到 trace 脚本
   exec 19>"$TRACE_FILE"
   echo "#!/bin/bash" >&19
