@@ -55,11 +55,11 @@ gen_slide_video() {
 import json
 pages=json.loads('''$pages''')
 for p in pages:
-    print(p.get('image','')+'\x1f'+(p.get('text')or'')+'\x1f'+(p.get('voice')or'')+'\x1f'+(p.get('duration')or'')+'\x1f'+(p.get('page_padding')or''))
+    print(p.get('image','')+'\t'+(p.get('text')or'')+'\t'+(p.get('voice')or'')+'\t'+(p.get('duration')or'')+'\t'+(p.get('page_padding')or''))
 " > "$tmp/_pages.txt"
 
   local i=0
-  while IFS=$'\x1f' read -r image text voice pd pp; do
+  while IFS=$'\t' read -r image text voice pd pp; do
     local num=$((i+1))
     local clip="$tmp/page_$(printf '%03d' $num).mp4"
     [ -z "$text" ] || [ "$text" = "None" ] && text=$(get_narration "$slide_dir" "$image" "$i")
