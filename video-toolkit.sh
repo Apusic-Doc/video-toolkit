@@ -223,36 +223,23 @@ compose() {
     local dir="$1"
     local rec="$dir/recording.mov"
     local dub="$dir/ai_dub.wav"
-    local srt="$dir/subtitles.srt"
     local out="$dir/final.mp4"
     
     [ ! -f "$rec" ] && { err "缺少 recording.mov"; return 1; }
     [ ! -f "$dub" ] && { err "缺少 ai_dub.wav，请先运行 dub"; return 1; }
     
-    info "合成最终视频..."
+    # 生成 AI 配音替换后的中间视频
+    info "生成 AI 配音视频..."
+    local content="$dir/_dubbed.mp4"
+    ffmpeg -i "$rec" -i "$dub" \
+        -c:v h264_videotoolbox -b:v 5M -r 30 -vf "scale=1920:-2" \
+        -c:a aac -map 0:v:0 -map 1:a:0 -shortest "$content" -y 2>/dev/null
     
-    # 后台执行 ffmpeg + 旋转等待
-    (
-    if [ -f "$srt" ] && [ "${VIDEO_BURN_SUB:-1}" != "0" ] && ffmpeg -filters 2>/dev/null | grep -qE " ass |libass"; then
-        ffmpeg -i "$srt" /tmp/_vt_sub.ass -y 2>/dev/null
-        ffmpeg -i "$rec" -i "$dub" \
-            -c:v h264_videotoolbox -b:v 5M -r 30 -vf "scale=1920:-2" \
-            -c:a aac -map 0:v:0 -map 1:a:0 \
-            -vf "scale=1920:-2,ass=filename=/tmp/_vt_sub.ass" \
-            -shortest "$out" -y 2>/dev/null
-        rm -f /tmp/_vt_sub.ass
-    else
-        ffmpeg -i "$rec" -i "$dub" \
-            -c:v h264_videotoolbox -b:v 5M -r 30 -vf "scale=1920:-2" \
-            -c:a aac -map 0:v:0 -map 1:a:0 \
-            -shortest "$out" -y 2>/dev/null
-    fi
-    ) &
-    pid=$!
-    spinner $pid "视频合成中..."
-    
-    if [ "${VIDEO_BURN_SUB:-0}" = "1" ] && [ -f "$srt" ] && ! ffmpeg -filters 2>/dev/null | grep -qE " ass |libass"; then warn "字幕未烧录 (ffmpeg 无 libass，字幕未烧录)"; fi
-    ok "成片: final.mp4"
+    # 统一走 compose_final（无 meta 时自动使用默认值）
+    local meta=$(load_meta "$dir" 2>/dev/null || echo "{}")
+    compose_final "$content" "$meta" "$dir" "$out"
+    rm -f "$content"
+    ok "final.mp4"
 }
 
 # ==================== Step 4: 翻译字幕（DeepSeek） ====================
@@ -545,6 +532,12 @@ cmd_mix_en() {
     local dir="$1"
     compose_en "$dir"
 }
+
+# ── 合成（包装 compose_final） ──
+cmd_mix() {
+    local dir="$1"
+    compose "$dir"
+}
 cmd_all() {
     local dir="$1"
     info "全流程: $(basename "$dir")"
@@ -576,18 +569,7 @@ cmd_all() {
     echo ""
     srt_to_dub "$dir" || return 1
     echo ""
-    # v2: 有 meta.json → 用 compose_final
-    if [ -f "$dir/meta.json" ] || [ -f "$dir/../meta.json" ]; then
-      local meta=$(load_meta "$dir")
-      local content="$dir/_dubbed.mp4"
-      ffmpeg -i "$dir/recording.mov" -i "$dir/ai_dub.wav" \
-        -c:v h264_videotoolbox -b:v 5M -r 30 -vf "scale=1920:-2" \
-        -c:a aac -map 0:v:0 -map 1:a:0 -shortest "$content" -y 2>/dev/null
-      compose_final "$content" "$meta" "$dir" "$dir/final.mp4"
-      rm -f "$content"
-    else
-      compose "$dir"
-    fi
+    compose "$dir"
     echo ""
     ok "final.mp4"
     show_status "$dir"
