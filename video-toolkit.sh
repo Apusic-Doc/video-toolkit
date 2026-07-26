@@ -9,14 +9,13 @@ fi
 
 # TRACE 模式：生成可回放的脚本录制文件
 if [ "${TRACE:-0}" = "1" ]; then
-  TRACE_FILE="${TRACE_FILE:-$(pwd)/trace-$(date +%H%M%S).sh}"
-  # 记录所有后续命令到 trace 脚本
-  exec 19>"$TRACE_FILE"
-  echo "#!/bin/bash" >&19
-  echo "# Video Toolkit trace — $(date)" >&19
-  echo "set -e" >&19
-  echo "" >&19
-  export BASH_XTRACEFD=19
+  TRACE_FILE="${TRACE_FILE:-$HOME/Desktop/trace-$(date +%H%M%S).sh}"
+  echo "#!/bin/bash" > "$TRACE_FILE"
+  echo "# Video Toolkit trace — $(date)" >> "$TRACE_FILE"
+  echo "set -e" >> "$TRACE_FILE"
+  echo "▶ TRACE: $TRACE_FILE"
+  export PS4='+ '
+  exec 2> >(tee -a "$TRACE_FILE" >&2)
   set -x
 fi
 # 约定文件名（每个 feature 目录下）:
