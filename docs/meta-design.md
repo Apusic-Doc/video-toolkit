@@ -3,13 +3,13 @@
 ## 配置优先级
 
 ```
-per_slide > feature/meta.json > project/meta.json > 内置默认
+pages > feature/meta.json > project/meta.json > 内置默认
      1              2                    3               4
 ```
 
 - **project/meta.json** — 设一次，所有 feature 继承
 - **feature/meta.json** — 只覆盖与 feature 不同的项
-- **per_slide** — 单页覆盖，如某页用不同语音
+- **pages** — 单页覆盖，如某页用不同语音。解说文本三级回退见下方
 
 ## 目录结构
 
@@ -71,10 +71,9 @@ project/
 
   "slides": {
     "mode": "auto",
-    "narration": null,
     "transition": "fade",
     "zoom": "none",
-    "per_slide": []
+    "pages": []
   }
 }
 ```
@@ -113,19 +112,26 @@ project/
 
 | 字段 | 默认 | 说明 |
 |---|---|---|
-| `mode` | `auto` | `auto`(文件系统检测) / `manual`(只按 per_slide) |
+| `mode` | `auto` | `auto`(文件系统检测) / `manual`(只按 pages) |
 | `narration` | null | 模式 B：单文件每行对应一张图 |
 | `transition` | fade | 默认过渡效果 |
 | `zoom` | none | 默认 Ken Burns 效果 |
-| `per_slide` | [] | 逐页配置。空数组 = 从文件系统自动推导 |
+| `pages` | [] | 逐页配置。空数组 = 从文件系统自动推导 |
 
-per_slide 结构：
+pages 结构：
 ```json
 [
   { "image": "01.png", "text": "欢迎", "duration": 4, "transition": "fade", "zoom": null },
   { "image": "02.png", "text": "核心功能", "voice": "zh-CN-YunyangNeural" }
 ]
 ```
+
+解说文本三级回退（仅当 `text` 为空时执行）：
+1. 配对文件：`01.png` → `01.txt`
+2. narration.txt：按行读取，第 N 行对应第 N 页
+3. 都没有 → warn 跳过该页配音
+
+> 首次读取后缓存到内存，后续页面直接从缓存取，避免重复 I/O。
 
 ## 自动检测逻辑
 
@@ -153,8 +159,8 @@ vt all 01 / vt mix 01 / vt slide 01
     │     └─ project/resources/cover.* → 用全局默认
          │
          ▼
-    per_slide:
-    ├─ 非空数组 → 以 per_slide 为准
+    pages:
+    ├─ 非空数组 → 以 pages 为准
     └─ 空数组 → 文件系统自动推导（配对模式 or narration.txt 模式）
 ```
 
@@ -162,7 +168,7 @@ vt all 01 / vt mix 01 / vt slide 01
 
 - 所有资源文件不存在 → **静默跳过 + `warn "xxx 不存在"`**
 - cover/outro/bgm/logo 任意一个缺失不阻断流程
-- per_slide 中图片找不到 → warn 跳过该页
+- pages 中图片找不到 → warn 跳过该页
 
 ## 与 vt 命令关系
 
