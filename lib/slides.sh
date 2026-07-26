@@ -83,6 +83,8 @@ for p in pages:
     if [ -z "$text" ] || [ "$text" = "None" ]; then
       text=$(get_narration "$slide_dir" "$image" "$i")
     fi
+    # 语音回退
+    [ -z "$voice" ] || [ "$voice" = "None" ] && voice="$default_voice"
 
     if [ -n "$text" ] && [ "$text" != "None" ]; then
       # 有解说：配音 + 图片
