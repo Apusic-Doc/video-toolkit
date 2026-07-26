@@ -65,11 +65,16 @@ gen_slide_video() {
 import json
 pages = json.loads('''$pages''')
 for p in pages:
-    print(p.get('image','') + '|' + (p.get('text') or '') + '|' + (p.get('voice') or '') + '|' + (p.get('duration') or '') + '|' + (p.get('page_padding') or ''))
+    img = p.get('image','')
+    txt = p.get('text') or ''
+    v = p.get('voice') or ''
+    dur = p.get('duration') or ''
+    pad = p.get('page_padding') or ''
+    print(img + '\x1f' + txt + '\x1f' + v + '\x1f' + dur + '\x1f' + pad)
 " > "$tmp/_pages.txt"
 
   local i=0
-  while IFS='|' read -r image text voice pd pp; do
+  while IFS=$'\x1f' read -r image text voice pd pp; do
     local num=$((i+1))
     local clip="$tmp/page_$(printf '%03d' $num).mp4"
 
@@ -83,13 +88,19 @@ for p in pages:
       local mp3="$tmp/_speech_$(printf '%03d' $num).mp3"
       "$EDGE" --voice "$voice" --text "$text" --write-media "$mp3" 2>/dev/null
 
-      local speech_dur=$(ffprobe -v quiet -show_entries format=duration -of csv=p=0 "$mp3" 2>/dev/null || echo 3)
-      local total_dur=$(python3 -c "print($speech_dur + ${pp:-1.5})")
-
-      ffmpeg -loop 1 -i "$slide_dir/$image" -i "$mp3" \
-        -c:v libx264 -preset ultrafast -crf 23 -c:a aac \
-        -t "$total_dur" -pix_fmt yuv420p "$clip" -y 2>/dev/null
-      rm -f "$mp3"
+      if [ -f "$mp3" ]; then
+        local speech_dur=$(ffprobe -v quiet -show_entries format=duration -of csv=p=0 "$mp3" 2>/dev/null || echo 3)
+        local total_dur=$(python3 -c "print($speech_dur + ${pp:-1.5})")
+        ffmpeg -loop 1 -i "$slide_dir/$image" -i "$mp3" \
+          -c:v libx264 -preset ultrafast -crf 23 -c:a aac \
+          -t "$total_dur" -pix_fmt yuv420p "$clip" -y 2>/dev/null
+        rm -f "$mp3"
+      else
+        warn "配音失败: $image 使用静默"
+        ffmpeg -loop 1 -i "$slide_dir/$image" \
+          -c:v libx264 -preset ultrafast -crf 23 \
+          -t "${pd:-3}" -pix_fmt yuv420p -an "$clip" -y 2>/dev/null
+      fi
     else
       # 无解说：纯图片
       ffmpeg -loop 1 -i "$slide_dir/$image" \
@@ -98,7 +109,9 @@ for p in pages:
     fi
 
     clips+=("$clip")
-    echo -e "  [$num/$count] $image ($(python3 -c "print('${text:0:30}')" 2>/dev/null || echo '...'))"
+    local preview="${text:0:30}"
+    [ ${#text} -gt 30 ] && preview="${preview}..."
+    echo -e "  [$num/$count] $image ($preview)"
     ((i++))
   done < "$tmp/_pages.txt"
 
