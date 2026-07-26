@@ -670,7 +670,26 @@ PYEOF
 
 cmd_mix() {
     local dir="$1"
-    compose "$dir"
+    # v2: 有 meta.json → 用 compose_final，否则旧流程
+    local meta=$(load_meta "$dir" 2>/dev/null || echo "{}")
+    if [ "$meta" != "{}" ] && [ -f "$dir/recording.mov" ]; then
+      info "v2 模式: 应用 cover/outro/bgm"
+      compose_final "$dir/recording.mov" "$meta" "$dir" "$dir/final.mp4" && ok "final.mp4"
+    else
+      compose "$dir"
+    fi
+}
+
+# ── 幻灯片独立命令 ──
+cmd_slide_v2() {
+    local dir="$1"
+    local meta=$(load_meta "$dir" 2>/dev/null || echo "{}")
+    local pages=$(build_pages "$dir" "$meta")
+    local content="$dir/_content.mp4"
+    gen_slide_video "$pages" "$meta" "$dir" "$content"
+    compose_final "$content" "$meta" "$dir" "$dir/final.mp4"
+    rm -f "$content"
+    ok "final.mp4"
 }
 
 cmd_status() {
@@ -693,7 +712,7 @@ case "${1:-}" in
     en)     dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_en "$dir" ;;
     dub-en) dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_dub_en "$dir" ;;
     mix-en) dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_mix_en "$dir" ;;
-    slide)  dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_slide "$dir" ;;  
+    slide)  dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_slide_v2 "$dir" ;;  
     play)
       dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }
       case "${3:-}" in
