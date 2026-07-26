@@ -566,6 +566,80 @@ cmd_dub() {
     srt_to_dub "$dir"
 }
 
+# ==================== 幻灯片自动生成 ====================
+# 用法: vt slide <feature>
+# feature 目录下需有 slides/ 子目录，内含 01.png 02.png ... + narration.txt
+cmd_slide() {
+    local dir="$1"
+    local slide_dir="$dir/slides"
+    local txt="$slide_dir/narration.txt"
+    local out="$dir/slides.mp4"
+    
+    [ ! -d "$slide_dir" ] && { err "缺少 slides/ 目录"; return 1; }
+    [ ! -f "$txt" ] && { err "缺少 $txt"; return 1; }
+    
+    info "生成幻灯片视频..."
+    
+    python3 - "$slide_dir" "$txt" "$out" "$VOICE" << 'PYEOF'
+import sys, os, subprocess, tempfile
+slide_dir = sys.argv[1]
+txt_file = sys.argv[2]
+out_mp4 = sys.argv[3]
+voice = sys.argv[4]
+
+with open(txt_file) as f:
+    lines = [l.strip() for l in f if l.strip() and not l.startswith('#')]
+
+imgs = sorted([f for f in os.listdir(slide_dir) if f.endswith(('.png','.jpg','.jpeg'))])
+if not imgs or len(lines) != len(imgs):
+    print(f"  ⚠️ 图片 {len(imgs)} 张 vs 解说 {len(lines)} 行，不匹配")
+    sys.exit(1)
+
+tmpdir = tempfile.mkdtemp()
+clips = []
+
+edge = ".venv/bin/edge-tts"
+if not os.path.exists(edge): edge = "edge-tts"
+
+for i, (img, text) in enumerate(zip(imgs, lines)):
+    num = i + 1
+    mp3 = os.path.join(tmpdir, f"audio_{num:02d}.mp3")
+    mp4 = os.path.join(tmpdir, f"clip_{num:02d}.mp4")
+    
+    # 生成 AI 配音
+    subprocess.run([edge, "--voice", voice, "--text", text, "--write-media", mp3],
+                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    
+    # 获取音频时长
+    r = subprocess.run(["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+                       "-of", "csv=p=0", mp3], capture_output=True, text=True)
+    dur = float(r.stdout.strip() or 3)
+    
+    # 图片 + 音频 → 视频片段
+    subprocess.run(["ffmpeg", "-loop", "1", "-i", os.path.join(slide_dir, img),
+                   "-i", mp3, "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+                   "-c:a", "aac", "-t", str(dur), "-pix_fmt", "yuv420p", mp4, "-y"],
+                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    clips.append(mp4)
+    print(f"  [{num}/{len(lines)}] {text[:30]}... ({dur:.1f}s)", flush=True)
+
+# 拼接
+concat = os.path.join(tmpdir, "concat.txt")
+with open(concat, "w") as f:
+    for c in clips:
+        f.write(f"file '{c}'\n")
+
+subprocess.run(["ffmpeg", "-f", "concat", "-safe", "0", "-i", concat,
+               "-c", "copy", out_mp4, "-y"],
+              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+import shutil; shutil.rmtree(tmpdir, ignore_errors=True)
+print(f"  → {out_mp4}")
+PYEOF
+    
+    ok "幻灯片视频: slides.mp4"
+}
+
 cmd_mix() {
     local dir="$1"
     compose "$dir"
@@ -591,6 +665,7 @@ case "${1:-}" in
     en)     dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_en "$dir" ;;
     dub-en) dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_dub_en "$dir" ;;
     mix-en) dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_mix_en "$dir" ;;
+    slide)  dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_slide "$dir" ;;  
     play)
       dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }
       case "${3:-}" in
