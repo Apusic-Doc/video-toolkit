@@ -106,3 +106,50 @@ gen_slide_video() {
   rm -rf "$tmp"
   echo "  ✅ slides.mp4"
 }
+
+# ── 字幕构建 ──
+# 用法: build_subtitle "$feature_dir" "$meta" "$output.srt"
+build_subtitle() {
+  local dir="$1"; local meta="$2"; local out="$3"
+  local mode=$(meta_get "$meta" "subtitle.mode")
+
+  case "$mode" in
+    null|None) return ;;  # 不启用
+    paired)
+      # 从 slides 配对生成 SRT
+      local pages=$(build_pages "$dir" "$meta")
+      local slide_dir="$dir/slides"
+      local page_padding=$(meta_get "$meta" "slides.page_padding")
+      local count=$(python3 -c "import json; print(len(json.loads('''$pages''')))")
+      local time=0.0
+      > "$out"
+      for i in $(seq 0 $((count-1))); do
+        local num=$((i+1))
+        local image=$(python3 -c "import json; print(json.loads('''$pages''')[$i]['image'])")
+        local text=$(python3 -c "import json; print(json.loads('''$pages''')[$i].get('text') or '')" 2>/dev/null)
+        [ -z "$text" ] || [ "$text" = "None" ] && text=$(get_narration "$slide_dir" "$image" "$i")
+        [ -z "$text" ] || [ "$text" = "None" ] && continue
+
+        # 估算语音时长（中文 ~4 字/秒）
+        local chars=${#text}
+        local dur=$(python3 -c "print(max($chars/4, 2) + ${page_padding:-1.5})")
+        local end=$(python3 -c "print($time + $dur)")
+
+        printf "%d\n%02d:%02d:%02d,%03d --> %02d:%02d:%02d,%03d\n%s\n\n" \
+          $num \
+          $(python3 -c "print(int($time//3600), int(($time%3600)//60), int($time%60), int(($time%1)*1000))") \
+          $(python3 -c "print(int($end//3600), int(($end%3600)//60), int($end%60), int(($end%1)*1000))") \
+          "$text" >> "$out"
+
+        time=$(python3 -c "print($time + $dur)")
+      done
+      echo "  ✅ 字幕已生成: $(basename $out)"
+      ;;
+    *)
+      # auto: 检测已有 SRT
+      if [ -f "$dir/subtitles.srt" ]; then
+        cp "$dir/subtitles.srt" "$out" 2>/dev/null
+      fi
+      ;;
+  esac
+}
