@@ -6,6 +6,14 @@
 if [ -z "$VIRTUAL_ENV" ] && [ -f "$(dirname "$0")/.venv/bin/activate" ]; then
   source "$(dirname "$0")/.venv/bin/activate"
 fi
+
+# TRACE 模式：记录所有命令到 trace.log
+if [ "${TRACE:-0}" = "1" ]; then
+  TRACE_FILE="${TRACE_FILE:-/tmp/vt_trace_$$.log}"
+  echo "▶ TRACE 模式: $TRACE_FILE"
+  exec 2> >(tee -a "$TRACE_FILE" >&2)
+  set -x
+fi
 # 约定文件名（每个 feature 目录下）:
 #   feature-XX-name/
 #   ├── recording.mov   原始录屏
