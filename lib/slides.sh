@@ -79,9 +79,7 @@ for p in pages:
           -t "$total_dur" -pix_fmt yuv420p "$clip" -y 2>/dev/null
         rm -f "$mp3"
       else
-        if [ "${DEBUG:-0}" = "1" ]; then
-          warn "edge-tts 失败: $EDGE --voice $voice"
-        else warn "配音失败: $image 使用静默"; fi
+        if [ "${DEBUG:-0}" = "1" ]; then warn "edge-tts 失败"; else warn "配音失败: $image 使用静默"; fi
         ffmpeg -loop 1 -i "$slide_dir/$image" \
           -c:v h264_videotoolbox -b:v 5M -r 30 \
           -t "${pd:-3}" -pix_fmt yuv420p -an "$clip" -y 2>/dev/null
