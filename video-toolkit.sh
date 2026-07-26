@@ -36,6 +36,12 @@ DEEPSEEK_KEY="${DEEPSEEK_API_KEY:-}"   # 优先环境变量
 # 再次从 config 读取
 [ -z "$DEEPSEEK_KEY" ] && [ -f "$HOME/.config/video-toolkit/config" ] && DEEPSEEK_KEY=$(grep '^DEEPSEEK_API_KEY=' "$HOME/.config/video-toolkit/config" 2>/dev/null | cut -d= -f2-)
 
+# ── 加载 v2 模块 ──
+TOOLKIT_DIR="$(cd "$(dirname "$0")" && pwd)"
+[ -f "$TOOLKIT_DIR/lib/meta.sh" ] && source "$TOOLKIT_DIR/lib/meta.sh"
+[ -f "$TOOLKIT_DIR/lib/compose.sh" ] && source "$TOOLKIT_DIR/lib/compose.sh"
+[ -f "$TOOLKIT_DIR/lib/slides.sh" ] && source "$TOOLKIT_DIR/lib/slides.sh"
+
 # ==================== 颜色 ====================
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 ok()   { echo -e "${GREEN}✅${NC} $1"; }
@@ -542,6 +548,28 @@ cmd_mix_en() {
 cmd_all() {
     local dir="$1"
     info "全流程: $(basename "$dir")"
+
+    # v2: 尝试加载 meta.json
+    local meta=$(load_meta "$dir" 2>/dev/null || echo "{}")
+    local type=$(detect_type "$dir" "$meta" 2>/dev/null || echo "video")
+
+    case "$type" in
+      slide)
+        info "幻灯片模式"
+        local pages=$(build_pages "$dir" "$meta")
+        local content="$dir/_content.mp4"
+        gen_slide_video "$pages" "$meta" "$dir" "$content"
+        compose_final "$content" "$meta" "$dir" "$dir/final.mp4"
+        rm -f "$content"
+        ok "final.mp4"
+        return
+        ;;
+      error:*)
+        warn "${type#error: }"
+        ;;
+    esac
+
+    # 默认 video 模式（向后兼容）
     echo ""
     check_env || return 1
     extract_srt "$dir" || return 1
@@ -550,7 +578,7 @@ cmd_all() {
     echo ""
     compose "$dir" || return 1
     echo ""
-    ok "全部完成！"
+    ok "final.mp4"
     show_status "$dir"
 }
 
