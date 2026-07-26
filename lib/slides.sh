@@ -8,6 +8,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 EDGE="${EDGE_TTS:-$SCRIPT_DIR/.venv/bin/edge-tts}"
+type warn 2>/dev/null | grep -q function || warn() { echo -e "  ⚠  $1"; }
 [ -x "$EDGE" ] || EDGE="edge-tts"
 
 # ── 构建 pages ──
