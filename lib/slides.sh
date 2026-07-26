@@ -57,6 +57,7 @@ gen_slide_video() {
   local pages="$1"; local meta="$2"; local dir="$3"; local out="$4"
   local slide_dir="$dir/slides"
   local tmp="/tmp/_vt_slide_$$"
+  rm -rf "$tmp"
   mkdir -p "$tmp"
   local clips=()
   local page_padding=$(meta_get "$meta" "slides.page_padding")
