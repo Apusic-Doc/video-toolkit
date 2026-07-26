@@ -66,21 +66,20 @@ compose_final() {
 
   # ── 4. 拼接视频 ──
   if [ ${#parts[@]} -eq 1 ]; then
-    # 只有内容，直接复制
     cp "$content" "$tmp/base.mp4"
   else
-    echo "➜ 拼接视频片段..."
+    echo -ne "  ⏳ 拼接视频片段... "
     local concat="$tmp/concat.txt"
     > "$concat"
-    for p in "${parts[@]}"; do
-      echo "file '$p'" >> "$concat"
-    done
-    ffmpeg -f concat -safe 0 -i "$concat" -c copy "$tmp/base.mp4" -y 2>/dev/null
+    for p in "${parts[@]}"; do echo "file '$p'" >> "$concat"; done
+    ffmpeg -f concat -safe 0 -i "$concat" -c:v h264_videotoolbox -b:v 5M -r 30 \
+      -c:a aac "$tmp/base.mp4" -y 2>/dev/null
+    echo "✅"
   fi
 
   # ── 5. BGM ──
   local bgm=$(resolve_asset "$dir" "$meta" "bgm")
-  if [ -n "$bgm" ]; then
+  if [ -n "$bgm" ] && [ -f "$bgm" ]; then
     echo "➜ 处理 BGM..."
     local bgm_vol=$(meta_get "$meta" "bgm_volume")
     local bgm_loop=$(meta_get "$meta" "bgm_loop")

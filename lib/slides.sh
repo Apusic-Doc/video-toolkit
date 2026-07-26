@@ -60,13 +60,17 @@ gen_slide_video() {
   local default_voice=$(meta_get "$meta" "voice")
   local count=$(python3 -c "import json; print(len(json.loads('''$pages''')))")
 
-  for i in $(seq 0 $((count-1))); do
+  # 一次性解析所有 pages 到临时文件（避免重复 json.loads）
+  python3 -c "
+import json
+pages = json.loads('''$pages''')
+for p in pages:
+    print(p.get('image','') + '|' + (p.get('text') or '') + '|' + (p.get('voice') or '') + '|' + (p.get('duration') or '') + '|' + (p.get('page_padding') or ''))
+" > "$tmp/_pages.txt"
+
+  local i=0
+  while IFS='|' read -r image text voice pd pp; do
     local num=$((i+1))
-    local image=$(python3 -c "import json; print(json.loads('''$pages''')[$i]['image'])")
-    local text=$(python3 -c "import json; print(json.loads('''$pages''')[$i].get('text') or '')")
-    local voice=$(python3 -c "import json; print(json.loads('''$pages''')[$i].get('voice') or '$default_voice')")
-    local pd=$(python3 -c "import json; print(json.loads('''$pages''')[$i].get('duration') or '')")
-    local pp=$(python3 -c "import json; print(json.loads('''$pages''')[$i].get('page_padding') or '$page_padding')")
     local clip="$tmp/page_$(printf '%03d' $num).mp4"
 
     # 三级回退
@@ -95,7 +99,8 @@ gen_slide_video() {
 
     clips+=("$clip")
     echo -e "  [$num/$count] $image ($(python3 -c "print('${text:0:30}')" 2>/dev/null || echo '...'))"
-  done
+    ((i++))
+  done < "$tmp/_pages.txt"
 
   # 拼接
   local concat="$tmp/concat.txt"

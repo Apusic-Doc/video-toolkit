@@ -96,7 +96,8 @@ detect_type() {
   # auto 模式
   local has_video=0; local has_slide=0
   [ -f "$dir/recording.mov" ] && has_video=1
-  [ -d "$dir/slides" ] && [ "$(ls "$dir/slides"/*.png "$dir/slides"/*.jpg 2>/dev/null | head -1)" ] && has_slide=1
+  local slide_count=$(ls "$dir/slides"/*.png "$dir/slides"/*.jpg "$dir/slides"/*.jpeg 2>/dev/null | wc -l | tr -d ' ')
+  [ "$slide_count" -gt 0 ] && has_slide=1
 
   if [ "$has_video" -eq 1 ] && [ "$has_slide" -eq 0 ]; then echo "video"
   elif [ "$has_slide" -eq 1 ] && [ "$has_video" -eq 0 ]; then echo "slide"

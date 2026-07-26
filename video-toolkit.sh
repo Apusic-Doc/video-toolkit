@@ -576,7 +576,18 @@ cmd_all() {
     echo ""
     srt_to_dub "$dir" || return 1
     echo ""
-    compose "$dir" || return 1
+    # v2: 有 meta.json → 用 compose_final
+    if [ -f "$dir/meta.json" ] || [ -f "$dir/../meta.json" ]; then
+      local meta=$(load_meta "$dir")
+      local content="$dir/_dubbed.mp4"
+      ffmpeg -i "$dir/recording.mov" -i "$dir/ai_dub.wav" \
+        -c:v h264_videotoolbox -b:v 5M -r 30 -vf "scale=1920:-2" \
+        -c:a aac -map 0:v:0 -map 1:a:0 -shortest "$content" -y 2>/dev/null
+      compose_final "$content" "$meta" "$dir" "$dir/final.mp4"
+      rm -f "$content"
+    else
+      compose "$dir"
+    fi
     echo ""
     ok "final.mp4"
     show_status "$dir"
@@ -670,11 +681,18 @@ PYEOF
 
 cmd_mix() {
     local dir="$1"
-    # v2: 有 meta.json → 用 compose_final，否则旧流程
-    local meta=$(load_meta "$dir" 2>/dev/null || echo "{}")
-    if [ "$meta" != "{}" ] && [ -f "$dir/recording.mov" ]; then
+    # v2: 检测 meta.json 文件是否存在
+    if [ -f "$dir/meta.json" ] || [ -f "$(dirname "$dir")/meta.json" ]; then
       info "v2 模式: 应用 cover/outro/bgm"
-      compose_final "$dir/recording.mov" "$meta" "$dir" "$dir/final.mp4" && ok "final.mp4"
+      local meta=$(load_meta "$dir")
+      # 先生成 AI 配音内容（替换原声）
+      local content="$dir/_dubbed.mp4"
+      ffmpeg -i "$dir/recording.mov" -i "$dir/ai_dub.wav" \
+        -c:v h264_videotoolbox -b:v 5M -r 30 -vf "scale=1920:-2" \
+        -c:a aac -map 0:v:0 -map 1:a:0 -shortest "$content" -y 2>/dev/null
+      compose_final "$content" "$meta" "$dir" "$dir/final.mp4"
+      rm -f "$content"
+      ok "final.mp4"
     else
       compose "$dir"
     fi
