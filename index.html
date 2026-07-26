@@ -197,6 +197,7 @@ footer {
   <div class="nav-r">
     <a href="#features" data-zh="特性" data-en="Features">Features</a>
     <a href="#pipeline" data-zh="流程" data-en="Pipeline">Pipeline</a>
+    <a href="#slides" data-zh="幻灯片" data-en="Slides">Slides</a>
     <a href="#quickstart" data-zh="快速开始" data-en="Quick Start">Quick Start</a>
     <a href="#config" data-zh="配置" data-en="Config">Config</a>
     <a href="#commands" data-zh="命令" data-en="Commands">Commands</a>
@@ -276,19 +277,19 @@ footer {
       </p>
     </div>
     <div class="card">
-      <div class="num">05 / modular</div>
-      <h4 data-zh="模块化管道" data-en="Modular Pipeline">模块化管道</h4>
-      <p data-zh="字幕提取、AI 配音、视频合成各自独立。可单独运行某一步，也可串联全自动。灵活的后期工作流。" 
-         data-en="Extract, dub, compose — each stage independent. Run any step alone or chain them all. Flexible post-production workflow.">
-        字幕提取、AI 配音、视频合成各自独立。可单独运行某一步，也可串联全自动。灵活的后期工作流。
+      <div class="num">05 / slideshow</div>
+      <h4 data-zh="幻灯片生成" data-en="Slideshow">幻灯片生成</h4>
+      <p data-zh="截图 + 解说文字 → 自动配音合成视频。支持 meta.json 三级配置，封面/BGM/封底。"
+         data-en="Screenshots + narration → auto-dubbed video. meta.json config with cover/BGM/outro.">
+        截图 + 解说文字 → 自动配音合成视频。支持 meta.json 三级配置，封面/BGM/封底。
       </p>
     </div>
     <div class="card">
-      <div class="num">06 / status</div>
-      <h4 data-zh="状态管理" data-en="Status Dashboard">状态管理</h4>
-      <p data-zh="一键查看全部 feature 的录制和出片进度。管理数十个演示视频的制作状态，批量掌控。" 
-         data-en="Check recording & production status for all features at a glance. Manage dozens of demo videos in one dashboard.">
-        一键查看全部 feature 的录制和出片进度。管理数十个演示视频的制作状态，批量掌控。
+      <div class="num">06 / config</div>
+      <h4 data-zh="meta.json 配置" data-en="meta.json Config">meta.json 配置</h4>
+      <p data-zh="项目/Feature/单页三级合并，voice/bgm/cover/outro 灵活覆盖。无配置文件完全向后兼容。"
+         data-en="Project/Feature/Page 3-level merge. voice/bgm/cover/outro per-level override. No config needed for legacy use.">
+        项目/Feature/单页三级合并，voice/bgm/cover/outro 灵活覆盖。无配置文件完全向后兼容。
       </p>
     </div>
   </div>
@@ -324,6 +325,20 @@ footer {
     <div class="arch-box">edge-tts EN</div>
     <span class="arch-arrow">→</span>
     <div class="arch-box" style="border-color:var(--green);color:var(--green);font-weight:700">final_en.mp4 ✨</div>
+  </div>
+</section>
+
+<!-- ═══════════ Slides ═══════════ -->
+<section id="slides">
+  <div class="section-label" data-zh="幻灯片" data-en="Slideshow">幻灯片</div>
+  <h2 class="section-title" data-zh="截图+解说→演示视频" data-en="Screenshots + narration → video">截图+解说→演示视频</h2>
+  <p class="section-sub" data-zh="放入截图和一段解说文字，自动配音合成幻灯片视频。支持 meta.json 三级配置 (voice/bgm/cover/outro)。"
+     data-en="Drop screenshots with narration text. Auto-dubbed slideshow video with meta.json 3-level config.">放入截图和一段解说文字，自动配音合成幻灯片视频。支持 meta.json 三级配置 (voice/bgm/cover/outro)。</p>
+  <div class="code-box">
+    <span class="cmt"># slides/01.png + slides/narration.txt（每行一段解说）</span><br>
+    <span class="cmd">vt</span> slide 01<br><br>
+    <span class="cmt"># 或通过 meta.json 高级配置</span><br>
+    <span class="cmd">vt</span> all 01 &nbsp;<span class="cmt"># 自动检测 slides/ 目录</span>
   </div>
 </section>
 
@@ -367,8 +382,8 @@ footer {
 <section id="config">
   <div class="section-label" data-zh="配置" data-en="Config">配置</div>
   <h2 class="section-title" data-zh="配置文件" data-en="Configuration">配置文件</h2>
-  <p class="section-sub" data-zh="所有配置存储在 <code>~/.config/vt/config</code>，不受 git 管理。通过 <code>vt config</code> 命令读写。" 
-     data-en="All config stored in <code>~/.config/vt/config</code>, not tracked by git. Use <code>vt config</code> to read/write.">所有配置存储在 <code>~/.config/vt/config</code>，不受 git 管理。通过 <code>vt config</code> 命令读写。</p>
+  <p class="section-sub" data-zh="所有配置存储在 <code>~/.config/video-toolkit/config</code>，不受 git 管理。通过 <code>vt config</code> 命令读写。" 
+     data-en="All config stored in <code>~/.config/video-toolkit/video-toolkit/config</code>, not tracked by git. Use <code>vt config</code> to read/write.">所有配置存储在 <code>~/.config/video-toolkit/config</code>，不受 git 管理。通过 <code>vt config</code> 命令读写。</p>
   <table class="tbl">
     <thead><tr><th data-zh="配置项" data-en="Key">配置项</th><th data-zh="默认值" data-en="Default">默认值</th><th data-zh="说明" data-en="Description">说明</th></tr></thead>
     <tbody>
@@ -393,7 +408,8 @@ footer {
       <tr><td><code>all 01</code></td><td data-zh="全流程: 字幕 → AI配音 → 合成" data-en="Full: extract → dub → compose">全流程: 字幕 → AI配音 → 合成</td><td>ffmpeg + whisper</td></tr>
       <tr><td><code>srt 01</code></td><td data-zh="仅提取字幕" data-en="Extract subtitles only">仅提取字幕</td><td>whisper</td></tr>
       <tr><td><code>dub 01</code></td><td data-zh="仅生成 AI 配音（试听）" data-en="Generate AI dub only (preview)">仅生成 AI 配音（试听）</td><td>edge-tts</td></tr>
-      <tr><td><code>mix 01</code></td><td data-zh="仅合成视频" data-en="Compose video only">仅合成视频</td><td>ffmpeg</td></tr>
+      <tr><td><code>mix 01</code></td><td data-zh="合成视频 + cover/outro/bgm" data-en="Compose + cover/outro/bgm">合成视频 + cover/outro/bgm</td><td>ffmpeg</td></tr>
+      <tr><td><code>slide 01</code></td><td data-zh="幻灯片模式" data-en="Slideshow mode"><strong data-zh="⭐ 幻灯片模式" data-en="⭐ Slideshow">⭐ 幻灯片模式</strong></td><td>edge-tts + ffmpeg</td></tr>
       <tr><td><code>trans 01</code></td><td data-zh="翻译字幕: 中文 → 英文" data-en="Translate: CN → EN">翻译字幕: 中文 → 英文</td><td>DeepSeek API</td></tr>
       <tr><td><code>en 01</code></td><td data-zh="英文全流程" data-en="English full pipeline"><strong data-zh="英文全流程" data-en="English full pipeline">英文全流程</strong></td><td>whisper + DeepSeek + edge-tts</td></tr>
       <tr><td><code>dub-en 01</code></td><td data-zh="仅生成英文配音" data-en="English dub only">仅生成英文配音</td><td>edge-tts</td></tr>
@@ -455,8 +471,8 @@ footer {
     <h4 data-zh="🎯 中文识别不够准确"
         data-en="🎯 Chinese recognition accuracy">🎯 中文识别不够准确</h4>
     <p style="color:var(--text2);margin-top:4px" 
-       data-zh='设置 <code>vt config VIDEO_ASR=funasr</code> 切换 SenseVoice，或编辑 <code>vt.sh</code> 将 Whisper 模型从 <code>small</code> 改为 <code>medium</code>。'
-       data-en='Set <code>vt config VIDEO_ASR=funasr</code> for SenseVoice, or edit <code>vt.sh</code> to change Whisper model from <code>small</code> to <code>medium</code>.'>设置 <code>vt config VIDEO_ASR=funasr</code> 切换 SenseVoice，或编辑 <code>vt.sh</code> 将 Whisper 模型从 <code>small</code> 改为 <code>medium</code>。</p>
+       data-zh='设置 <code>vt config VIDEO_ASR=funasr</code> 切换 SenseVoice，或编辑 <code>video-toolkit.sh</code> 将 Whisper 模型从 <code>small</code> 改为 <code>medium</code>。'
+       data-en='Set <code>vt config VIDEO_ASR=funasr</code> for SenseVoice, or edit <code>video-toolkit.sh</code> to change Whisper model from <code>small</code> to <code>medium</code>.'>设置 <code>vt config VIDEO_ASR=funasr</code> 切换 SenseVoice，或编辑 <code>video-toolkit.sh</code> 将 Whisper 模型从 <code>small</code> 改为 <code>medium</code>。</p>
   </div>
   <div class="card" style="margin-bottom:12px">
     <h4 data-zh="🔑 DeepSeek API Key 配置"
