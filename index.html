@@ -181,7 +181,8 @@ footer {
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  nav .nav-links { display: none; }
+  nav .nav-r { display: none; }
+  nav .nav-r.open { display: flex; flex-direction: column; position: absolute; top: 56px; left: 0; right: 0; background: var(--bg2); border-bottom: 1px solid var(--border); padding: 12px 24px; gap: 4px; }
   .mobile-menu { display: block; }
   section { padding: 48px 16px; }
   .arch { gap: 6px; }
@@ -207,6 +208,7 @@ footer {
     <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme">☀</button>
     <button class="lang-btn" onclick="toggleLang()" title="Switch language">🌐</button>
   </div>
+  <button class="mobile-menu" onclick="document.querySelector('.nav-r').classList.toggle('open')">☰</button>
 </nav>
 
 <!-- ═══════════ Hero ═══════════ -->
