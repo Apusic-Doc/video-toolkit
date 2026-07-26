@@ -7,11 +7,16 @@ if [ -z "$VIRTUAL_ENV" ] && [ -f "$(dirname "$0")/.venv/bin/activate" ]; then
   source "$(dirname "$0")/.venv/bin/activate"
 fi
 
-# TRACE 模式：记录所有命令到 trace.log
+# TRACE 模式：生成可回放的脚本录制文件
 if [ "${TRACE:-0}" = "1" ]; then
-  TRACE_FILE="${TRACE_FILE:-/tmp/vt_trace_$$.log}"
-  echo "▶ TRACE 模式: $TRACE_FILE"
-  exec 2> >(tee -a "$TRACE_FILE" >&2)
+  TRACE_FILE="${TRACE_FILE:-$(pwd)/trace.sh}"
+  # 记录所有后续命令到 trace 脚本
+  exec 19>"$TRACE_FILE"
+  echo "#!/bin/bash" >&19
+  echo "# Video Toolkit trace — $(date)" >&19
+  echo "set -e" >&19
+  echo "" >&19
+  export BASH_XTRACEFD=19
   set -x
 fi
 # 约定文件名（每个 feature 目录下）:
