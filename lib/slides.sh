@@ -24,8 +24,10 @@ if not pages:
         files = sorted([f for f in os.listdir(slide_dir) if f.endswith(('.png','.jpg','.jpeg'))])
         pages = [{'image': f} for f in files]
 defaults = meta.get('slides', {})
+default_voice = meta.get('voice', 'zh-CN-XiaoxiaoNeural')
 for p in pages:
     p.setdefault('voice', None)
+    if not p.get('voice'): p['voice'] = default_voice
     p.setdefault('text', None)
     p.setdefault('duration', None)
     p.setdefault('page_padding', None)
