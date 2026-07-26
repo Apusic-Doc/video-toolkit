@@ -590,6 +590,7 @@ cmd_dub() {
 # ==================== 幻灯片自动生成 ====================
 cmd_slide_v2() {
     local dir="$1"
+    info "幻灯片模式: $(basename "$dir")"
     local meta=$(load_meta "$dir" 2>/dev/null || echo "{}")
     local pages=$(build_pages "$dir" "$meta")
     local content="$dir/_content.mp4"
