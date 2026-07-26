@@ -21,11 +21,10 @@
 curl -sSf https://video-toolkit.bitey.ai/install.sh | bash
 ```
 
-安装后全局可用：
+安装后全局可用。`samples/` 目录包含示例项目，无需录制即可体验：
 
 ```bash
-video-toolkit all 05
-vt all 05              # 短别名
+cd samples && vt all feature-01-demo
 ```
 
 ## 🚀 快速开始
