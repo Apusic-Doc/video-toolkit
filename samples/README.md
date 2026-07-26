@@ -2,28 +2,35 @@
 
 无需录制即可体验 Video Toolkit 全流程。
 
-## 快速体验
+## 录屏处理
 
 ```bash
-# 1. 进入示例目录
-cd samples
 vt all feature-01-demo
-
-# 2. 查看生成的文件
-ls feature-01-demo/
-# → recording.mov  subtitles.srt  ai_dub.wav  final.mp4
-
-# 3. 播放成片
 vt play feature-01-demo final
+```
+
+## 幻灯片生成
+
+截图 + 解说文字 → 自动配音合成视频：
+
+```bash
+vt slide feature-02-slides
+vt play feature-02-slides slides.mp4
+```
+
+结构：
+```
+feature-02-slides/slides/
+├── 01.png            ← 截图（按顺序命名）
+├── 02.png
+├── 03.png
+└── narration.txt     ← 每行一段解说
 ```
 
 ## 自定义
 
-参考 `feature-01-demo/` 结构创建自己的项目：
-
+参考示例目录创建自己的项目：
 ```
 feature-XX-name/
-└── recording.mov    ← 用 Cmd+Shift+5 录制，放这里
+└── recording.mov    ← Cmd+Shift+5 录制
 ```
-
-然后 `vt all XX` 即可。
