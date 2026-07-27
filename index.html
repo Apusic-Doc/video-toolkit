@@ -352,12 +352,12 @@ footer {
   <h4 style="margin:24px 0 10px;color:var(--text3);font-size:0.82rem;text-transform:uppercase;letter-spacing:1px" data-zh="解说模式" data-en="Narration Modes">解说模式</h4>
   <p style="color:var(--text2);font-size:0.88rem;margin-bottom:8px" data-zh="支持三种解说文本配置，灵活适配不同场景" data-en="Three narration modes for different scenarios">支持三种解说文本配置，灵活适配不同场景</p>
   <div class="code-box">
-    <span class="cmt"># 模式 A: narration.txt — 单文件按行，最简单</span><br>
-    <span class="cmt">#   第 1 行 → 第一张图，第 2 行 → 第二张图</span><br><br>
-    <span class="cmt"># 模式 B: 一对一 txt — 每张图配同名 txt</span><br>
+    <span class="cmt"># A: narration.txt — one line per slide (simplest)</span><br>
+    <span class="cmt">#    line 1 → slide 1, line 2 → slide 2</span><br><br>
+    <span class="cmt"># B: paired .txt — one txt per image</span><br>
     <span class="cmt">#   001-overview.png + 001-overview.txt</span><br><br>
-    <span class="cmt"># 模式 C: meta.json — 内嵌每页解说 + 高级配置</span><br>
-    { "pages": [{ "image": "01.png", "text": "解说词", "voice": "zh-CN-YunyangNeural" }] }
+    <span class="cmt"># C: meta.json — inline text + advanced config</span><br>
+    { "pages": [{ "image": "01.png", "text": "script", "voice": "en-US-AvaNeural" }] }
   </div>
 
   <h4 style="margin:24px 0 10px;color:var(--text3);font-size:0.82rem;text-transform:uppercase;letter-spacing:1px" data-zh="执行" data-en="Run">执行</h4>
