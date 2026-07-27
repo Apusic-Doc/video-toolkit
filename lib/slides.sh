@@ -132,7 +132,7 @@ for i, p in enumerate(pages):
             t2.start()
             enc_start = time.time()
             subprocess.run(['ffmpeg','-loop','1','-i',os.path.join(slide_dir,img),
-                          '-i',mp3,'-c:v','h264_videotoolbox','-b:v','5M','-r','30',
+                          '-i',mp3,'-vf','scale=1920:-2','-c:v','h264_videotoolbox','-b:v','5M','-r','30',
                           '-c:a','aac','-t',str(dur),'-pix_fmt','yuv420p',clip,'-y'],
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             enc_elapsed = time.time() - enc_start
@@ -142,13 +142,13 @@ for i, p in enumerate(pages):
         else:
             print(f'\r  ⚠ TTS 失败 [{num}/{total}] {img}', flush=True)
             subprocess.run(['ffmpeg','-loop','1','-i',os.path.join(slide_dir,img),
-                          '-c:v','h264_videotoolbox','-b:v','5M','-r','30',
+                          '-vf','scale=1920:-2','-c:v','h264_videotoolbox','-b:v','5M','-r','30',
                           '-t',str(pd or 3),'-pix_fmt','yuv420p','-an',clip,'-y'],
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     else:
         print(f'  [{num}/{total}] {img} (静默)', flush=True)
         subprocess.run(['ffmpeg','-loop','1','-i',os.path.join(slide_dir,img),
-                      '-c:v','h264_videotoolbox','-b:v','5M','-r','30',
+                      '-vf','scale=1920:-2','-c:v','h264_videotoolbox','-b:v','5M','-r','30',
                       '-t',str(pd or 3),'-pix_fmt','yuv420p','-an',clip,'-y'],
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     
