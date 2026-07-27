@@ -60,7 +60,18 @@ with open('$tmp/_pages.json','w') as f:
 
   # 全部在 Python 中完成：配音 + 合成 + 拼接
   python3 -c "
-import json, os, subprocess, tempfile
+import json, os, subprocess, tempfile, time, threading, sys
+
+spin = '⣾⣽⣻⢿⡿⣟⣯⣷'
+def show_spinner(msg, stop_event):
+    i = 0
+    start = time.time()
+    while not stop_event.is_set():
+        c = spin[i % 8]
+        elapsed = time.time() - start
+        print(f'\r  {c} {msg} {elapsed:.0f}s', end='', flush=True)
+        time.sleep(0.3)
+        i += 1
 
 slide_dir = '$slide_dir'
 out_mp4 = '$out'
@@ -82,13 +93,11 @@ for i, p in enumerate(pages):
     
     # 解说回退
     if not txt:
-        # 1. 配对文件
         base = os.path.splitext(img)[0]
         paired = os.path.join(slide_dir, base + '.txt')
         if os.path.exists(paired):
             with open(paired) as f: txt = f.read().strip()
         else:
-            # 2. narration.txt
             nar = os.path.join(slide_dir, 'narration.txt')
             if os.path.exists(nar):
                 with open(nar) as f:
@@ -99,25 +108,45 @@ for i, p in enumerate(pages):
     
     if txt:
         mp3 = f'$tmp/_speech_{num:03d}.mp3'
-        if subprocess.run([edge, '--voice', v, '--text', txt, '--write-media', mp3],
-                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0 and os.path.exists(mp3):
+        
+        # TTS 生成 + 旋转等待
+        stop_tts = threading.Event()
+        t = threading.Thread(target=show_spinner, args=(f'TTS [{num}/{total}]', stop_tts))
+        t.start()
+        tts_start = time.time()
+        result = subprocess.run([edge, '--voice', v, '--text', txt, '--write-media', mp3],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        tts_elapsed = time.time() - tts_start
+        stop_tts.set(); t.join()
+        
+        if result.returncode == 0 and os.path.exists(mp3):
+            print(f'\r  ✅ TTS [{num}/{total}] {img} ({tts_elapsed:.1f}s)', flush=True)
+            
             r = subprocess.run(['ffprobe','-v','quiet','-show_entries','format=duration','-of','csv=p=0',mp3],
                              capture_output=True, text=True)
             dur = float(r.stdout.strip() or 3) + pp
-            print(f'  [{num}/{total}] {img} (编码中...)\r', end='', flush=True)
+            
+            # 编码 + 旋转等待
+            stop_enc = threading.Event()
+            t2 = threading.Thread(target=show_spinner, args=(f'编码 [{num}/{total}]', stop_enc))
+            t2.start()
+            enc_start = time.time()
             subprocess.run(['ffmpeg','-loop','1','-i',os.path.join(slide_dir,img),
                           '-i',mp3,'-c:v','h264_videotoolbox','-b:v','5M','-r','30',
                           '-c:a','aac','-t',str(dur),'-pix_fmt','yuv420p',clip,'-y'],
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            enc_elapsed = time.time() - enc_start
+            stop_enc.set(); t2.join()
             os.remove(mp3)
+            print(f'\r  ✅ 编码 [{num}/{total}] {img} ({enc_elapsed:.1f}s)', flush=True)
         else:
-            print(f'  [{num}/{total}] {img} (配音失败)\r', end='', flush=True)
+            print(f'\r  ⚠ TTS 失败 [{num}/{total}] {img}', flush=True)
             subprocess.run(['ffmpeg','-loop','1','-i',os.path.join(slide_dir,img),
                           '-c:v','h264_videotoolbox','-b:v','5M','-r','30',
                           '-t',str(pd or 3),'-pix_fmt','yuv420p','-an',clip,'-y'],
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     else:
-        print(f'  [{num}/{total}] {img} (静默)\r', end='', flush=True)
+        print(f'  [{num}/{total}] {img} (静默)', flush=True)
         subprocess.run(['ffmpeg','-loop','1','-i',os.path.join(slide_dir,img),
                       '-c:v','h264_videotoolbox','-b:v','5M','-r','30',
                       '-t',str(pd or 3),'-pix_fmt','yuv420p','-an',clip,'-y'],
