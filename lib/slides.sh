@@ -104,7 +104,7 @@ for i, p in enumerate(pages):
                     lines = [l.strip() for l in f if l.strip()]
                 if i < len(lines): txt = lines[i]
     
-    clip = f'$tmp/page_{num:03d}.mp4'
+    clip = f'$dir/_page_{num:03d}.mp4'  # 保存到 feature 目录便于调试
     
     if txt:
         mp3 = f'$tmp/_speech_{num:03d}.mp3'
@@ -161,6 +161,13 @@ concat = f'$tmp/concat.txt'
 with open(concat, 'w') as f:
     for c in clips:
         f.write(f\"file '{c}'\n\")
+
+# 调试：打印拼接命令
+print(f'  拼接 {len(clips)} 个片段:', flush=True)
+for c in clips:
+    print(f'    {c}', flush=True)
+print(f'  ffmpeg -f concat -safe 0 -i {concat} -c:v h264_videotoolbox -b:v 5M -r 30 -c:a aac {out_mp4} -y', flush=True)
+
 subprocess.run(['ffmpeg','-f','concat','-safe','0','-i',concat,'-c:v','h264_videotoolbox','-b:v','5M','-r','30','-c:a','aac',out_mp4,'-y'],
               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 print('  ✅ slides.mp4')
