@@ -51,54 +51,85 @@ gen_slide_video() {
   local default_voice=$(meta_get "$meta" "voice")
   local count=$(python3 -c "import json;print(len(json.loads('''$pages''')))")
 
+  # 全部在 Python 中完成：配音 + 合成 + 拼接
   python3 -c "
-import json
-pages=json.loads('''$pages''')
-for p in pages:
-    print(p.get('image','')+'\t'+(p.get('text')or'')+'\t'+(p.get('voice')or'')+'\t'+(p.get('duration')or'')+'\t'+(p.get('page_padding')or''))
-" > "$tmp/_pages.txt"
+import json, os, subprocess, tempfile
 
-  local i=0
-  while IFS=$'\t' read -r image text voice pd pp; do
-    local num=$((i+1))
-    local clip="$tmp/page_$(printf '%03d' $num).mp4"
-    [ -z "$text" ] || [ "$text" = "None" ] && text=$(get_narration "$slide_dir" "$image" "$i")
-    [ -z "$voice" ] || [ "$voice" = "None" ] && voice="$default_voice"
+slide_dir = '$slide_dir'
+out_mp4 = '$out'
+pages_json = open('$tmp/_pages.json').read()
+pages = json.loads(pages_json)
+voice = '$default_voice'
+edge = '$EDGE'
+padding = float('$page_padding' or 1.5)
+total = len(pages)
+clips = []
 
-    if [ -n "$text" ] && [ "$text" != "None" ]; then
-      local mp3="$tmp/_speech_$(printf '%03d' $num).mp3"
-      if [ "${DEBUG:-0}" = "1" ]; then "$EDGE" --voice "$voice" --text "$text" --write-media "$mp3"
-      else "$EDGE" --voice "$voice" --text "$text" --write-media "$mp3" 2>/dev/null; fi
+for i, p in enumerate(pages):
+    num = i + 1
+    img = p.get('image','')
+    txt = p.get('text') or ''
+    v = p.get('voice') or voice
+    pd = p.get('duration') or ''
+    pp = p.get('page_padding') or padding
+    
+    # 解说回退
+    if not txt:
+        # 1. 配对文件
+        base = os.path.splitext(img)[0]
+        paired = os.path.join(slide_dir, base + '.txt')
+        if os.path.exists(paired):
+            with open(paired) as f: txt = f.read().strip()
+        else:
+            # 2. narration.txt
+            nar = os.path.join(slide_dir, 'narration.txt')
+            if os.path.exists(nar):
+                with open(nar) as f:
+                    lines = [l.strip() for l in f if l.strip()]
+                if i < len(lines): txt = lines[i]
+    
+    clip = f'$tmp/page_{num:03d}.mp4'
+    
+    if txt:
+        mp3 = f'$tmp/_speech_{num:03d}.mp3'
+        if subprocess.run([edge, '--voice', v, '--text', txt, '--write-media', mp3],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0 and os.path.exists(mp3):
+            r = subprocess.run(['ffprobe','-v','quiet','-show_entries','format=duration','-of','csv=p=0',mp3],
+                             capture_output=True, text=True)
+            dur = float(r.stdout.strip() or 3) + pp
+            print(f'  [{num}/{total}] {img} (编码中...)\r', end='', flush=True)
+            subprocess.run(['ffmpeg','-loop','1','-i',os.path.join(slide_dir,img),
+                          '-i',mp3,'-c:v','h264_videotoolbox','-b:v','5M','-r','30',
+                          '-c:a','aac','-t',str(dur),'-pix_fmt','yuv420p',clip,'-y'],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            os.remove(mp3)
+        else:
+            print(f'  [{num}/{total}] {img} (配音失败)\r', end='', flush=True)
+            subprocess.run(['ffmpeg','-loop','1','-i',os.path.join(slide_dir,img),
+                          '-c:v','h264_videotoolbox','-b:v','5M','-r','30',
+                          '-t',str(pd or 3),'-pix_fmt','yuv420p','-an',clip,'-y'],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    else:
+        print(f'  [{num}/{total}] {img} (静默)\r', end='', flush=True)
+        subprocess.run(['ffmpeg','-loop','1','-i',os.path.join(slide_dir,img),
+                      '-c:v','h264_videotoolbox','-b:v','5M','-r','30',
+                      '-t',str(pd or 3),'-pix_fmt','yuv420p','-an',clip,'-y'],
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    
+    clips.append(clip)
+    preview = (txt[:30] + '...') if len(txt) > 30 else (txt or '...')
+    print(f'  [{num}/{total}] {img} ({preview})', flush=True)
 
-      if [ -f "$mp3" ]; then
-        local speech_dur=$(ffprobe -v quiet -show_entries format=duration -of csv=p=0 "$mp3" 2>/dev/null || echo 3)
-        local total_dur=$(python3 -c "print($speech_dur + ${pp:-1.5})")
-        echo -ne "  [$num/$count] $image 编码中...\r"
-        ffmpeg -loop 1 -i "$slide_dir/$image" -i "$mp3" \
-          -c:v h264_videotoolbox -b:v 5M -r 30 -c:a aac \
-          -t "$total_dur" -pix_fmt yuv420p "$clip" -y 2>/dev/null
-        rm -f "$mp3"
-      else
-        if [ "${DEBUG:-0}" = "1" ]; then warn "edge-tts 失败"; else warn "配音失败: $image 使用静默"; fi
-        ffmpeg -loop 1 -i "$slide_dir/$image" \
-          -c:v h264_videotoolbox -b:v 5M -r 30 \
-          -t "${pd:-3}" -pix_fmt yuv420p -an "$clip" -y 2>/dev/null
-      fi
-    else
-      ffmpeg -loop 1 -i "$slide_dir/$image" \
-        -c:v h264_videotoolbox -b:v 5M -r 30 \
-        -t "${pd:-3}" -pix_fmt yuv420p -an "$clip" -y 2>/dev/null
-    fi
+# 拼接
+concat = f'$tmp/concat.txt'
+with open(concat, 'w') as f:
+    for c in clips:
+        f.write(f\"file '{c}'\n\")
+subprocess.run(['ffmpeg','-f','concat','-safe','0','-i',concat,'-c','copy',out_mp4,'-y'],
+              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+print('  ✅ slides.mp4')
+"
 
-    local preview="${text:0:30}"
-    [ ${#text} -gt 30 ] && preview="${preview}..."
-    echo -e "\r  [$num/$count] $image ($preview)    "
-    ((i++))
-  done < "$tmp/_pages.txt"
-
-  local concat="$tmp/concat.txt"; > "$concat"
-  for c in "$tmp"/page_*.mp4; do echo "file '$c'" >> "$concat"; done
-  ffmpeg -f concat -safe 0 -i "$concat" -c copy "$out" -y 2>/dev/null
   rm -rf "$tmp"
   echo "  ✅ slides.mp4"
 }
