@@ -161,7 +161,7 @@ concat = f'$tmp/concat.txt'
 with open(concat, 'w') as f:
     for c in clips:
         f.write(f\"file '{c}'\n\")
-subprocess.run(['ffmpeg','-f','concat','-safe','0','-i',concat,'-c','copy',out_mp4,'-y'],
+subprocess.run(['ffmpeg','-f','concat','-safe','0','-i',concat,'-c:v','h264_videotoolbox','-b:v','5M','-r','30','-c:a','aac',out_mp4,'-y'],
               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 print('  ✅ slides.mp4')
 "
