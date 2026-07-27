@@ -226,7 +226,6 @@ footer {
   <div class="cta">
     <a href="#quickstart" class="cta-prim" data-zh="🚀 快速开始" data-en="🚀 Get Started">🚀 快速开始</a>
     <a href="https://github.com/Apusic-Doc/video-toolkit" class="cta-sec" data-zh="⭐ GitHub" data-en="⭐ GitHub">⭐ GitHub</a>
-    <a href="https://github.com/Apusic-Doc/video-toolkit/tree/main/samples" class="cta-sec" data-zh="📂 示例体验" data-en="📂 Try Samples">📂 示例体验</a>
   </div>
   <p style="margin-top:24px">
     <code id="install-cmd" style="background:var(--code-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 20px;font-size:0.88rem;display:inline-block;cursor:pointer" 
@@ -341,10 +340,10 @@ footer {
      data-en="Drop screenshots with narration text. Auto-dubbed slideshow with meta.json 3-level config (voice/bgm/cover/outro)."
      data-en="Drop screenshots with narration text. Auto-dubbed slideshow video with meta.json 3-level config.">放入截图和一段解说文字，自动配音合成幻灯片视频。支持 meta.json 三级配置 (voice/bgm/cover/outro)。</p>
   <div class="code-box">
-    <span class="cmt"># slides/01.png + slides/narration.txt（每行一段解说）</span><br>
+    <span class="cmt"># slides/01.png + slides/narration.txt (one line per slide)</span><br>
     <span class="cmd">vt</span> slide 01<br><br>
-    <span class="cmt"># 或通过 meta.json 高级配置</span><br>
-    <span class="cmd">vt</span> all 01 &nbsp;<span class="cmt"># 自动检测 slides/ 目录</span>
+    <span class="cmt"># or via meta.json advanced config</span><br>
+    <span class="cmd">vt</span> all 01 &nbsp;<span class="cmt"># auto-detect slides/</span>
   </div>
 </section>
 
@@ -375,12 +374,12 @@ footer {
      data-zh="feature 参数支持三种写法：编号 <code>01</code> / 全名 <code>feature-01-ipv6-http2-websocket</code> / 路径"
      data-en="feature accepts: number <code>01</code> / full name <code>feature-01-ipv6-http2-websocket</code> / path">feature 参数支持三种写法：编号 <code>01</code> / 全名 <code>feature-01-ipv6-http2-websocket</code> / 路径</p>
   <div class="code-box">
-    <span class="cmt"># 录制（Cmd+Shift+5）→ feature 目录: recording.mov</span><br><br>
-    <span class="cmt"># 一键出片</span><br>
+    <span class="cmt"># Record (Cmd+Shift+5) → recording.mov</span><br><br>
+    <span class="cmt"># One command to final cut</span><br>
     <span class="cmd">vt</span> all 01<br><br>
-    <span class="cmt"># 调整字幕后</span><br>
-    <span class="cmd">vt</span> dub 01 &nbsp;<span class="cmt"># AI 配音</span><br>
-    <span class="cmd">vt</span> mix 01 &nbsp;<span class="cmt"># 合成</span>
+    <span class="cmt"># Adjust subtitles then</span><br>
+    <span class="cmd">vt</span> dub 01 &nbsp;<span class="cmt"># AI dub</span><br>
+    <span class="cmd">vt</span> mix 01 &nbsp;<span class="cmt"># compose</span>
   </div>
 </section>
 
