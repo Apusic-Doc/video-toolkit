@@ -112,6 +112,38 @@ case "${1:-}" in
   config)
     CONFIG="$HOME/.config/video-toolkit/config"
     shift
+    
+    # vt config list <key> — 列出某个 key 的可选值
+    if [ "${1:-}" = "list" ]; then
+      case "${2:-}" in
+        voice|voices)
+          echo "中文 (VIDEO_VOICE):"
+          echo "  zh-CN-XiaoxiaoNeural    ★ 温暖清晰（默认）"
+          echo "  zh-CN-YunyangNeural       专业可靠"
+          echo "  zh-CN-YunjianNeural       激情有力"
+          echo "  zh-CN-YunxiNeural         活泼阳光"
+          echo "  zh-CN-XiaoyiNeural        可爱轻快"
+          echo ""
+          echo "英文 (VIDEO_VOICE_EN):"
+          echo "  en-US-AvaNeural         ★ 清晰亲和（默认）"
+          echo "  en-US-AriaNeural          自信"
+          echo "  en-US-ChristopherNeural   权威"
+          echo "  en-GB-SoniaNeural         英式女声"
+          echo "  en-GB-RyanNeural          英式男声"
+          ;;
+        asr|engine)
+          echo "ASR 引擎 (VIDEO_ASR):"
+          echo "  faster-whisper     ★ 默认"
+          echo "  openai-whisper        OpenAI Whisper"
+          echo "  funasr                SenseVoice (阿里达摩院)"
+          ;;
+        *)
+          echo "用法: vt config list <voice|asr>"
+          ;;
+      esac
+      exit 0
+    fi
+    
     if [ -z "${1:-}" ]; then
       cat "$CONFIG" 2>/dev/null || echo "无配置"
     else
