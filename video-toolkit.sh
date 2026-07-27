@@ -664,6 +664,8 @@ case "${1:-}" in
         echo "  vt status  --all        查看全部"
         echo "  vt config              查看配置"
         echo "  vt config KEY=value    设置配置"
+        echo "  vt config list voice   列出可用语音"
+        echo "  vt config list asr     列出 ASR 引擎"
         echo "  vt --version            版本"
         echo "  vt --update             自动更新"
         echo ""

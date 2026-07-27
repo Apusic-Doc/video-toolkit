@@ -79,6 +79,8 @@ vt slide feature-XX-slides
 | `vt status --all` | 查看全部 feature 状态 | — |
 | `vt config` | 查看配置 | — |
 | `vt config KEY=val` | 设置配置 | — |
+| `vt config list voice` | 列出可用语音 | — |
+| `vt config list asr` | 列出 ASR 引擎 | — |
 | `vt --version` | 查看版本 | — |
 | `vt --update` | 自动更新 | — |
 
@@ -200,6 +202,12 @@ vt dub 01 && vt mix 01  # 重生成，支持段间静默对齐
 
 ```bash
 vt config DEEPSEEK_API_KEY=sk-xxx
+```
+
+### 查看可用 AI 语音
+
+```bash
+vt config list voice
 ```
 
 ### 试听 AI 配音
