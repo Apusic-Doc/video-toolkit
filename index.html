@@ -337,14 +337,37 @@ footer {
   <div class="section-label" data-zh="幻灯片" data-en="Slideshow">幻灯片</div>
   <h2 class="section-title" data-zh="截图+解说→演示视频" data-en="Screenshots + narration → video">截图+解说→演示视频</h2>
   <p class="section-sub" data-zh="放入截图和一段解说文字，自动配音合成幻灯片视频。支持 meta.json 三级配置 (voice/bgm/cover/outro)。" 
-     data-en="Drop screenshots with narration text. Auto-dubbed slideshow with meta.json 3-level config (voice/bgm/cover/outro)."
-     data-en="Drop screenshots with narration text. Auto-dubbed slideshow video with meta.json 3-level config.">放入截图和一段解说文字，自动配音合成幻灯片视频。支持 meta.json 三级配置 (voice/bgm/cover/outro)。</p>
+     data-en="Drop screenshots with narration. Auto-dubbed slideshow with meta.json 3-level config.">放入截图和一段解说文字，自动配音合成幻灯片视频。支持 meta.json 三级配置 (voice/bgm/cover/outro)。</p>
+
+  <h4 style="margin:24px 0 10px;color:var(--text3);font-size:0.82rem;text-transform:uppercase;letter-spacing:1px" data-zh="目录结构" data-en="Directory">目录结构</h4>
   <div class="code-box">
-    <span class="cmt"># slides/01.png + slides/narration.txt (one line per slide)</span><br>
-    <span class="cmd">vt</span> slide 01<br><br>
-    <span class="cmt"># or via meta.json advanced config</span><br>
-    <span class="cmd">vt</span> all 01 &nbsp;<span class="cmt"># auto-detect slides/</span>
+    feature-02-slides/<br>
+    &nbsp;&nbsp;└── slides/<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── 001-overview.png<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── 002-features.png<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── ...<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── narration.txt &nbsp;<span class="cmt">← one line per slide</span>
   </div>
+
+  <h4 style="margin:24px 0 10px;color:var(--text3);font-size:0.82rem;text-transform:uppercase;letter-spacing:1px" data-zh="执行" data-en="Run">执行</h4>
+  <div class="code-box">
+    <span class="cmd">vt</span> slide feature-02-slides
+  </div>
+
+  <h4 style="margin:24px 0 10px;color:var(--text3);font-size:0.82rem;text-transform:uppercase;letter-spacing:1px" data-zh="执行效果" data-en="Output">执行效果</h4>
+  <div class="code-box">
+    <span class="out">  ✅ TTS [1/9] 001-overview.png (3.1s)</span><br>
+    <span class="out">  ✅ 编码 [1/9] 001-overview.png (2.4s)</span><br>
+    <span class="out">  ✅ TTS [2/9] 002-features.png (2.8s)</span><br>
+    <span class="out">  ✅ 编码 [2/9] 002-features.png (2.1s)</span><br>
+    <span class="out">  ...</span><br>
+    <span class="out">  ✅ slides.mp4</span><br>
+    <span class="out">  ✅ final.mp4</span>
+  </div>
+
+  <p style="color:var(--text2);font-size:0.88rem;margin-top:16px"
+     data-zh='每页实时显示 🎙️AI配音 + 🎬硬件编码 进度和耗时。最终生成带封面的 <code>final.mp4</code>。'
+     data-en='Per-slide progress with TTS + HW encode timing. Outputs <code>final.mp4</code>.'>每页实时显示 🎙️AI配音 + 🎬硬件编码 进度和耗时。最终生成带封面的 <code>final.mp4</code>。</p>
 </section>
 
 <!-- ═══════════ Quick Start ═══════════ -->
