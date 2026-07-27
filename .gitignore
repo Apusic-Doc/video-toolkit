@@ -5,3 +5,5 @@ __pycache__/
 _tmp*
 .DS_Store
 trace-*.sh
+final.mp4
+*.mp4
