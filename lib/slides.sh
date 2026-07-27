@@ -51,6 +51,13 @@ gen_slide_video() {
   local default_voice=$(meta_get "$meta" "voice")
   local count=$(python3 -c "import json;print(len(json.loads('''$pages''')))")
 
+  # 写 pages JSON 到文件
+  python3 -c "
+import json
+with open('$tmp/_pages.json','w') as f:
+    json.dump(json.loads('''$pages'''), f, ensure_ascii=False)
+"
+
   # 全部在 Python 中完成：配音 + 合成 + 拼接
   python3 -c "
 import json, os, subprocess, tempfile
