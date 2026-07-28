@@ -46,7 +46,13 @@ DEEPSEEK_KEY="${DEEPSEEK_API_KEY:-}"   # 优先环境变量
 # 其次从 ~/.aas_deepseek_key 读取（仅本机）
 [ -z "$DEEPSEEK_KEY" ] && [ -f "$HOME/.aas_deepseek_key" ] && DEEPSEEK_KEY=$(cat "$HOME/.aas_deepseek_key" 2>/dev/null)
 # 再次从 config 读取
-[ -z "$DEEPSEEK_KEY" ] && [ -f "$HOME/.config/video-toolkit/config" ] && DEEPSEEK_KEY=$(grep '^DEEPSEEK_API_KEY=' "$HOME/.config/video-toolkit/config" 2>/dev/null | cut -d= -f2-)
+if [ -f "$HOME/.config/video-toolkit/config" ]; then
+    [ -z "$DEEPSEEK_KEY" ] && DEEPSEEK_KEY=$(grep '^DEEPSEEK_API_KEY=' "$HOME/.config/video-toolkit/config" 2>/dev/null | cut -d= -f2-)
+    [ "$VOICE" = "zh-CN-XiaoxiaoNeural" ] && VOICE=$(grep '^VIDEO_VOICE=' "$HOME/.config/video-toolkit/config" 2>/dev/null | cut -d= -f2-)
+    [ "$VOICE" = "zh-CN-XiaoxiaoNeural" ] || : # keep if set by env
+    [ "$VOICE_EN" = "en-US-AvaNeural" ] && VOICE_EN=$(grep '^VIDEO_VOICE_EN=' "$HOME/.config/video-toolkit/config" 2>/dev/null | cut -d= -f2-)
+    [ "$ASR_ENGINE" = "faster-whisper" ] && ASR_ENGINE=$(grep '^VIDEO_ASR=' "$HOME/.config/video-toolkit/config" 2>/dev/null | cut -d= -f2-)
+fi
 
 # ── 加载 v2 模块 ──
 TOOLKIT_DIR="$(cd "$(dirname "$0")" && pwd)"
