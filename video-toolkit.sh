@@ -554,13 +554,6 @@ cmd_mix_en() {
 cmd_mix() {
     local dir="$1"
     compose "$dir"
-    # v2: 如果 meta.json 有封面配置，追加合成
-    local meta=$(load_meta "$dir" 2>/dev/null || echo "{}")
-    local cover=$(meta_get "$meta" "cover")
-    local title=$(meta_get "$meta" "title")
-    if [ "$cover" = "true" ] || [ -n "$title" ]; then
-        compose_final "$dir/_dubbed.mp4" "$meta" "$dir" "$dir/final.mp4"
-    fi
 }
 cmd_all() {
     local dir="$1"
