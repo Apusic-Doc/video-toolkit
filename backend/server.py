@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Video Toolkit Web UI Server (Tier 1 — Project > Feature hierarchy)"""
-import http.server, json, os, subprocess, threading, queue, time, urllib.parse, sys
+import http.server, json, os, subprocess as sp, threading, queue, time, urllib.parse, sys, shutil
 
 PORT = int(os.environ.get("VT_PORT", "9876"))
 TOOLKIT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -305,9 +305,7 @@ if __name__ == "__main__":
     try:
         httpd = http.server.HTTPServer(("0.0.0.0", PORT), APIHandler)
     except OSError:
-        import subprocess as sp
-        sp.run(["lsof", "-ti", f":{PORT}", "-sTCP:LISTEN", "|", "xargs", "kill", "-9"],
-               shell=True, capture_output=True)
+        sp.run(f"lsof -ti :{PORT} | xargs kill -9 2>/dev/null", shell=True, capture_output=True)
         time.sleep(1)
         httpd = http.server.HTTPServer(("0.0.0.0", PORT), APIHandler)
     print(f"✅ Video Toolkit UI → http://localhost:{PORT}")
