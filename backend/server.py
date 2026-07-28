@@ -1,261 +1,306 @@
 #!/usr/bin/env python3
-"""Video Toolkit Web UI Server (Tier 1)"""
+"""Video Toolkit Web UI Server (Tier 1 — Project > Feature hierarchy)"""
 import http.server, json, os, subprocess, threading, queue, time, urllib.parse, sys
 
 PORT = int(os.environ.get("VT_PORT", "9876"))
 TOOLKIT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UI_DIR = os.path.join(TOOLKIT_DIR, "ui")
+PROJECTS_DIR = os.environ.get("VIDEO_PROJECTS_DIR",
+    os.path.join(os.path.dirname(TOOLKIT_DIR), "projects"))
 CONFIG_FILE = os.path.expanduser("~/.config/video-toolkit/config")
 
-# ── SSE 任务管理 ──
+os.makedirs(PROJECTS_DIR, exist_ok=True)
+
+# ── SSE Task Manager ──
 class TaskManager:
-    def __init__(self):
-        self.tasks = {}
-        self._lock = threading.Lock()
-
-    def create(self, task_id):
+    def __init__(self): self.tasks = {}; self._lock = threading.Lock()
+    def create(self, tid):
+        with self._lock: q = queue.Queue(); self.tasks[tid] = {"queue": q, "process": None, "status": "running"}; return q
+    def update(self, tid, status):
         with self._lock:
-            q = queue.Queue()
-            self.tasks[task_id] = {"queue": q, "process": None, "status": "running"}
-        return q
-
-    def update(self, task_id, status):
+            if tid in self.tasks: self.tasks[tid]["status"] = status
+    def get(self, tid):
+        with self._lock: return self.tasks.get(tid)
+    def cleanup(self, tid):
         with self._lock:
-            if task_id in self.tasks:
-                self.tasks[task_id]["status"] = status
+            if tid in self.tasks: del self.tasks[tid]
 
-    def get(self, task_id):
-        with self._lock:
-            return self.tasks.get(task_id)
+TASKS = TaskManager()
 
-tasks = TaskManager()
+class APIHandler(http.server.BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
 
-# ── SSE 流式执行命令 ──
-def run_command(cmd, task_id, feat_dir=None):
-    q = tasks.create(task_id)
-    env = os.environ.copy()
-    if feat_dir:
-        env["VIDEO_FEATURES_DIR"] = feat_dir
+    def log_message(self, *a): pass
 
-    def reader(pipe, prefix):
-        for line in iter(pipe.readline, ""):
-            q.put(json.dumps({"type": "output", "text": prefix + line.rstrip()}))
-        pipe.close()
+    def ok(self, data=None):
+        self.send_response(200); self.send_header("Content-Type", "application/json")
+        self.send_header("Access-Control-Allow-Origin", "*"); self.end_headers()
+        self.wfile.write(json.dumps(data or {}).encode())
 
-    try:
-        proc = subprocess.Popen(
-            ["bash", os.path.join(TOOLKIT_DIR, "video-toolkit.sh")] + cmd.split(),
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            text=True, bufsize=1, cwd=TOOLKIT_DIR, env=env
-        )
-        tasks.tasks[task_id]["process"] = proc
-        reader(proc.stdout, "")
-        proc.wait()
-        status = "success" if proc.returncode == 0 else "failed"
-        tasks.update(task_id, status)
-        q.put(json.dumps({"type": "done", "status": status}))
-    except Exception as e:
-        tasks.update(task_id, "error")
-        q.put(json.dumps({"type": "error", "text": str(e)}))
+    def error(self, code, msg=""):
+        self.send_response(code); self.send_header("Access-Control-Allow-Origin", "*"); self.end_headers()
+        self.wfile.write(json.dumps({"error": msg}).encode())
 
-# ── API 路由 ──
-class APIHandler(http.server.SimpleHTTPRequestHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=UI_DIR, **kwargs)
-
-    def log_message(self, format, *args):
-        pass  # 静默
-
+    # ── Routing ──
     def do_GET(self):
-        path = urllib.parse.urlparse(self.path).path
-
-        if path == "/api/features":
-            return self.json_response(self.list_features())
-        if path == "/api/config":
-            return self.json_response(self.read_config())
-        if path == "/api/status":
-            return self.json_response(self.get_status())
-        if path.startswith("/api/task/"):
-            return self.handle_sse(path)
-        if path.startswith("/api/files/"):
-            return self.serve_feature_file(path)
-        return super().do_GET()
+        p = urllib.parse.urlparse(self.path)
+        if p.path == "/api/projects": return self.list_projects()
+        if p.path == "/api/config": return self.get_global_config()
+        if p.path == "/api/task/": return self.handle_404()
+        if p.path.startswith("/api/task/"): return self.sse_task(p.path.split("/")[-1])
+        if p.path.startswith("/api/files/"): return self.serve_file("GET", p.path)
+        m = self._match_proj_feat(p.path, "GET")
+        if m: return self.dispatch(m[0], m[1], m[2], m[3], "GET")
+        if p.path == "/" or "." not in p.path.split("/")[-1]:
+            return self.serve_static(p.path)
+        return self.handle_404()
 
     def do_POST(self):
-        path = urllib.parse.urlparse(self.path).path
+        p = urllib.parse.urlparse(self.path)
+        body = self._read_body()
+        if p.path == "/api/projects": return self.create_project(body)
+        if p.path == "/api/config": return self.set_global_config(body)
+        if p.path == "/api/run": return self.run_task(body)
+        if p.path.startswith("/api/upload/"): return self.upload_file(p.path, body)
+        m = self._match_proj_feat(p.path, "POST")
+        if m: return self.dispatch(m[0], m[1], m[2], m[3], "POST", body)
+        return self.handle_404()
+
+    def do_OPTIONS(self):
+        self.send_response(200); self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type"); self.end_headers()
+
+    def _read_body(self):
         length = int(self.headers.get("Content-Length", 0))
-        body = json.loads(self.rfile.read(length)) if length > 0 else {}
+        return json.loads(self.rfile.read(length)) if length > 0 else {}
 
-        if path == "/api/run":
-            return self.run_task(body)
-        if path == "/api/config":
-            return self.json_response(self.write_config(body))
-        if path == "/api/features":
-            return self.json_response(self.create_feature(body))
-        if path.startswith("/api/features/") and path.endswith("/delete"):
-            return self.json_response(self.delete_feature(path))
-        if path.startswith("/api/upload/"):
-            return self.handle_upload(path)
-        self.send_error(404)
+    def _match_proj_feat(self, path, method):
+        """Parse /api/projects/{pname}/features/{fname}[/{action}]"""
+        parts = path.strip("/").split("/")
+        if len(parts) < 4 or parts[:2] != ["api", "projects"]: return None
+        pname = parts[2]
+        if len(parts) == 3: return ("project", pname, None, None)
+        if len(parts) >= 5 and parts[3] == "features":
+            fname = parts[4]
+            action = parts[5] if len(parts) > 5 else ""
+            return ("feature", pname, fname, action)
+        return None
 
-    # ── SSE ──
-    def handle_sse(self, path):
-        task_id = path.split("/")[-1]
-        q = tasks.get(task_id)
-        if not q:
-            self.send_error(404)
-            return
-        self.send_response(200)
-        self.send_header("Content-Type", "text/event-stream")
-        self.send_header("Cache-Control", "no-cache")
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.end_headers()
-        while True:
-            try:
-                msg = q["queue"].get(timeout=30)
-                self.wfile.write(f"data: {msg}\n\n".encode())
-                self.wfile.flush()
-                parsed = json.loads(msg)
-                if parsed.get("type") in ("done", "error"):
-                    break
-            except queue.Empty:
-                self.wfile.write(": ping\n\n".encode())
-                self.wfile.flush()
+    def dispatch(self, kind, pname, fname, action, method, body=None):
+        if kind == "project":
+            if method == "GET": return self.get_project(pname)
+            if method == "POST": return self.create_feature(pname, body)
+        if kind == "feature":
+            if action == "delete":
+                return self.delete_file(pname, fname)
+            return self.error(400, "unknown action")
+        return self.error(400)
 
-    def run_task(self, body):
-        cmd = body.get("cmd", "")
-        feat = body.get("feature", "")
-        task_id = str(int(time.time() * 1000))
-        feat_dir = None
-        if feat:
-            feat_dir = self.resolve_feature(feat)
-        threading.Thread(target=run_command, args=(cmd, task_id, feat_dir), daemon=True).start()
-        self.json_response({"task_id": task_id})
+    # ── Projects ──
+    def list_projects(self):
+        projects = []
+        for name in sorted(os.listdir(PROJECTS_DIR)):
+            d = os.path.join(PROJECTS_DIR, name)
+            if not os.path.isdir(d) or name.startswith("."): continue
+            features = self._list_features_in(d)
+            projects.append({"name": name, "features": features})
+        self.ok(projects)
 
-    # ── Helpers ──
-    def json_response(self, data):
-        body = json.dumps(data, ensure_ascii=False).encode()
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+    def get_project(self, pname):
+        d = os.path.join(PROJECTS_DIR, pname)
+        if not os.path.isdir(d): return self.error(404, "project not found")
+        features = self._list_features_in(d)
+        self.ok({"name": pname, "features": features})
 
-    def list_features(self):
-        base = os.environ.get("VIDEO_FEATURES_DIR", TOOLKIT_DIR)
-        result = []
-        if os.path.isdir(base):
-            for d in sorted(os.listdir(base)):
-                if d.startswith("feature-") and os.path.isdir(os.path.join(base, d)):
-                    has_rec = os.path.exists(os.path.join(base, d, "recording.mov"))
-                    has_slides = os.path.isdir(os.path.join(base, d, "slides"))
-                    has_final = os.path.exists(os.path.join(base, d, "final.mp4"))
-                    result.append({
-                        "name": d, "type": "slide" if has_slides and not has_rec else "video",
-                        "has_recording": has_rec, "has_slides": has_slides, "has_final": has_final
-                    })
-        return result
+    def create_project(self, body):
+        name = body.get("name", "").strip()
+        if not name: return self.error(400, "name required")
+        d = os.path.join(PROJECTS_DIR, name)
+        if os.path.exists(d): return self.error(409, "exists")
+        os.makedirs(d, exist_ok=True)
+        self.ok({"created": name})
 
-    def resolve_feature(self, name):
-        base = os.environ.get("VIDEO_FEATURES_DIR", TOOLKIT_DIR)
-        if os.path.isdir(name): return name
-        path = os.path.join(base, name)
-        if os.path.isdir(path): return path
-        import glob
-        matches = glob.glob(os.path.join(base, f"feature-{name.replace('feature-', '')}*"))
-        return matches[0] if matches else base
+    def create_feature(self, pname, body):
+        d = os.path.join(PROJECTS_DIR, pname)
+        if not os.path.isdir(d): return self.error(404, "project not found")
+        fname = body.get("name", "").strip()
+        mode = body.get("mode", "video")
+        if not fname: return self.error(400, "name required")
+        fd = os.path.join(d, fname)
+        if os.path.exists(fd): return self.error(409, "exists")
+        os.makedirs(fd, exist_ok=True)
+        if mode == "slide": os.makedirs(os.path.join(fd, "slides"), exist_ok=True)
+        self.ok({"created": fname})
 
-    def read_config(self):
+    def _list_features_in(self, proj_dir):
+        features = []
+        for name in sorted(os.listdir(proj_dir)):
+            d = os.path.join(proj_dir, name)
+            if not os.path.isdir(d) or name.startswith("."): continue
+            features.append({
+                "name": name,
+                "type": "slide" if os.path.isdir(os.path.join(d, "slides")) else "video",
+                "has_recording": any(f for f in os.listdir(d) if f.startswith("recording") and os.path.isfile(os.path.join(d, f))),
+                "has_slides": os.path.isdir(os.path.join(d, "slides")) and len(os.listdir(os.path.join(d, "slides"))) > 0,
+                "has_final": os.path.isfile(os.path.join(d, "final.mp4"))
+            })
+        return features
+
+    # ── Files ──
+    def serve_file(self, method, path):
+        base = PROJECTS_DIR
+        rel = path.replace("/api/files/", "").lstrip("/")
+        fp = os.path.join(base, os.path.normpath(rel))
+        # Security: stay inside PROJECTS_DIR
+        if not fp.startswith(base + os.sep) and fp != base:
+            return self.error(403)
+        if os.path.isdir(fp):
+            files = [f for f in os.listdir(fp) if not f.startswith('.') and os.path.isfile(os.path.join(fp, f))]
+            return self.ok(files)
+        if not os.path.exists(fp): return self.error(404)
+        if method == "POST": return self.handle_404()
+        ext = os.path.splitext(fp)[1]
+        ct = {"mp4": "video/mp4", "wav": "audio/wav", "png": "image/png", "jpg": "image/jpeg",
+              "mov": "video/quicktime", "mp3": "audio/mpeg", "json": "application/json",
+              "txt": "text/plain", "srt": "text/plain"}.get(ext[1:], "application/octet-stream")
+        self.send_response(200); self.send_header("Content-Type", ct)
+        self.send_header("Content-Length", os.path.getsize(fp)); self.end_headers()
+        with open(fp, "rb") as f: self.wfile.write(f.read())
+
+    def delete_file(self, pname, fname):
+        body = urllib.parse.parse_qs(self.path.split("?")[1]) if "?" in self.path else {}
+        path = body.get("path", [""])[0]
+        fp = os.path.join(PROJECTS_DIR, pname, fname, os.path.normpath(path))
+        if not fp.startswith(os.path.join(PROJECTS_DIR, pname, fname)):
+            return self.error(403)
+        if os.path.isfile(fp): os.remove(fp)
+        elif os.path.isdir(fp):
+            import shutil; shutil.rmtree(fp)
+        self.ok({"deleted": path})
+
+    def upload_file(self, path, body):
+        pname = path.split("/")[3] if len(path.split("/")) > 3 else None
+        fname = path.split("/")[4] if len(path.split("/")) > 4 else None
+        fpath = path.split("/", 5)[5] if len(path.split("/")) > 5 else ""
+        if not pname or not fname: return self.error(400)
+        dest = os.path.join(PROJECTS_DIR, pname, fname, fpath)
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        if isinstance(body, str):
+            with open(dest, "w", encoding="utf-8") as f: f.write(body)
+        elif isinstance(body, bytes):
+            with open(dest, "wb") as f: f.write(body)
+        else:
+            # multipart or raw? Read from raw request
+            cl = int(self.headers.get("Content-Length", 0))
+            data = self.rfile.read(cl)
+            with open(dest, "wb") as f: f.write(data)
+        self.ok({"uploaded": fpath})
+
+    # ── Config ──
+    def get_global_config(self):
         cfg = {}
         if os.path.exists(CONFIG_FILE):
             with open(CONFIG_FILE) as f:
                 for line in f:
                     line = line.strip()
-                    if "=" in line and not line.startswith("#"):
+                    if line and not line.startswith("#") and "=" in line:
                         k, v = line.split("=", 1)
-                        cfg[k] = v
-        return cfg
+                        cfg[k.strip()] = v.strip()
+        self.ok(cfg)
 
-    def write_config(self, body):
-        existing = self.read_config()
+    def set_global_config(self, body):
+        existing = {}
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE) as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        existing[k.strip()] = v.strip()
         existing.update(body)
-        os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
         with open(CONFIG_FILE, "w") as f:
+            f.write("# Video Toolkit 配置文件\n")
             for k, v in existing.items():
                 f.write(f"{k}={v}\n")
-        return {"ok": True}
+        self.ok({"saved": True})
 
-    def get_status(self):
-        base = os.environ.get("VIDEO_FEATURES_DIR", TOOLKIT_DIR)
-        features = self.list_features()
-        total = len(features)
-        done = sum(1 for f in features if f["has_final"])
-        return {"total": total, "done": done, "features": features}
+    # ── Run ──
+    def run_task(self, body):
+        cmd = body.get("cmd", "")
+        pname = body.get("project", "")
+        fname = body.get("feature", "")
+        if not pname or not fname: return self.error(400, "project + feature required")
+        fd = os.path.join(PROJECTS_DIR, pname, fname)
+        if not os.path.isdir(fd): return self.error(404, "feature not found")
 
-    def create_feature(self, body):
-        base = os.environ.get("VIDEO_FEATURES_DIR", TOOLKIT_DIR)
-        name = body.get("name", "").strip()
-        if not name: return {"error": "name required"}
-        if not name.startswith("feature-"): name = f"feature-{name}"
-        feat_dir = os.path.join(base, name)
-        os.makedirs(feat_dir, exist_ok=True)
-        mode = body.get("mode", "video")
-        if mode == "slide":
-            os.makedirs(os.path.join(feat_dir, "slides"), exist_ok=True)
-        # 写初始 meta.json
-        meta = {"type": mode, "voice": "zh-CN-XiaoxiaoNeural", "voice_en": "en-US-AvaNeural"}
-        with open(os.path.join(feat_dir, "meta.json"), "w") as f:
-            json.dump(meta, f, ensure_ascii=False, indent=2)
-        return {"ok": True, "name": name, "path": feat_dir}
+        task_id = f"{int(time.time())}-{os.urandom(3).hex()}"
+        q = TASKS.create(task_id)
+        self.ok({"task_id": task_id})
 
-    def delete_feature(self, path):
-        base = os.environ.get("VIDEO_FEATURES_DIR", TOOLKIT_DIR)
-        name = path.replace("/api/features/", "").replace("/delete", "")
-        feat_dir = os.path.join(base, name)
-        if os.path.isdir(feat_dir):
-            import shutil
-            shutil.rmtree(feat_dir)
-            return {"ok": True}
-        return {"error": "not found"}
+        t = threading.Thread(target=self._exec, args=(task_id, cmd, fd))
+        t.daemon = True; t.start()
 
-    def handle_upload(self, path):
-        base = os.environ.get("VIDEO_FEATURES_DIR", TOOLKIT_DIR)
-        # /api/upload/feature-01/recording.mov or /api/upload/feature-01/slides/01.png
-        rel = path.replace("/api/upload/", "")
-        parts = rel.split("/", 1)
-        feat_dir = os.path.join(base, parts[0])
-        file_path = os.path.join(feat_dir, parts[1]) if len(parts) > 1 else feat_dir
-        os.makedirs(os.path.dirname(file_path) or feat_dir, exist_ok=True)
-        content = self.rfile.read(int(self.headers["Content-Length"]))
-        with open(file_path, "wb") as f:
-            f.write(content)
-        return self.json_response({"ok": True, "path": file_path})
+    def _exec(self, task_id, cmd, feature_dir):
+        script = os.path.join(TOOLKIT_DIR, "video-toolkit.sh")
+        p = subprocess.Popen(
+            ["bash", script, cmd, feature_dir],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, bufsize=1, cwd=TOOLKIT_DIR
+        )
+        TASKS.tasks[task_id]["process"] = p
+        for line in p.stdout:
+            TASKS.tasks[task_id]["queue"].put({"type": "output", "text": line.rstrip()})
+        p.wait()
+        status = "done" if p.returncode == 0 else f"error ({p.returncode})"
+        TASKS.update(task_id, status)
+        TASKS.tasks[task_id]["queue"].put({"type": "done", "status": status})
 
-    def serve_feature_file(self, path):
-        base = os.environ.get("VIDEO_FEATURES_DIR", TOOLKIT_DIR)
-        rel = path.replace("/api/files/", "")
-        file_path = os.path.join(base, rel)
-        # 目录列表
-        if os.path.isdir(file_path):
-            files = [f for f in os.listdir(file_path) if not f.startswith('.') and os.path.isfile(os.path.join(file_path, f))]
-            return self.json_response(files)
-        if not os.path.exists(file_path):
-            self.send_error(404); return
-        self.send_response(200)
-        ct = "video/mp4" if rel.endswith(".mp4") else "audio/wav" if rel.endswith(".wav") else "application/octet-stream"
-        self.send_header("Content-Type", ct)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Content-Length", str(os.path.getsize(file_path)))
-        self.end_headers()
-        with open(file_path, "rb") as f:
-            self.wfile.write(f.read())
+    def sse_task(self, task_id):
+        ti = TASKS.get(task_id)
+        if not ti: return self.error(404)
+        self.send_response(200); self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache"); self.end_headers()
+        q = ti["queue"]
+        try:
+            while True:
+                msg = q.get(timeout=30)
+                self.wfile.write(f"data: {json.dumps(msg)}\n\n".encode())
+                self.wfile.flush()
+                if msg["type"] in ("done", "error"): break
+        except queue.Empty:
+            self.wfile.write('data: {"type":"error","status":"timeout"}\n\n'.encode())
+            self.wfile.flush()
+        TASKS.cleanup(task_id)
+
+    # ── Static ──
+    def serve_static(self, path):
+        fp = os.path.join(UI_DIR, path.lstrip("/") or "index.html")
+        if not os.path.exists(fp) or not fp.startswith(UI_DIR):
+            fp = os.path.join(UI_DIR, "index.html")
+        ext = os.path.splitext(fp)[1]
+        ct = {".html": "text/html", ".css": "text/css", ".js": "application/javascript",
+              ".svg": "image/svg+xml", ".png": "image/png"}.get(ext, "text/plain")
+        self.send_response(200); self.send_header("Content-Type", ct)
+        self.send_header("Content-Length", os.path.getsize(fp)); self.end_headers()
+        with open(fp, "rb") as f: self.wfile.write(f.read())
+
+    def handle_404(self):
+        self.error(404, "not found")
 
 if __name__ == "__main__":
-    server = http.server.HTTPServer(("0.0.0.0", PORT), APIHandler)
-    print(f"  🎬 Video Toolkit UI → http://localhost:{PORT}")
-    print(f"  📁 静态文件: {UI_DIR}")
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        print("\n  👋 bye")
+    # Auto-create demo project from old 'samples' dir
+    old_samples = os.path.join(TOOLKIT_DIR, "samples")
+    demo_proj = os.path.join(PROJECTS_DIR, "demo")
+    if os.path.isdir(old_samples) and not os.path.exists(demo_proj):
+        import shutil
+        for item in os.listdir(old_samples):
+            if item.startswith("feature-") and os.path.isdir(os.path.join(old_samples, item)):
+                dest = os.path.join(demo_proj, item)
+                if not os.path.exists(dest):
+                    shutil.copytree(os.path.join(old_samples, item), dest)
+        if os.listdir(PROJECTS_DIR): os.makedirs(demo_proj, exist_ok=True)
+
+    httpd = http.server.HTTPServer(("0.0.0.0", PORT), APIHandler)
+    print(f"✅ Video Toolkit UI → http://localhost:{PORT}")
+    httpd.serve_forever()

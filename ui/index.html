@@ -9,128 +9,87 @@
 </head>
 <body>
 <div id="app">
-  <!-- Topbar (landing page style) -->
+  <!-- Topbar -->
   <nav class="topbar">
-    <div class="brand" style="cursor:pointer" @click="selectedFeature='';page='projects'">
-      <div class="brand-logo">🎬</div>
-      <span class="brand-text">Video Toolkit</span>
+    <div class="brand" style="cursor:pointer" @click="selectedFeature='';selectedProject='';page='projects'">
+      <div class="brand-logo">🎬</div><span class="brand-text">Video Toolkit</span>
     </div>
     <div class="topbar-nav">
-      <a :class="{active:page==='projects'}" @click="page='projects';selectedFeature=''">Projects</a>
-      <a :class="{active:page==='config'}" @click="page='config';selectedFeature=''">Config</a>
-      <a :class="{active:page==='commands'}" @click="page='commands';selectedFeature=''">Commands</a>
-      <a :class="{active:page==='output'}" @click="page='output';selectedFeature=''">Output</a>
+      <a :class="{active:page==='projects'}" @click="page='projects';selectedFeature='';selectedProject=''">Projects</a>
+      <a :class="{active:page==='config'}" @click="page='config';selectedFeature='';selectedProject=''">Config</a>
+      <a :class="{active:page==='commands'}" @click="page='commands';selectedFeature='';selectedProject=''">Commands</a>
+      <a :class="{active:page==='output'}" @click="page='output';selectedFeature='';selectedProject=''">Output</a>
       <a href="https://video-toolkit.bitey.ai" target="_blank">Docs</a>
       <a href="https://video-toolkit.bitey.ai/#faq" target="_blank">FAQ</a>
       <a href="https://github.com/Apusic-Doc/video-toolkit" target="_blank">GitHub</a>
     </div>
     <div class="topbar-actions">
-      <button class="icon-btn" @click="refreshFeatures" title="Refresh">🔄</button>
+      <button class="icon-btn" @click="refreshProjects" title="Refresh">🔄</button>
       <button class="icon-btn" @click="toggleTheme" :title="themeBtn=='🌙'?'Light':'Dark'">{{ themeBtn }}</button>
     </div>
   </nav>
 
   <div class="app-container">
-    <!-- ═══════ Global Config Page ═══════ -->
+    <!-- ═══════ Global Config ═══════ -->
     <template v-if="page==='config'">
-      <div class="page-header">
-        <h1><span>Global Configuration</span></h1>
-        <p>Default settings for all projects</p>
-      </div>
-      <div class="card">
-        <div class="card-header">
-          <h3>⚙️ Settings</h3>
-          <button class="btn btn-pri btn-sm" @click="saveGlobalConfig">Save</button>
-        </div>
+      <div class="page-header"><h1><span>Global Configuration</span></h1><p>Default settings for all projects</p></div>
+      <div class="card"><div class="card-header"><h3>⚙️ Settings</h3><button class="btn btn-pri btn-sm" @click="saveGlobalConfig">Save</button></div>
         <div class="card-body">
-          <div class="form-section">
-            <label class="form-label">DeepSeek API Key</label>
-            <input class="input" v-model="gCfg.DEEPSEEK_API_KEY" placeholder="sk-xxx" type="password">
-          </div>
+          <div class="form-section"><label class="form-label">DeepSeek API Key</label><input class="input" v-model="gCfg.DEEPSEEK_API_KEY" placeholder="sk-xxx" type="password"></div>
           <div class="config-grid">
-            <div class="config-item">
-              <label class="form-label">ASR Engine</label>
-              <select class="select" v-model="gCfg.VIDEO_ASR">
-                <option value="faster-whisper">faster-whisper ★</option>
-                <option value="openai-whisper">openai-whisper</option>
-                <option value="funasr">funasr (SenseVoice)</option>
-              </select>
-            </div>
-            <div class="config-item">
-              <label class="form-label">Chinese Voice</label>
-              <select class="select" v-model="gCfg.VIDEO_VOICE">
-                <option value="zh-CN-XiaoxiaoNeural">Xiaoxiao ★ Warm & clear</option>
-                <option value="zh-CN-YunyangNeural">Yunyang · Professional</option>
-                <option value="zh-CN-YunjianNeural">Yunjian · Passionate</option>
-                <option value="zh-CN-YunxiNeural">Yunxi · Lively</option>
-                <option value="zh-CN-XiaoyiNeural">Xiaoyi · Cute</option>
-              </select>
-            </div>
-            <div class="config-item">
-              <label class="form-label">English Voice</label>
-              <select class="select" v-model="gCfg.VIDEO_VOICE_EN">
-                <option value="en-US-AvaNeural">Ava ★ Clear & friendly</option>
-                <option value="en-US-AriaNeural">Aria · Confident</option>
-                <option value="en-US-ChristopherNeural">Christopher · Authoritative</option>
-                <option value="en-GB-SoniaNeural">Sonia · British female</option>
-                <option value="en-GB-RyanNeural">Ryan · British male</option>
-              </select>
-            </div>
-            <div class="config-item">
-              <label class="form-label">Subtitle Burn-in</label>
-              <select class="select" v-model="gCfg.VIDEO_BURN_SUB">
-                <option value="0">Off</option>
-                <option value="1">On (needs libass)</option>
-              </select>
-            </div>
+            <div class="config-item"><label class="form-label">ASR Engine</label><select class="select" v-model="gCfg.VIDEO_ASR"><option value="faster-whisper">faster-whisper ★</option><option value="openai-whisper">openai-whisper</option><option value="funasr">funasr (SenseVoice)</option></select></div>
+            <div class="config-item"><label class="form-label">Chinese Voice</label><select class="select" v-model="gCfg.VIDEO_VOICE"><option v-for="v in voiceOptions.cn" :value="v.id">{{ v.label }}</option></select></div>
+            <div class="config-item"><label class="form-label">English Voice</label><select class="select" v-model="gCfg.VIDEO_VOICE_EN"><option v-for="v in voiceOptions.en" :value="v.id">{{ v.label }}</option></select></div>
+            <div class="config-item"><label class="form-label">Subtitle Burn</label><select class="select" v-model="gCfg.VIDEO_BURN_SUB"><option value="0">Off</option><option value="1">On</option></select></div>
           </div>
         </div>
       </div>
     </template>
 
-    <!-- ═══════ Commands Page ═══════ -->
+    <!-- ═══════ Commands ═══════ -->
     <template v-if="page==='commands'">
-      <div class="page-header"><h1><span>Commands</span></h1><p>All available operations. Select a project first.</p></div>
-      <div class="card"><div class="card-body">
-        <div class="config-grid">
-          <div class="config-item"><strong>all</strong> <span style="color:var(--text3)">— Full pipeline</span></div>
-          <div class="config-item"><strong>srt</strong> <span style="color:var(--text3)">— Extract subtitles</span></div>
-          <div class="config-item"><strong>dub</strong> <span style="color:var(--text3)">— AI dubbing</span></div>
-          <div class="config-item"><strong>mix</strong> <span style="color:var(--text3)">— Compose video</span></div>
-          <div class="config-item"><strong>slide</strong> <span style="color:var(--text3)">— Slideshow</span></div>
-          <div class="config-item"><strong>trans</strong> <span style="color:var(--text3)">— Translate subtitles</span></div>
-          <div class="config-item"><strong>en</strong> <span style="color:var(--text3)">— English version</span></div>
-          <div class="config-item"><strong>config KEY=val</strong> <span style="color:var(--text3)">— Set config</span></div>
-          <div class="config-item"><strong>config list voice</strong> <span style="color:var(--text3)">— List voices</span></div>
-        </div>
-      </div></div>
+      <div class="page-header"><h1><span>Commands</span></h1><p>Reference</p></div>
+      <div class="card"><div class="card-body"><div class="config-grid">
+        <div class="config-item" v-for="c in cmdList" :key="c.cmd"><strong>{{ c.cmd }}</strong> <span style="color:var(--text3)">— {{ c.desc }}</span></div>
+      </div></div></div>
     </template>
 
-    <!-- ═══════ Output Page ═══════ -->
+    <!-- ═══════ Output ═══════ -->
     <template v-if="page==='output'">
-      <div class="page-header"><h1><span>Output</span></h1><p>Recent generated videos. Select a project to view.</p></div>
+      <div class="page-header"><h1><span>Output</span></h1><p>Generated videos</p></div>
+      <div v-if="!outputFeatures.length" class="empty-state"><div style="font-size:2rem">📭</div><div>No generated videos</div></div>
       <div class="project-grid">
-        <div v-for="f in features.filter(x=>x.has_final)" :key="f.name" class="project-card" @click="selectFeature(f.name);tab='output'">
-          <div class="icon">✅</div><h4>{{ f.name }}</h4>
-          <div style="font-size:0.78rem;color:var(--text3)">final.mp4</div>
+        <div v-for="(f,idx) in outputFeatures" :key="idx" class="project-card" @click="selectedFeature=f.name;selectedProject=f.project;tab='output'">
+          <div class="icon">✅</div><h4>{{ f.project }} / {{ f.name }}</h4><div style="font-size:0.75rem;color:var(--text3)">final.mp4</div>
         </div>
-        <div v-if="!features.some(x=>x.has_final)" class="empty-state" style="grid-column:1/-1"><div style="font-size:2rem;margin-bottom:8px">📭</div><div>No output yet</div></div>
       </div>
     </template>
-    <template v-if="page==='projects' && !selectedFeature">
-      <div class="page-header">
-        <h1><span>Projects</span></h1>
-        <p>Manage your video and slideshow projects</p>
+
+    <!-- ═══════ Projects List ═══════ -->
+    <template v-if="page==='projects' && !selectedProject">
+      <div class="page-header"><h1><span>Projects</span></h1>
+        <p>A project contains multiple features (videos or slideshows)</p>
       </div>
       <div class="project-grid">
-        <div class="project-card project-card--add" @click="showCreate=true">
-          <div class="plus">+</div><div>New Project</div>
+        <div class="project-card project-card--add" @click="showCreateProj=true"><div class="plus">+</div><div>New Project</div></div>
+        <div v-for="p in projects" :key="p.name" class="project-card" @click="selectProject(p.name)">
+          <div class="icon">📁</div><h4>{{ p.name }}</h4>
+          <div style="font-size:0.78rem;color:var(--text3)">{{ p.features?.length||0 }} features</div>
         </div>
-        <div v-for="f in features" :key="f.name" class="project-card" @click="selectFeature(f.name)">
-          <div class="icon">{{ f.type=='video'?'📹':'🖼️' }}</div>
-          <h4>{{ f.name }}</h4>
-          <div class="meta">
-            <span class="badge" :class="f.type=='video'?'badge-b':'badge-g'">{{ f.type }}</span>
+      </div>
+    </template>
+
+    <!-- ═══════ Project Detail (Features) ═══════ -->
+    <template v-if="selectedProject && !selectedFeature">
+      <div class="page-header" style="display:flex;align-items:center;gap:12px">
+        <button class="icon-btn" @click="selectedProject=''" title="Back">←</button>
+        <div><h1 style="margin:0"><span>{{ selectedProject }}</span></h1><p style="margin-top:2px">{{ (projFeatures||[]).length }} feature(s)</p></div>
+      </div>
+      <div class="project-grid">
+        <div class="project-card project-card--add" @click="showCreateFeat=true"><div class="plus">+</div><div>New Feature</div></div>
+        <div v-for="f in projFeatures" :key="f.name" class="project-card" @click="selectFeature(f.name)">
+          <div class="icon">{{ f.type=='video'?'📹':'🖼️' }}</div><h4>{{ f.name }}</h4>
+          <div class="meta"><span class="badge" :class="f.type=='video'?'badge-b':'badge-g'">{{ f.type }}</span>
             <span v-if="f.has_recording" class="badge badge-o">rec</span>
             <span v-if="f.has_slides" class="badge badge-o">slides</span>
             <span v-if="f.has_final" class="badge badge-g">done ✅</span>
@@ -139,17 +98,16 @@
       </div>
     </template>
 
-    <!-- ═══════ Project Detail ═══════ -->
+    <!-- ═══════ Feature Detail ═══════ -->
     <template v-if="selectedFeature">
       <div class="page-header" style="display:flex;align-items:center;gap:12px">
-        <button class="icon-btn" @click="selectedFeature='';page='projects'" title="Back">←</button>
+        <button class="icon-btn" @click="selectedFeature=''" title="Back">←</button>
         <div>
+          <div style="font-size:0.75rem;color:var(--text3);margin-bottom:2px">{{ selectedProject }}</div>
           <h1 style="margin:0"><span>{{ selectedFeature }}</span></h1>
           <p style="margin-top:2px"><span :class="featureType=='video'?'badge badge-b':'badge badge-g'">{{ featureType }}</span></p>
         </div>
-        <div style="margin-left:auto" class="btn-row">
-          <button class="btn btn-pri" @click="startPipeline" :disabled="running">{{ running?'⏳ Pipeline...':'▶ Pipeline' }}</button>
-        </div>
+        <div style="margin-left:auto"><button class="btn btn-pri" @click="confirmRun('all', 'Full Pipeline')" :disabled="running">{{ running?'⏳ ...':'▶ Pipeline' }}</button></div>
       </div>
 
       <div class="tabs">
@@ -161,187 +119,93 @@
 
       <!-- Files -->
       <div v-show="tab=='files'" class="detail-grid">
-        <div class="card" v-if="featureType=='video'">
-          <div class="card-header"><h3>📹 Recording</h3></div>
-          <div class="card-body">
-            <div v-if="hasRecording" class="file-item"><span class="name">🎬 recording.mov</span><span class="del" @click="delFile('recording.mov')">✕</span></div>
-            <label v-else class="upload-zone"><input type="file" accept="video/*" @change="uploadFile($event,'recording.mov')"><div class="icon">📹</div><div>Drop or click to upload</div><div class="hint">.mov .mp4</div></label>
-          </div>
-        </div>
-        <div class="card" v-if="featureType=='slide'">
-          <div class="card-header"><h3>🖼️ Slides</h3></div>
-          <div class="card-body">
-            <div v-for="(s,i) in slideFiles" :key="i" class="file-item"><span class="name">🖼️ {{ s }}</span><span class="del" @click="delFile('slides/'+s)">✕</span></div>
-            <label class="upload-zone" style="padding:24px"><input type="file" accept="image/*" multiple @change="uploadSlide($event)"><div class="icon">🖼️</div><div>Drop images</div><div class="hint">.png .jpg</div></label>
-          </div>
-        </div>
-        <div class="card" v-if="featureType=='slide'">
-          <div class="card-header"><h3>📝 Narration</h3></div>
-          <div class="card-body">
-            <textarea class="textarea" v-model="narrationText" placeholder="Line 1 → Slide 1" style="min-height:120px"></textarea>
-            <div style="margin-top:12px"><button class="btn btn-pri btn-sm" @click="saveNarration">Save</button></div>
-          </div>
-        </div>
+        <div class="card" v-if="featureType=='video'"><div class="card-header"><h3>📹 Recording</h3></div><div class="card-body">
+          <div v-if="hasRecording" class="file-item"><span class="name">🎬 recording.mov</span><span class="del" @click="delFile('recording.mov')">✕</span></div>
+          <label v-else class="upload-zone"><input type="file" accept="video/*" @change="uploadFile($event,'recording.mov')"><div class="icon">📹</div><div>Upload video</div></label>
+        </div></div>
+        <div class="card" v-if="featureType=='slide'"><div class="card-header"><h3>🖼️ Slides</h3></div><div class="card-body">
+          <div v-for="(s,i) in slideFiles" :key="i" class="file-item"><span class="name">🖼️ {{ s }}</span><span class="del" @click="delFile('slides/'+s)">✕</span></div>
+          <label class="upload-zone" style="padding:24px"><input type="file" accept="image/*" multiple @change="uploadSlide($event)"><div class="icon">🖼️</div><div>Upload images</div></label>
+        </div></div>
+        <div class="card" v-if="featureType=='slide'"><div class="card-header"><h3>📝 Narration</h3></div><div class="card-body">
+          <textarea class="textarea" v-model="narrationText" placeholder="One line per slide" style="min-height:120px"></textarea>
+          <div style="margin-top:12px"><button class="btn btn-pri btn-sm" @click="saveNarration">Save</button></div>
+        </div></div>
       </div>
 
-      <!-- Config Tab: Visual editor + JSON toggle -->
+      <!-- Config -->
       <div v-show="tab=='config'" class="detail-grid">
-        <div class="card detail-full">
-          <div class="card-header">
-            <h3>📄 Project Config</h3>
-            <div class="btn-row">
-              <button class="btn btn-sm" :class="{'btn-pri':cfgView=='visual'}" @click="cfgView='visual'">Visual</button>
-              <button class="btn btn-sm" :class="{'btn-pri':cfgView=='json'}" @click="cfgView='json'">{ } JSON</button>
-              <button class="btn btn-pri btn-sm" @click="saveMeta">Save</button>
-            </div>
+        <div class="card detail-full"><div class="card-header"><h3>📄 Config</h3>
+          <div class="btn-row"><button class="btn btn-sm" :class="{'btn-pri':cfgView=='visual'}" @click="cfgView='visual'">Visual</button><button class="btn btn-sm" :class="{'btn-pri':cfgView=='json'}" @click="cfgView='json'">{ } JSON</button><button class="btn btn-pri btn-sm" @click="saveMeta">Save</button></div>
+        </div><div class="card-body">
+          <div v-show="cfgView=='visual'"><div class="config-grid">
+            <div class="config-item"><label class="form-label">Type</label><select class="select" v-model="mCfg.type"><option value="auto">Auto</option><option value="video">Video</option><option value="slide">Slideshow</option></select></div>
+            <div class="config-item"><label class="form-label">Chinese Voice</label><select class="select" v-model="mCfg.voice"><option v-for="v in voiceOptions.cn" :value="v.id">{{ v.label }}</option></select></div>
+            <div class="config-item"><label class="form-label">English Voice</label><select class="select" v-model="mCfg.voice_en"><option v-for="v in voiceOptions.en" :value="v.id">{{ v.label }}</option></select></div>
+            <div class="config-item"><label class="form-label">Cover</label><input class="input" v-model="mCfg.cover" placeholder="null or path"></div>
+            <div class="config-item"><label class="form-label">Outro</label><input class="input" v-model="mCfg.outro" placeholder="null or path"></div>
+            <div class="config-item"><label class="form-label">BGM</label><input class="input" v-model="mCfg.bgm" placeholder="null or path"></div>
+            <div class="config-item"><label class="form-label">BGM Volume</label><input class="input" v-model.number="mCfg.bgm_volume" type="number" min="0" max="1" step="0.05"></div>
           </div>
-          <div class="card-body">
-            <!-- Visual editor -->
-            <div v-show="cfgView=='visual'">
-              <div class="config-grid">
-                <div class="config-item">
-                  <label class="form-label">Type</label>
-                  <select class="select" v-model="mCfg.type">
-                    <option value="auto">Auto Detect</option>
-                    <option value="video">Video</option>
-                    <option value="slide">Slideshow</option>
-                  </select>
-                </div>
-                <div class="config-item">
-                  <label class="form-label">Chinese Voice</label>
-                  <select class="select" v-model="mCfg.voice">
-                    <option v-for="v in voiceOptions.cn" :value="v.id">{{ v.label }}</option>
-                  </select>
-                </div>
-                <div class="config-item">
-                  <label class="form-label">English Voice</label>
-                  <select class="select" v-model="mCfg.voice_en">
-                    <option v-for="v in voiceOptions.en" :value="v.id">{{ v.label }}</option>
-                  </select>
-                </div>
-                <div class="config-item">
-                  <label class="form-label">Cover Image/Video</label>
-                  <input class="input" v-model="mCfg.cover" placeholder="e.g. resources/cover.png or null">
-                </div>
-                <div class="config-item">
-                  <label class="form-label">Outro Image/Video</label>
-                  <input class="input" v-model="mCfg.outro" placeholder="e.g. resources/outro.png or null">
-                </div>
-                <div class="config-item">
-                  <label class="form-label">Cover Duration (s)</label>
-                  <input class="input" v-model.number="mCfg.cover_duration" type="number" min="0" step="0.5">
-                </div>
-                <div class="config-item">
-                  <label class="form-label">BGM Path</label>
-                  <input class="input" v-model="mCfg.bgm" placeholder="e.g. resources/bgm.mp3 or null">
-                </div>
-                <div class="config-item">
-                  <label class="form-label">BGM Volume (0-1)</label>
-                  <input class="input" v-model.number="mCfg.bgm_volume" type="number" min="0" max="1" step="0.05">
-                </div>
-              </div>
-              <!-- Slides -->
-              <div v-if="mCfg.type=='slide'" style="margin-top:20px">
-                <label class="form-label">Slide Settings</label>
-                <div class="config-grid">
-                  <div class="config-item">
-                    <label class="form-label">Page Duration (s)</label>
-                    <input class="input" v-model.number="mCfg.slides.page_duration" type="number" min="1" step="0.5">
-                  </div>
-                  <div class="config-item">
-                    <label class="form-label">Page Padding (s)</label>
-                    <input class="input" v-model.number="mCfg.slides.page_padding" type="number" min="0" step="0.5">
-                  </div>
-                  <div class="config-item">
-                    <label class="form-label">Transition</label>
-                    <select class="select" v-model="mCfg.slides.transition">
-                      <option value="fade">Fade</option>
-                      <option value="none">None</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <!-- JSON editor -->
-            <div v-show="cfgView=='json'">
-              <textarea class="textarea" v-model="metaText" style="min-height:400px;font-family:var(--mono);font-size:0.78rem" spellcheck="false"></textarea>
-            </div>
-          </div>
-        </div>
+          <div v-if="mCfg.type=='slide'" style="margin-top:20px"><label class="form-label">Slide Settings</label><div class="config-grid">
+            <div class="config-item"><label class="form-label">Page Duration (s)</label><input class="input" v-model.number="mCfg.slides.page_duration" type="number" min="1" step="0.5"></div>
+            <div class="config-item"><label class="form-label">Page Padding (s)</label><input class="input" v-model.number="mCfg.slides.page_padding" type="number" min="0" step="0.5"></div>
+            <div class="config-item"><label class="form-label">Transition</label><select class="select" v-model="mCfg.slides.transition"><option value="fade">Fade</option><option value="none">None</option></select></div>
+          </div></div></div>
+          <div v-show="cfgView=='json'"><textarea class="textarea" v-model="metaText" style="min-height:400px;font-family:var(--mono);font-size:0.78rem" spellcheck="false"></textarea></div>
+        </div></div>
       </div>
 
-      <!-- Run Tab: Confirmation-based -->
+      <!-- Run -->
       <div v-show="tab=='run'">
-        <div class="card" style="margin-bottom:16px">
-          <div class="card-header">
-            <h3>▶ Pipeline</h3>
-            <div class="status-bar">
-              <span class="status-dot" :class="{running:running,ready:taskStatus=='done'||taskStatus==''}"></span>
-              {{ taskStatus||'idle' }}
-            </div>
+        <div class="card" style="margin-bottom:16px"><div class="card-header"><h3>▶ Pipeline</h3><div class="status-bar"><span class="status-dot" :class="{running:running,ready:!running}"></span>{{ taskStatus||'idle' }}</div></div><div class="card-body">
+          <p style="color:var(--text2);font-size:0.88rem;margin-bottom:16px">Extract subtitles → AI dub → Compose video. Each step may take 30s-2min.</p>
+          <div class="btn-row" style="margin-bottom:12px"><button class="btn btn-pri" @click="confirmRun('all', 'Full Pipeline')" :disabled="running">🚀 Run Pipeline</button></div>
+          <div style="font-size:0.78rem;color:var(--text3);margin-bottom:16px">Individual steps:</div>
+          <div class="btn-row">
+            <button class="btn btn-sm" @click="runSingle('srt')" :disabled="running">🎙️ SRT</button>
+            <button class="btn btn-sm" @click="runSingle('dub')" :disabled="running">🤖 Dub</button>
+            <button class="btn btn-sm" @click="runSingle('mix')" :disabled="running">🎬 Mix</button>
+            <button class="btn btn-sm" @click="runSingle('slide')" :disabled="running">📸 Slide</button>
+            <button class="btn btn-sm" @click="runSingle('trans')" :disabled="running">🌐 Trans</button>
+            <button class="btn btn-sm" @click="runSingle('en')" :disabled="running">🇬🇧 EN</button>
           </div>
-          <div class="card-body">
-            <p style="color:var(--text2);font-size:0.88rem;margin-bottom:16px">
-              Pipeline runs: <strong>extract subtitles → AI dub → compose video</strong>. Each step may take 30s-2min for long videos. The terminal will show live progress.
-            </p>
-            <div class="btn-row" style="margin-bottom:12px">
-              <button class="btn btn-pri" @click="confirmRun('all', 'Full Pipeline')" :disabled="running">🚀 Run Pipeline</button>
-            </div>
-            <div style="font-size:0.78rem;color:var(--text3);margin-bottom:16px">Or run individual steps:</div>
-            <div class="btn-row">
-              <button class="btn btn-sm" @click="runSingle('srt')" :disabled="running">🎙️ Extract Subtitles</button>
-              <button class="btn btn-sm" @click="runSingle('dub')" :disabled="running">🤖 AI Dub</button>
-              <button class="btn btn-sm" @click="runSingle('mix')" :disabled="running">🎬 Compose Video</button>
-              <button class="btn btn-sm" @click="runSingle('slide')" :disabled="running">📸 Slide</button>
-              <button class="btn btn-sm" @click="runSingle('trans')" :disabled="running">🌐 Translate</button>
-              <button class="btn btn-sm" @click="runSingle('en')" :disabled="running">🇬🇧 English</button>
-            </div>
+        </div></div>
+        <div class="card"><div class="card-header"><h3>🖥️ Output</h3></div><div class="card-body" style="padding:0">
+          <div class="terminal" ref="term">
+            <div v-if="!lines.length" class="empty-state" style="padding:40px"><div style="font-size:2rem">🖥️</div><div>Run a command</div></div>
+            <div v-for="(l,i) in lines" :key="i" :class="l.class||''">{{ l.text }}</div>
           </div>
-        </div>
-        <div class="card">
-          <div class="card-header"><h3>🖥️ Output</h3></div>
-          <div class="card-body" style="padding:0">
-            <div class="terminal" ref="term">
-              <div v-if="!lines.length" class="empty-state" style="padding:40px"><div style="font-size:2rem;margin-bottom:8px">🖥️</div><div>Select a command</div></div>
-              <div v-for="(l,i) in lines" :key="i" :class="l.class||''">{{ l.text }}</div>
-            </div>
-          </div>
-        </div>
+        </div></div>
       </div>
 
       <!-- Output -->
-      <div v-show="tab=='output'">
-        <div class="card"><div class="card-header"><h3>📺 final.mp4</h3></div><div class="card-body" style="padding:8px">
-          <video v-if="hasFinal" controls class="video-player" :src="'/api/files/'+selectedFeature+'/final.mp4'"></video>
-          <div v-else class="empty-state"><div style="font-size:2.5rem;margin-bottom:8px">📭</div><div>No output yet</div></div>
-        </div></div>
-      </div>
+      <div v-show="tab=='output'"><div class="card"><div class="card-header"><h3>📺 final.mp4</h3></div><div class="card-body" style="padding:8px">
+        <video v-if="hasFinal" controls class="video-player" :src="'/api/files/'+selectedProject+'/'+selectedFeature+'/final.mp4'"></video>
+        <div v-else class="empty-state"><div style="font-size:2.5rem">📭</div><div>No output yet</div></div>
+      </div></div></div>
     </template>
   </div>
 
-  <!-- Create Dialog -->
-  <div class="overlay" v-if="showCreate" @click.self="showCreate=false">
-    <div class="dialog">
-      <h3>✨ New Project</h3>
-      <div class="form-section"><label class="form-label">Name</label><input class="input" v-model="newProject.name" placeholder="e.g. 01-intro" @keyup.enter="createProject" autofocus></div>
-      <div class="form-section"><label class="form-label">Type</label>
-        <select class="select" v-model="newProject.mode"><option value="video">📹 Video</option><option value="slide">🖼️ Slideshow</option></select>
-      </div>
-      <div class="btn-row" style="justify-content:flex-end;margin-top:24px">
-        <button class="btn" @click="showCreate=false">Cancel</button><button class="btn btn-pri" @click="createProject">Create</button>
-      </div>
+  <!-- Create Project Dialog -->
+  <div class="overlay" v-if="showCreateProj" @click.self="showCreateProj=false">
+    <div class="dialog"><h3>✨ New Project</h3>
+      <div class="form-section"><label class="form-label">Project Name</label><input class="input" v-model="newName" placeholder="my-project" @keyup.enter="createProject" autofocus></div>
+      <div class="btn-row" style="justify-content:flex-end;margin-top:24px"><button class="btn" @click="showCreateProj=false">Cancel</button><button class="btn btn-pri" @click="createProject">Create</button></div>
     </div>
   </div>
-
+  <!-- Create Feature Dialog -->
+  <div class="overlay" v-if="showCreateFeat" @click.self="showCreateFeat=false">
+    <div class="dialog"><h3>✨ New Feature</h3>
+      <div class="form-section"><label class="form-label">Feature Name</label><input class="input" v-model="newName" placeholder="01-intro" @keyup.enter="createFeature" autofocus></div>
+      <div class="form-section"><label class="form-label">Type</label><select class="select" v-model="newMode"><option value="video">📹 Video</option><option value="slide">🖼️ Slideshow</option></select></div>
+      <div class="btn-row" style="justify-content:flex-end;margin-top:24px"><button class="btn" @click="showCreateFeat=false">Cancel</button><button class="btn btn-pri" @click="createFeature">Create</button></div>
+    </div>
+  </div>
   <!-- Confirm Dialog -->
   <div class="overlay" v-if="confirmCmd" @click.self="confirmCmd=null">
-    <div class="dialog">
-      <h3>⚡ {{ confirmLabel }}</h3>
-      <p style="color:var(--text2);margin-bottom:16px">This will start processing. For a 2-minute video, it takes ~30s. Progress will show in the terminal.</p>
-      <div class="btn-row" style="justify-content:flex-end">
-        <button class="btn" @click="confirmCmd=null">Cancel</button>
-        <button class="btn btn-pri" @click="executeConfirm">▶ Start</button>
-      </div>
+    <div class="dialog"><h3>⚡ {{ confirmLabel }}</h3><p style="color:var(--text2);margin-bottom:16px">For a 2-minute video this takes ~30s. Progress shows in terminal.</p>
+      <div class="btn-row" style="justify-content:flex-end"><button class="btn" @click="confirmCmd=null">Cancel</button><button class="btn btn-pri" @click="executeConfirm">▶ Start</button></div>
     </div>
   </div>
 </div>
