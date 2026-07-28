@@ -1,13 +1,16 @@
-// ── API Client ──
 const api = {
   async get(url) { const r = await fetch(url); return r.json(); },
   async post(url, data) {
     const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
     return r.json();
-  }
+  },
+  async upload(url, file, filename) {
+    const r = await fetch(`/api/upload/${url}`, { method: "POST", body: file });
+    return r.ok ? { ok: true } : { ok: false };
+  },
+  async del(url) { await fetch(`/api/features/${url}/delete`, { method: "POST" }); }
 };
 
-// ── SSE Stream ──
 function streamTask(taskId, onLine, onDone) {
   const es = new EventSource(`/api/task/${taskId}`);
   es.onmessage = (e) => {
@@ -19,131 +22,124 @@ function streamTask(taskId, onLine, onDone) {
   es.onerror = () => { es.close(); onDone("error"); };
 }
 
-// ── Feature List Component ──
-const FeatureList = {
-  props: ["features", "selected"],
-  emits: ["select", "refresh"],
-  template: `
-    <div class="card">
-      <h3>📂 Features</h3>
-      <div v-if="features.length===0" style="color:var(--text3);font-size:0.85rem">无 feature 目录</div>
-      <div v-for="f in features" :key="f.name"
-        :class="['feature-item', { active: selected===f.name }]"
-        @click="$emit('select', f.name)">
-        <span>{{ f.name }}</span>
-        <span>
-          <span class="badge" :class="f.type==='video'?'g':'b'">{{ f.type }}</span>
-          <span v-if="f.has_final" class="badge g" style="margin-left:4px">✅</span>
-        </span>
-      </div>
-    </div>
-  `
-};
-
-// ── Command Panel Component ──
-const CommandPanel = {
-  props: ["feature", "running"],
-  emits: ["run"],
-  template: `
-    <div class="card">
-      <h3>⚡ Commands</h3>
-      <div v-if="!feature" style="color:var(--text3);font-size:0.85rem">← 请先选择 feature</div>
-      <div v-else>
-        <div class="cmd-btns">
-          <button class="btn btn-pri" @click="$emit('run','all')" :disabled="running">🚀 all</button>
-          <button class="btn" @click="$emit('run','srt')" :disabled="running">🎙️ srt</button>
-          <button class="btn" @click="$emit('run','dub')" :disabled="running">🤖 dub</button>
-          <button class="btn" @click="$emit('run','mix')" :disabled="running">🎬 mix</button>
-          <button class="btn" @click="$emit('run','slide')" :disabled="running">📸 slide</button>
-          <button class="btn" @click="$emit('run','en')" :disabled="running">🌐 en</button>
-        </div>
-        <div class="cmd-btns">
-          <button class="btn btn-sm" @click="$emit('run','trans')" :disabled="running">🌐 trans</button>
-          <button class="btn btn-sm" @click="$emit('run','dub-en')" :disabled="running">en-dub</button>
-          <button class="btn btn-sm" @click="$emit('run','mix-en')" :disabled="running">en-mix</button>
-        </div>
-      </div>
-    </div>
-  `
-};
-
-// ── Live Terminal Component ──
-const LiveTerminal = {
-  props: ["lines", "status"],
-  template: `
-    <div class="card">
-      <h3>🖥️ Terminal {{ status ? '· '+status : '' }}</h3>
-      <div class="terminal" ref="term">
-        <div v-if="lines.length===0" style="color:var(--text3)">等待命令...</div>
-        <div v-for="(l,i) in lines" :key="i" :class="l.class || ''">{{ l.text }}</div>
-      </div>
-    </div>
-  `,
-  updated() {
-    const t = this.$refs.term;
-    if (t) t.scrollTop = t.scrollHeight;
-  }
-};
-
-// ── Config Panel Component ──
-const ConfigPanel = {
-  props: ["config"],
-  emits: ["update"],
-  data() { return { editing: false, form: {} }; },
-  template: `
-    <div class="card">
-      <h3>⚙️ Config <button class="btn btn-sm" @click="editing=!editing" style="float:right">{{ editing?'Done':'Edit' }}</button></h3>
-      <div v-if="!editing">
-        <div class="card-row" v-for="(v,k) in config" :key="k">
-          <span class="label">{{ k }}</span><span style="font-family:var(--mono);font-size:0.8rem">{{ v || '(empty)' }}</span>
-        </div>
-      </div>
-      <div v-else>
-        <div class="config-row" v-for="(v,k) in config" :key="k">
-          <span class="key">{{ k }}</span>
-          <input v-model="form[k]" :placeholder="v" />
-        </div>
-        <button class="btn btn-pri btn-sm" @click="save">Save</button>
-      </div>
-    </div>
-  `,
-  methods: {
-    async save() {
-      await api.post("/api/config", this.form);
-      this.editing = false;
-      this.$emit("update");
-    }
-  },
-  watch: {
-    config: {
-      immediate: true,
-      handler(c) { if (!this.editing) this.form = { ...c }; }
-    }
-  }
-};
-
-// ── App ──
-const { createApp, ref, computed } = Vue;
+const { createApp, ref, computed, watch, nextTick } = Vue;
 createApp({
-  components: { FeatureList, CommandPanel, LiveTerminal, ConfigPanel },
   setup() {
     const features = ref([]);
     const selectedFeature = ref("");
-    const config = ref({});
-    const terminalLines = ref([]);
+    const tab = ref("files");
+    const lines = ref([]);
     const taskStatus = ref("");
-    const isRunning = ref(false);
+    const running = ref(false);
     const themeBtn = ref("🌙");
+    const showCreate = ref(false);
+    const newProject = ref({ name: "", mode: "video" });
+    const globalConfig = ref({});
+    const metaText = ref("{}");
+    const narrationText = ref("");
+    const slideFiles = ref([]);
 
-    async function refreshFeatures() { features.value = await api.get("/api/features"); }
-    async function loadConfig() { config.value = await api.get("/api/config"); }
+    const featureType = computed(() => {
+      const f = features.value.find(x => x.name === selectedFeature.value);
+      return f ? f.type : "video";
+    });
+    const hasRecording = computed(() => {
+      const f = features.value.find(x => x.name === selectedFeature.value);
+      return f ? f.has_recording : false;
+    });
+    const hasFinal = computed(() => {
+      const f = features.value.find(x => x.name === selectedFeature.value);
+      return f ? f.has_final : false;
+    });
 
-    function selectFeature(name) { selectedFeature.value = name; }
+    async function refreshFeatures() {
+      features.value = await api.get("/api/features");
+    }
 
-    async function runCommand(cmd) {
-      if (isRunning.value) return;
-      isRunning.value = true; taskStatus.value = "running";
-      terminalLines.value = [];
+    async function selectFeature(name) {
+      selectedFeature.value = name;
+      tab.value = "files";
+      await loadFeatureData();
+    }
+
+    async function loadFeatureData() {
+      if (!selectedFeature.value) return;
+      // load meta.json
+      try {
+        const r = await fetch(`/api/files/${selectedFeature.value}/meta.json`);
+        if (r.ok) metaText.value = JSON.stringify(await r.json(), null, 2);
+      } catch { metaText.value = "{}"; }
+      // load narration
+      try {
+        const r = await fetch(`/api/files/${selectedFeature.value}/slides/narration.txt`);
+        if (r.ok) narrationText.value = await r.text();
+      } catch { narrationText.value = ""; }
+      // list slide files
+      const f = features.value.find(x => x.name === selectedFeature.value);
+      if (f && f.has_slides) {
+        try {
+          // simple: check if slides/ dir exists (we'll just show from features list)
+          slideFiles.value = [];
+        } catch { slideFiles.value = []; }
+      }
+      // load global config
+      globalConfig.value = await api.get("/api/config");
+    }
+
+    async function createProject() {
+      if (!newProject.value.name) return;
+      await api.post("/api/features", newProject.value);
+      showCreate.value = false;
+      newProject.value = { name: "", mode: "video" };
+      await refreshFeatures();
+      selectFeature(newProject.value.name.startsWith("feature-") ? newProject.value.name : `feature-${newProject.value.name}`);
+    }
+
+    async function uploadFile(event, filename) {
+      const file = event.target.files[0];
+      if (!file) return;
+      await api.upload(`${selectedFeature.value}/${filename}`, file);
+      await refreshFeatures();
+    }
+
+    async function uploadSlide(event) {
+      for (const file of event.target.files) {
+        await api.upload(`${selectedFeature.value}/slides/${file.name}`, file);
+      }
+      await refreshFeatures();
+    }
+
+    async function delFile(path) {
+      await api.del(`${selectedFeature.value}/${path}`.replace("//", "/"));
+      await refreshFeatures();
+    }
+
+    async function saveNarration() {
+      const blob = new Blob([narrationText.value], { type: "text/plain" });
+      await api.upload(`${selectedFeature.value}/slides/narration.txt`, blob);
+      await refreshFeatures();
+    }
+
+    async function saveMeta() {
+      try {
+        JSON.parse(metaText.value); // validate
+      } catch { alert("Invalid JSON"); return; }
+      const blob = new Blob([metaText.value], { type: "application/json" });
+      await api.upload(`${selectedFeature.value}/meta.json`, blob);
+      await refreshFeatures();
+    }
+
+    async function saveGlobalConfig() {
+      await api.post("/api/config", globalConfig.value);
+      alert("Saved");
+    }
+
+    function editMeta(e) { metaText.value = e.target.innerText; }
+
+    async function run(cmd) {
+      if (running.value) return;
+      running.value = true; taskStatus.value = "running"; lines.value = [];
+      tab.value = "run";
 
       function addLine(text) {
         let cls = "";
@@ -151,21 +147,16 @@ createApp({
         else if (text.includes("❌") || text.includes("Error")) cls = "err";
         else if (text.includes("⚠")) cls = "warn";
         else if (text.includes("➜")) cls = "info";
-        terminalLines.value.push({ text, class: cls });
+        lines.value.push({ text, class: cls });
       }
 
-      const { task_id } = await api.post("/api/run", {
-        cmd, feature: selectedFeature.value
-      });
-
+      const { task_id } = await api.post("/api/run", { cmd, feature: selectedFeature.value });
       streamTask(task_id, addLine, (status) => {
         taskStatus.value = status;
-        isRunning.value = false;
+        running.value = false;
         refreshFeatures();
       });
     }
-
-    async function updateConfig() { await loadConfig(); }
 
     function toggleTheme() {
       const cur = document.documentElement.getAttribute("data-theme");
@@ -175,14 +166,21 @@ createApp({
       localStorage.setItem("vt-theme", next);
     }
 
+    watch(selectedFeature, async () => { if (selectedFeature.value) await loadFeatureData(); });
+
     // Init
     const saved = localStorage.getItem("vt-theme") || "dark";
     document.documentElement.setAttribute("data-theme", saved);
     themeBtn.value = saved === "dark" ? "🌙" : "☀";
+    refreshFeatures();
 
-    refreshFeatures(); loadConfig();
-
-    return { features, selectedFeature, config, terminalLines, taskStatus, isRunning,
-      themeBtn, refreshFeatures, selectFeature, runCommand, updateConfig, toggleTheme };
+    return {
+      features, selectedFeature, tab, lines, taskStatus, running,
+      themeBtn, showCreate, newProject, globalConfig, metaText, narrationText, slideFiles,
+      featureType, hasRecording, hasFinal,
+      refreshFeatures, selectFeature, createProject,
+      uploadFile, uploadSlide, delFile, saveNarration, saveMeta, saveGlobalConfig, editMeta,
+      run, toggleTheme
+    };
   }
 }).mount("#app");

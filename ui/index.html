@@ -1,37 +1,206 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Video Toolkit</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%236c5ce7'/><stop offset='100%25' style='stop-color:%2300d2a0'/></linearGradient></defs><rect x='2' y='10' width='32' height='28' rx='4' fill='url(%23g)'/><polygon points='34,16 46,22 46,26 34,32' fill='url(%23g)'/><circle cx='18' cy='24' r='7' fill='white' opacity='0.9'/><circle cx='18' cy='24' r='3' fill='%2300d2a0'/></svg>">
 <link rel="stylesheet" href="css/app.css">
+<style>
+/* Tab & Form extras */
+.tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border)}
+.tab{
+  padding:8px 16px;cursor:pointer;border-bottom:2px solid transparent;
+  font-size:0.85rem;color:var(--text2);transition:all .2s
+}
+.tab:hover,.tab.active{color:var(--accent2);border-bottom-color:var(--accent)}
+.panel{display:none}
+.panel.active{display:block}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:0.82rem;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px}
+.form-group input,.form-group select,.form-group textarea{
+  width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);
+  padding:8px 12px;border-radius:var(--radius-sm);font-size:0.85rem;font-family:var(--font)
+}
+.form-group textarea{min-height:80px;resize:vertical}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--accent)}
+.form-row{display:flex;gap:12px}
+.form-row .form-group{flex:1}
+.form-actions{display:flex;gap:8px;margin-top:16px}
+pre.meta{font-family:var(--mono);font-size:0.78rem;color:var(--text2);background:var(--bg);padding:12px;border-radius:var(--radius-sm);overflow-x:auto;max-height:400px}
+.video-preview video{max-width:100%;border-radius:var(--radius)}
+.upload-zone{
+  border:2px dashed var(--border);border-radius:var(--radius);padding:40px;text-align:center;
+  cursor:pointer;transition:all .2s;color:var(--text3)
+}
+.upload-zone:hover{border-color:var(--accent);color:var(--accent)}
+.file-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:0.85rem}
+.file-item .del{color:var(--red);cursor:pointer;font-size:0.8rem}
+.dialog-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:100;display:flex;align-items:center;justify-content:center}
+.dialog{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:32px;width:480px;max-width:90vw}
+.voice-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:768px){.voice-grid{grid-template-columns:1fr}}
+</style>
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 </head>
 <body>
 <div id="app">
   <nav class="topbar">
     <div class="brand">🎬 <span style="background:linear-gradient(135deg,#6c5ce7,#a29bfe,#00d2a0);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Video Toolkit</span></div>
-    <div class="right" style="display:flex;align-items:center;gap:12px">
-      <button @click="refreshFeatures" class="topbar-btn" title="Refresh">🔄</button>
-      <button @click="toggleTheme" class="topbar-btn" title="Toggle theme">{{ themeBtn }}</button>
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="topbar-btn" @click="refreshFeatures">🔄</button>
+      <button class="topbar-btn" @click="toggleTheme">{{ themeBtn }}</button>
     </div>
   </nav>
 
   <main>
-    <div class="grid-layout">
-      <div class="left-panel">
-        <feature-list :features="features" :selected="selectedFeature" @select="selectFeature" @refresh="refreshFeatures" />
-        <config-panel :config="config" @update="updateConfig" />
+    <!-- Empty state / Project list -->
+    <template v-if="!selectedFeature">
+      <h2 style="margin-bottom:12px">📂 Projects</h2>
+      <button class="btn btn-pri" @click="showCreate=true" style="margin-bottom:20px">+ New Project</button>
+      <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px">
+        <div v-for="f in features" :key="f.name" class="card" style="cursor:pointer" @click="selectFeature(f.name)">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
+            <strong>{{ f.name }}</strong>
+            <span class="badge" :class="f.type==='video'?'g':'b'">{{ f.type }}</span>
+          </div>
+          <div style="font-size:0.78rem;color:var(--text3)">
+            <div v-if="f.has_recording">📹 recording.mov</div>
+            <div v-if="f.has_slides">🖼️ slides/</div>
+            <div v-if="f.has_final" class="badge g">✅ final.mp4</div>
+          </div>
+        </div>
       </div>
-      <div class="right-panel">
-        <command-panel :feature="selectedFeature" :running="isRunning" @run="runCommand" />
-        <live-terminal :lines="terminalLines" :status="taskStatus" />
+      <p v-if="features.length===0" style="color:var(--text2)">点击 + New Project 开始</p>
+    </template>
+
+    <!-- Project Detail -->
+    <template v-else>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <button class="btn btn-sm" @click="selectedFeature=''">← Back</button>
+        <h2 style="margin:0">{{ selectedFeature }}</h2>
+        <span class="badge" :class="featureType==='video'?'g':'b'">{{ featureType }}</span>
+      </div>
+
+      <div class="tabs">
+        <div class="tab" :class="{active:tab==='files'}" @click="tab='files'">📁 Files</div>
+        <div class="tab" :class="{active:tab==='config'}" @click="tab='config'">⚙️ Config</div>
+        <div class="tab" :class="{active:tab==='run'}" @click="tab='run'">⚡ Run</div>
+        <div class="tab" :class="{active:tab==='output'}" @click="tab='output'">📺 Output</div>
+      </div>
+
+      <!-- Files Tab -->
+      <div class="panel" :class="{active:tab==='files'}">
+        <div class="card">
+          <h3>Recording ({{featureType==='video'?'video':'slideshow'}} mode)</h3>
+          <div v-if="featureType==='video'">
+            <div v-if="hasRecording" class="file-item">
+              <span>📹 recording.mov</span>
+              <span class="del" @click="delFile('recording.mov')">✕</span>
+            </div>
+            <label v-else class="upload-zone">
+              <input type="file" accept="video/*" @change="uploadFile($event,'recording.mov')" style="display:none">
+              📹 Drop or click to upload recording.mov
+            </label>
+          </div>
+          <div v-else>
+            <div v-for="(s,i) in slideFiles" :key="i" class="file-item">
+              <span>🖼️ {{ s.name }}</span>
+              <span class="del" @click="delFile('slides/'+s.name)">✕</span>
+            </div>
+            <label class="upload-zone">
+              <input type="file" accept="image/*" multiple @change="uploadSlide($event)" style="display:none">
+              🖼️ Drop or click to upload images
+            </label>
+            <div class="form-group" style="margin-top:12px">
+              <label>Narration (narration.txt)</label>
+              <textarea v-model="narrationText" placeholder="每行一段解说..."></textarea>
+              <button class="btn btn-sm" @click="saveNarration" style="margin-top:8px">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Config Tab -->
+      <div class="panel" :class="{active:tab==='config'}">
+        <div class="card">
+          <h3>Meta Config (meta.json)</h3>
+          <pre class="meta" contenteditable="true" @input="editMeta" v-text="metaText"></pre>
+          <div class="form-actions">
+            <button class="btn btn-pri btn-sm" @click="saveMeta">Save meta.json</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Global Config (vt config)</h3>
+          <div class="config-row" v-for="(v,k) in globalConfig" :key="k">
+            <span class="key">{{ k }}</span>
+            <input v-model="globalConfig[k]" />
+          </div>
+          <button class="btn btn-pri btn-sm" @click="saveGlobalConfig">Save</button>
+        </div>
+      </div>
+
+      <!-- Run Tab -->
+      <div class="panel" :class="{active:tab==='run'}">
+        <div class="card">
+          <h3>⚡ Commands</h3>
+          <div class="cmd-btns" style="margin-bottom:12px">
+            <button class="btn btn-pri" @click="run('all')" :disabled="running">🚀 all</button>
+            <button class="btn" @click="run('srt')" :disabled="running">🎙️ srt</button>
+            <button class="btn" @click="run('dub')" :disabled="running">🤖 dub</button>
+            <button class="btn" @click="run('mix')" :disabled="running">🎬 mix</button>
+          </div>
+          <div class="cmd-btns">
+            <button class="btn btn-sm" @click="run('slide')" :disabled="running">📸 slide</button>
+            <button class="btn btn-sm" @click="run('trans')" :disabled="running">🌐 trans</button>
+            <button class="btn btn-sm" @click="run('en')" :disabled="running">🌐 en</button>
+            <button class="btn btn-sm" @click="run('dub-en')" :disabled="running">en-dub</button>
+            <button class="btn btn-sm" @click="run('mix-en')" :disabled="running">en-mix</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>🖥️ Terminal {{ taskStatus ? '· '+taskStatus : '' }}</h3>
+          <div class="terminal" ref="term">
+            <div v-if="!lines.length" style="color:var(--text3)">等待命令...</div>
+            <div v-for="(l,i) in lines" :key="i" :class="l.class||''">{{ l.text }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Output Tab -->
+      <div class="panel" :class="{active:tab==='output'}">
+        <div class="card video-preview">
+          <h3>📺 final.mp4</h3>
+          <video v-if="hasFinal" controls :src="'/api/files/'+selectedFeature+'/final.mp4'" style="max-width:100%"></video>
+          <p v-else style="color:var(--text3)">还没有生成视频</p>
+        </div>
+      </div>
+    </template>
+
+    <!-- Create Dialog -->
+    <div class="dialog-overlay" v-if="showCreate" @click.self="showCreate=false">
+      <div class="dialog">
+        <h3 style="margin-bottom:16px">New Project</h3>
+        <div class="form-group">
+          <label>Project Name</label>
+          <input v-model="newProject.name" placeholder="e.g. 01-intro or feature-01-intro" @keyup.enter="createProject">
+        </div>
+        <div class="form-group">
+          <label>Mode</label>
+          <select v-model="newProject.mode">
+            <option value="video">📹 Video (recording.mov)</option>
+            <option value="slide">🖼️ Slideshow (images + narration)</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button class="btn" @click="showCreate=false">Cancel</button>
+          <button class="btn btn-pri" @click="createProject">Create</button>
+        </div>
       </div>
     </div>
   </main>
 </div>
 
-<script type="module" src="js/app.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>

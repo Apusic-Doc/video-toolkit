@@ -77,6 +77,8 @@ class APIHandler(http.server.SimpleHTTPRequestHandler):
             return self.json_response(self.get_status())
         if path.startswith("/api/task/"):
             return self.handle_sse(path)
+        if path.startswith("/api/files/"):
+            return self.serve_feature_file(path)
         return super().do_GET()
 
     def do_POST(self):
@@ -88,6 +90,12 @@ class APIHandler(http.server.SimpleHTTPRequestHandler):
             return self.run_task(body)
         if path == "/api/config":
             return self.json_response(self.write_config(body))
+        if path == "/api/features":
+            return self.json_response(self.create_feature(body))
+        if path.startswith("/api/features/") and path.endswith("/delete"):
+            return self.json_response(self.delete_feature(path))
+        if path.startswith("/api/upload/"):
+            return self.handle_upload(path)
         self.send_error(404)
 
     # ── SSE ──
@@ -184,6 +192,60 @@ class APIHandler(http.server.SimpleHTTPRequestHandler):
         total = len(features)
         done = sum(1 for f in features if f["has_final"])
         return {"total": total, "done": done, "features": features}
+
+    def create_feature(self, body):
+        base = os.environ.get("VIDEO_FEATURES_DIR", TOOLKIT_DIR)
+        name = body.get("name", "").strip()
+        if not name: return {"error": "name required"}
+        if not name.startswith("feature-"): name = f"feature-{name}"
+        feat_dir = os.path.join(base, name)
+        os.makedirs(feat_dir, exist_ok=True)
+        mode = body.get("mode", "video")
+        if mode == "slide":
+            os.makedirs(os.path.join(feat_dir, "slides"), exist_ok=True)
+        # 写初始 meta.json
+        meta = {"type": mode, "voice": "zh-CN-XiaoxiaoNeural", "voice_en": "en-US-AvaNeural"}
+        with open(os.path.join(feat_dir, "meta.json"), "w") as f:
+            json.dump(meta, f, ensure_ascii=False, indent=2)
+        return {"ok": True, "name": name, "path": feat_dir}
+
+    def delete_feature(self, path):
+        base = os.environ.get("VIDEO_FEATURES_DIR", TOOLKIT_DIR)
+        name = path.replace("/api/features/", "").replace("/delete", "")
+        feat_dir = os.path.join(base, name)
+        if os.path.isdir(feat_dir):
+            import shutil
+            shutil.rmtree(feat_dir)
+            return {"ok": True}
+        return {"error": "not found"}
+
+    def handle_upload(self, path):
+        base = os.environ.get("VIDEO_FEATURES_DIR", TOOLKIT_DIR)
+        # /api/upload/feature-01/recording.mov or /api/upload/feature-01/slides/01.png
+        rel = path.replace("/api/upload/", "")
+        parts = rel.split("/", 1)
+        feat_dir = os.path.join(base, parts[0])
+        file_path = os.path.join(feat_dir, parts[1]) if len(parts) > 1 else feat_dir
+        os.makedirs(os.path.dirname(file_path) or feat_dir, exist_ok=True)
+        content = self.rfile.read(int(self.headers["Content-Length"]))
+        with open(file_path, "wb") as f:
+            f.write(content)
+        return self.json_response({"ok": True, "path": file_path})
+
+    def serve_feature_file(self, path):
+        base = os.environ.get("VIDEO_FEATURES_DIR", TOOLKIT_DIR)
+        rel = path.replace("/api/files/", "")
+        file_path = os.path.join(base, rel)
+        if not os.path.exists(file_path):
+            self.send_error(404); return
+        self.send_response(200)
+        ct = "video/mp4" if rel.endswith(".mp4") else "audio/wav" if rel.endswith(".wav") else "application/octet-stream"
+        self.send_header("Content-Type", ct)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Content-Length", str(os.path.getsize(file_path)))
+        self.end_headers()
+        with open(file_path, "rb") as f:
+            self.wfile.write(f.read())
 
 if __name__ == "__main__":
     server = http.server.HTTPServer(("0.0.0.0", PORT), APIHandler)
