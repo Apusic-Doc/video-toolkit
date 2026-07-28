@@ -82,6 +82,8 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
         if len(parts) < 4 or parts[:2] != ["api", "projects"]: return None
         pname = parts[2]
         if len(parts) == 3: return ("project", pname, None, None)
+        if len(parts) == 4 and parts[3] == "features":
+            return ("project", pname, None, None)  # POST /api/projects/{name}/features
         if len(parts) >= 5 and parts[3] == "features":
             fname = parts[4]
             action = parts[5] if len(parts) > 5 else ""
