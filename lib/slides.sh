@@ -92,6 +92,13 @@ total = len(pages)
 clips = []
 force = '${FORCE:-0}' == '1'
 
+# 缓存
+cache_file = os.path.join('$dir', '.slide-cache.json')
+cache = {}
+if not force and os.path.exists(cache_file):
+    with open(cache_file) as f:
+        cache = json.load(f)
+
 for i, p in enumerate(pages):
     num = i + 1
     img = p.get('image','')
