@@ -236,6 +236,10 @@ class APIHandler(http.server.SimpleHTTPRequestHandler):
         base = os.environ.get("VIDEO_FEATURES_DIR", TOOLKIT_DIR)
         rel = path.replace("/api/files/", "")
         file_path = os.path.join(base, rel)
+        # 目录列表
+        if os.path.isdir(file_path):
+            files = [f for f in os.listdir(file_path) if not f.startswith('.') and os.path.isfile(os.path.join(file_path, f))]
+            return self.json_response(files)
         if not os.path.exists(file_path):
             self.send_error(404); return
         self.send_response(200)

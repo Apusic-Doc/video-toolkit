@@ -75,13 +75,10 @@ createApp({
         if (r.ok) narrationText.value = await r.text();
       } catch { narrationText.value = ""; }
       // list slide files
-      const f = features.value.find(x => x.name === selectedFeature.value);
-      if (f && f.has_slides) {
-        try {
-          // simple: check if slides/ dir exists (we'll just show from features list)
-          slideFiles.value = [];
-        } catch { slideFiles.value = []; }
-      }
+      try {
+        const r = await fetch(`/api/files/${selectedFeature.value}/slides`);
+        if (r.ok) slideFiles.value = (await r.json()) || [];
+      } catch { slideFiles.value = []; }
       // load global config
       globalConfig.value = await api.get("/api/config");
     }
