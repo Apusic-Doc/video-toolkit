@@ -13,8 +13,9 @@ gen_title_card() {
     -pointsize 56 -fill '#1a1a1a' -annotate +0-60 "$title" \
     -pointsize 36 -fill '#888888' -annotate +0+20 "$subtitle" \
     "$png" 2>/dev/null || return 1
-  ffmpeg -loop 1 -i "$png" -c:v libx264 -preset fast -crf 23 \
-    -t "$duration" -pix_fmt yuv420p -an "$out" -y 2>/dev/null
+  ffmpeg -loop 1 -i "$png" -f lavfi -i "anullsrc=r=44100:cl=mono" \
+    -c:v libx264 -preset fast -crf 23 -c:a aac \
+    -t "$duration" -pix_fmt yuv420p -shortest "$out" -y 2>/dev/null
   rm -f "$png"
 }
 
