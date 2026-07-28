@@ -640,6 +640,43 @@ cmd_slide_v2() {
     rm -f "$content"
 }
 
+# ── config 命令 ──
+cmd_config() {
+    local cfg="$HOME/.config/video-toolkit/config"
+    local sub="$1" val="$2"
+    case "$sub" in
+        "") cat "$cfg" 2>/dev/null || echo "(空)" ;;
+        "list")
+            case "$val" in
+                voice|voices)
+                    echo "中文: zh-CN-XiaoxiaoNeural ★ 温暖清晰"
+                    echo "      zh-CN-YunyangNeural · 专业稳重"
+                    echo "      zh-CN-YunjianNeural · 激情洋溢"
+                    echo "      zh-CN-YunxiNeural   · 活泼可爱"
+                    echo "英文: en-US-AvaNeural     ★ 清晰亲和"
+                    echo "      en-US-AriaNeural    · 自信大方"
+                    echo "      en-GB-SoniaNeural   · 英式女声"
+                    ;;
+                asr)
+                    echo "faster-whisper  ★ CTranslate2 加速"
+                    echo "openai-whisper    原始 OpenAI"
+                    echo "funasr           阿里 SenseVoice"
+                    ;;
+                *) echo "用法: vt config list <voice|asr>" ;;
+            esac ;;
+        *=*) 
+            local k="${sub%%=*}" v="${sub#*=}"
+            [ -f "$cfg" ] || touch "$cfg"
+            if grep -q "^${k}=" "$cfg" 2>/dev/null; then
+                sed -i.bak "s/^${k}=.*/${k}=${v}/" "$cfg" 2>/dev/null
+            else
+                echo "${k}=${v}" >> "$cfg"
+            fi
+            echo "✅ $k=$v" ;;
+        *) echo "用法: vt config [KEY=value|list voice|list asr]" ;;
+    esac
+}
+
 cmd_status() {
     if [ "$1" = "--all" ]; then
         for d in "$BASE"/feature-*/; do
