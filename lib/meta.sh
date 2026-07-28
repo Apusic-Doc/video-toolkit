@@ -72,6 +72,24 @@ load_meta() {
   # defaults → project → feature
   local merged=$(merge_json "$defaults" "$proj_json")
   merged=$(merge_json "$merged" "$feat_json")
+  
+  # config 文件覆盖（vt config 的值优先级高于 meta.json）
+  merged=$(python3 -c "
+import json, os
+m = json.loads('''$merged''')
+cfg_file = os.path.expanduser('~/.config/video-toolkit/config')
+if os.path.exists(cfg_file):
+    with open(cfg_file) as f:
+        for line in f:
+            line = line.strip()
+            if '=' in line and not line.startswith('#'):
+                k, v = line.split('=', 1)
+                if k == 'VIDEO_VOICE': m['voice'] = v
+                elif k == 'VIDEO_VOICE_EN': m['voice_en'] = v
+                elif k == 'VIDEO_ASR': m['asr'] = v
+                elif k == 'VIDEO_BURN_SUB': m['subtitle']['burn'] = (v == '1')
+print(json.dumps(m))
+" 2>/dev/null || echo "$merged")
   echo "$merged"
 }
 
