@@ -91,6 +91,19 @@ padding = float('$page_padding' or 1.5)
 total = len(pages)
 clips = []
 force = '${FORCE:-0}' == '1'
+single_page = '${VT_SLIDE_PAGE:-}'
+
+# 单页模式：只处理指定页
+if single_page:
+    try:
+        p = int(single_page) - 1
+        if 0 <= p < total:
+            pages = [pages[p]]
+            total = 1
+        else:
+            print(f'  ⚠ 页码 {single_page} 超出范围 1-{total}')
+    except:
+        pass
 
 # 缓存
 cache_file = os.path.join('$dir', '.slide-cache.json')
