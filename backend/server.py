@@ -50,7 +50,6 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
         if p.path.startswith("/api/task/"): return self.sse_task(p.path.split("/")[-1])
         if p.path.startswith("/api/files/"): return self.serve_file("GET", p.path)
         if p.path == "/" or "." not in p.path.rsplit("/", 1)[-1]: return self.serve_static(p.path)
-            return self.serve_static(p.path)
         return self.handle_404()
 
     def do_POST(self):
