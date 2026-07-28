@@ -18,7 +18,10 @@
     <div class="topbar-nav">
       <a :class="{active:page==='projects'}" @click="page='projects';selectedFeature=''">Projects</a>
       <a :class="{active:page==='config'}" @click="page='config';selectedFeature=''">Config</a>
+      <a :class="{active:page==='commands'}" @click="page='commands';selectedFeature=''">Commands</a>
+      <a :class="{active:page==='output'}" @click="page='output';selectedFeature=''">Output</a>
       <a href="https://video-toolkit.bitey.ai" target="_blank">Docs</a>
+      <a href="https://video-toolkit.bitey.ai/#faq" target="_blank">FAQ</a>
       <a href="https://github.com/Apusic-Doc/video-toolkit" target="_blank">GitHub</a>
     </div>
     <div class="topbar-actions">
@@ -85,7 +88,35 @@
       </div>
     </template>
 
-    <!-- ═══════ Projects ═══════ -->
+    <!-- ═══════ Commands Page ═══════ -->
+    <template v-if="page==='commands'">
+      <div class="page-header"><h1><span>Commands</span></h1><p>All available operations. Select a project first.</p></div>
+      <div class="card"><div class="card-body">
+        <div class="config-grid">
+          <div class="config-item"><strong>all</strong> <span style="color:var(--text3)">— Full pipeline</span></div>
+          <div class="config-item"><strong>srt</strong> <span style="color:var(--text3)">— Extract subtitles</span></div>
+          <div class="config-item"><strong>dub</strong> <span style="color:var(--text3)">— AI dubbing</span></div>
+          <div class="config-item"><strong>mix</strong> <span style="color:var(--text3)">— Compose video</span></div>
+          <div class="config-item"><strong>slide</strong> <span style="color:var(--text3)">— Slideshow</span></div>
+          <div class="config-item"><strong>trans</strong> <span style="color:var(--text3)">— Translate subtitles</span></div>
+          <div class="config-item"><strong>en</strong> <span style="color:var(--text3)">— English version</span></div>
+          <div class="config-item"><strong>config KEY=val</strong> <span style="color:var(--text3)">— Set config</span></div>
+          <div class="config-item"><strong>config list voice</strong> <span style="color:var(--text3)">— List voices</span></div>
+        </div>
+      </div></div>
+    </template>
+
+    <!-- ═══════ Output Page ═══════ -->
+    <template v-if="page==='output'">
+      <div class="page-header"><h1><span>Output</span></h1><p>Recent generated videos. Select a project to view.</p></div>
+      <div class="project-grid">
+        <div v-for="f in features.filter(x=>x.has_final)" :key="f.name" class="project-card" @click="selectFeature(f.name);tab='output'">
+          <div class="icon">✅</div><h4>{{ f.name }}</h4>
+          <div style="font-size:0.78rem;color:var(--text3)">final.mp4</div>
+        </div>
+        <div v-if="!features.some(x=>x.has_final)" class="empty-state" style="grid-column:1/-1"><div style="font-size:2rem;margin-bottom:8px">📭</div><div>No output yet</div></div>
+      </div>
+    </template>
     <template v-if="page==='projects' && !selectedFeature">
       <div class="page-header">
         <h1><span>Projects</span></h1>
