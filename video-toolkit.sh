@@ -251,7 +251,6 @@ compose() {
     local meta=$(load_meta "$dir" 2>/dev/null || echo "{}")
     compose_final "$content" "$meta" "$dir" "$out"
     rm -f "$content"
-    ok "final.mp4"
 }
 
 # ==================== Step 4: 翻译字幕（DeepSeek） ====================
@@ -606,10 +605,22 @@ cmd_slide_v2() {
     local meta=$(load_meta "$dir" 2>/dev/null || echo "{}")
     local pages=$(build_pages "$dir" "$meta")
     local content="$dir/_content.mp4"
+    
+    # 智能缓存：所有片段未变 + final.mp4 已是新于片段 → 跳过
+    if [ "${FORCE:-0}" != "1" ] && [ -f "$dir/final.mp4" ]; then
+      local newer=1
+      for clip in "$dir/_clips"/page_*.mp4; do
+        [ "$clip" -nt "$dir/final.mp4" ] && newer=0 && break
+      done
+      if [ "$newer" -eq 1 ]; then
+        info "所有页面未变，直接使用已有 final.mp4"
+        return
+      fi
+    fi
+    
     gen_slide_video "$pages" "$meta" "$dir" "$content"
     compose_final "$content" "$meta" "$dir" "$dir/final.mp4"
     rm -f "$content"
-    ok "final.mp4"
 }
 
 cmd_status() {
