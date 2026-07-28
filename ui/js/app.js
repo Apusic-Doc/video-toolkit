@@ -1,8 +1,17 @@
 const api = {
-  async get(url) { const r = await fetch(url); return r.json(); },
-  async post(url, data) { const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); return r.json(); },
-  async upload(url, file) { const r = await fetch(`/api/upload/${url}`, { method: "POST", body: file }); return r.ok ? { ok: true } : { ok: false }; },
-  async del(url) { await fetch(`/api/features/${encodeURIComponent(url)}/delete`, { method: "POST" }); }
+  async get(url) {
+    try { const r = await fetch(url); if (!r.ok) throw new Error(r.status); return r.json(); }
+    catch(e) { console.warn(`API GET ${url} failed:`, e.message); return []; }
+  },
+  async post(url, data) {
+    try { const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); return r.json(); }
+    catch(e) { console.warn(`API POST ${url} failed:`, e.message); return {}; }
+  },
+  async upload(url, file) { const r = await fetch(`/api/upload/${url}`, { method: "POST", body: file }); return { ok: r.ok }; },
+  async del(url) {
+    try { await fetch(`/api/features/${encodeURIComponent(url)}/delete`, { method: "POST" }); }
+    catch(e) { console.warn(`Delete ${url} failed:`, e.message); }
+  }
 };
 
 function streamTask(taskId, onLine, onDone) {

@@ -49,9 +49,7 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
         if p.path == "/api/task/": return self.handle_404()
         if p.path.startswith("/api/task/"): return self.sse_task(p.path.split("/")[-1])
         if p.path.startswith("/api/files/"): return self.serve_file("GET", p.path)
-        m = self._match_proj_feat(p.path, "GET")
-        if m: return self.dispatch(m[0], m[1], m[2], m[3], "GET")
-        if p.path == "/" or "." not in p.path.split("/")[-1]:
+        if p.path == "/" or "." not in p.path.rsplit("/", 1)[-1]: return self.serve_static(p.path)
             return self.serve_static(p.path)
         return self.handle_404()
 
