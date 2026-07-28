@@ -551,6 +551,20 @@ cmd_mix_en() {
 }
 
 # ── 合成（包装 compose_final） ──
+# ── 封面预览 ──
+cmd_cover() {
+    local dir="$1"
+    local meta=$(load_meta "$dir" 2>/dev/null || echo "{}")
+    local title=$(meta_get "$meta" "title")
+    local subtitle=$(meta_get "$meta" "subtitle")
+    local dur=$(meta_get "$meta" "cover_duration")
+    local out="$dir/_cover_test.mp4"
+    [ -z "$title" ] && { err "meta.json 缺少 title"; return 1; }
+    info "生成封面预览: $title"
+    gen_title_card "$title" "${subtitle:-}" "${dur:-3}" "$out"
+    [ -f "$out" ] && { open "$out" 2>/dev/null || xdg-open "$out" 2>/dev/null; ok "封面预览 (${dur:-3}s)" ; } || err "生成失败"
+}
+
 cmd_mix() {
     local dir="$1"
     compose "$dir"
@@ -686,6 +700,7 @@ case "${1:-}" in
     srt)    dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_srt "$dir" ;;
     dub)    dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_dub "$dir" ;;
     mix)    dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_mix "$dir" ;;
+    cover)  dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_cover "$dir" ;;
     trans)  dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_trans "$dir" ;;
     en)     dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_en "$dir" ;;
     dub-en) dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_dub_en "$dir" ;;
