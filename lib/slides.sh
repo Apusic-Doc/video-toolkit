@@ -60,7 +60,15 @@ with open('$tmp/_pages.json','w') as f:
 
   # 全部在 Python 中完成：配音 + 合成 + 拼接
   python3 -c "
-import json, os, subprocess, tempfile, time, threading, sys
+import json, os, subprocess, tempfile, time, threading, sys, hashlib
+
+def file_md5(path):
+    if not os.path.exists(path): return ''
+    with open(path, 'rb') as f:
+        return hashlib.md5(f.read()).hexdigest()
+
+def text_hash(text):
+    return hashlib.md5(text.encode()).hexdigest()[:8]
 
 spin = '⣾⣽⣻⢿⡿⣟⣯⣷'
 def show_spinner(msg, stop_event):
