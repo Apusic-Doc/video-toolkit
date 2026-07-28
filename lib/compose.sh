@@ -2,46 +2,41 @@
 # ============================================================
 # compose_final — 通用视频合成器
 # ============================================================
-# 用法: source lib/compose.sh
-#       compose_final <content_video> <meta_json> <output>
-# 功能: 封面 + 内容 + 封底 + BGM + 水印 = final.mp4
-# ============================================================
 
 # ── 生成标题封面（白屏 + 居中文字）──
 gen_title_card() {
   local title="$1" subtitle="$2" duration="${3:-3}" out="$4"
   [ -z "$title" ] && return 1
-  local vf="drawtext=fontsize=56:fontcolor=black:box=0:x=(w-text_w)/2:y=(h-text_h)/2-30:text='$title'"
-  [ -n "$subtitle" ] && vf="$vf,drawtext=fontsize=36:fontcolor=gray:box=0:x=(w-text_w)/2:y=(h+text_h)/2+10:text='$subtitle'"
-  ffmpeg -f lavfi -i "color=c=white:s=1920x1080:d=$duration:r=30" \
-    -vf "$vf" -c:v h264_videotoolbox -b:v 5M -pix_fmt yuv420p -an "$out" -y 2>/dev/null
+  local png="/tmp/_vt_cover_$$.png"
+  convert -size 1920x1080 xc:white \
+    -gravity center \
+    -pointsize 56 -fill '#1a1a1a' -annotate +0-60 "$title" \
+    -pointsize 36 -fill '#888888' -annotate +0+20 "$subtitle" \
+    "$png" 2>/dev/null || return 1
+  ffmpeg -loop 1 -i "$png" -c:v libx264 -preset fast -crf 23 \
+    -t "$duration" -pix_fmt yuv420p -an "$out" -y 2>/dev/null
+  rm -f "$png"
 }
 
 # ── 生成封面片段（图片或视频） ──
 gen_cover() {
   local asset="$1" dur="$2" out="$3"
   if [[ "$asset" == *.mp4 || "$asset" == *.mov ]]; then
-    # 视频封面：直接复制
     ffmpeg -i "$asset" -c:v libx264 -preset ultrafast -crf 23 -an "$out" -y 2>/dev/null && echo "$out"
   else
-    # 图片封面：静态帧 + 时长
     ffmpeg -loop 1 -i "$asset" -c:v libx264 -preset ultrafast -crf 23 -t "$dur" -pix_fmt yuv420p -an "$out" -y 2>/dev/null && echo "$out"
   fi
 }
 
 # ── 生成封底片段 ──
 gen_outro() {
-  gen_cover "$1" "$2" "$3"  # 逻辑相同
+  gen_cover "$1" "$2" "$3"
 }
 
-# ── 主函数 ──
-# compose_final <content_video> <meta_json> <feature_dir> <output.mp4>
+# ── 主合成 ──
 compose_final() {
-  local content="$1"; local meta="$2"; local dir="$3"; local out="$4"
-  local project_dir="$(cd "$dir/.." && pwd)"
-  local tmp="/tmp/_vt_final_$$"
-  mkdir -p "$tmp"
-
+  local content="$1" meta="$2" dir="$3" out="$4"
+  local tmp="/tmp/_vt_compose_$$"; mkdir -p "$tmp"
   local parts=()
   local audio_src="$content"
 
@@ -70,62 +65,43 @@ compose_final() {
     fi
   fi
 
-  # ── 2. 内容 ──
+  # ── 2. 正文内容 ──
   parts+=("$content")
 
   # ── 3. 封底 ──
   local outro=$(resolve_asset "$dir" "$meta" "outro")
-  if [ -n "$outro" ]; then
+  if [ -n "$outro" ] && [ "$outro" != "false" ]; then
     echo "➜ 添加封底..."
     local outro_dur=$(meta_get "$meta" "outro_duration")
     local outro_clip="$tmp/outro.mp4"
     if gen_outro "$outro" "${outro_dur:-3}" "$outro_clip"; then
       parts+=("$outro_clip")
-    else
-      echo "⚠  封底生成失败"
     fi
   fi
 
-  # ── 4. 拼接视频 ──
+  # ── 4. 拼接 ──
   if [ ${#parts[@]} -eq 1 ]; then
-    cp "$content" "$tmp/base.mp4"
+    cp "$content" "$out"
   else
-    echo -ne "  ⏳ 拼接视频片段... "
+    echo "⏳ 合成 ${#parts[@]} 个片段..."
     local concat="$tmp/concat.txt"
     > "$concat"
     for p in "${parts[@]}"; do echo "file '$p'" >> "$concat"; done
-    ffmpeg -f concat -safe 0 -i "$concat" -c:v h264_videotoolbox -b:v 5M -r 30 \
+    ffmpeg -f concat -safe 0 -i "$concat" -c:v libx264 -preset fast -crf 23 \
       -c:a aac "$tmp/base.mp4" -y 2>/dev/null
-    echo "✅"
+    cp "$tmp/base.mp4" "$out"
   fi
 
   # ── 5. BGM ──
   local bgm=$(resolve_asset "$dir" "$meta" "bgm")
   if [ -n "$bgm" ] && [ -f "$bgm" ]; then
-    echo "➜ 处理 BGM..."
+    echo "➜ 混入 BGM..."
     local bgm_vol=$(meta_get "$meta" "bgm_volume")
-    local bgm_loop=$(meta_get "$meta" "bgm_loop")
-
-    # 获取视频时长
-    local vid_dur=$(ffprobe -v quiet -show_entries format=duration -of csv=p=0 "$tmp/base.mp4")
-
-    # 生成匹配时长的 BGM
-    local bgm_fit="$tmp/bgm_fit.wav"
-    if [ "$bgm_loop" = "True" ]; then
-      # 循环到匹配视频时长
-      ffmpeg -stream_loop -1 -i "$bgm" -t "$vid_dur" -af "volume=${bgm_vol:-0.15}" "$bgm_fit" -y 2>/dev/null
-    else
-      # 不循环：截断或直接使用
-      ffmpeg -i "$bgm" -t "$vid_dur" -af "volume=${bgm_vol:-0.15}" "$bgm_fit" -y 2>/dev/null
-    fi
-
-    # BGM 叠加到视频
-    ffmpeg -i "$tmp/base.mp4" -i "$bgm_fit" -filter_complex "[1:a]adelay=0|0[bgm];[0:a][bgm]amix=inputs=2:duration=first" \
-      -c:v copy -c:a aac "$tmp/mixed.mp4" -y 2>/dev/null
-    [ -f "$tmp/mixed.mp4" ] && mv "$tmp/mixed.mp4" "$tmp/base.mp4"
+    ffmpeg -i "$out" -i "$bgm" -filter_complex "[1:a]volume=${bgm_vol:-0.15}[bgm];[0:a][bgm]amix=inputs=2:duration=first" \
+      -c:v copy "$tmp/final.mp4" -y 2>/dev/null
+    mv "$tmp/final.mp4" "$out"
   fi
 
-  # ── 6. 输出 ──
-  cp "$tmp/base.mp4" "$out"
   rm -rf "$tmp"
+  echo "✅ $(basename "$out")"
 }
