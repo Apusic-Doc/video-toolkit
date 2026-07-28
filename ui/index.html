@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Video Toolkit</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%236c5ce7'/><stop offset='100%25' style='stop-color:%2300d2a0'/></linearGradient></defs><rect x='2' y='10' width='32' height='28' rx='4' fill='url(%23g)'/><polygon points='34,16 46,22 46,26 34,32' fill='url(%23g)'/><circle cx='18' cy='24' r='7' fill='white' opacity='0.9'/><circle cx='18' cy='24' r='3' fill='%2300d2a0'/></svg>">
+<link rel="stylesheet" href="css/app.css">
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+</head>
+<body>
+<div id="app">
+  <nav class="topbar">
+    <div class="brand">🎬 <span style="background:linear-gradient(135deg,#6c5ce7,#a29bfe,#00d2a0);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Video Toolkit</span></div>
+    <div class="right" style="display:flex;align-items:center;gap:12px">
+      <button @click="refreshFeatures" class="topbar-btn" title="Refresh">🔄</button>
+      <button @click="toggleTheme" class="topbar-btn" title="Toggle theme">{{ themeBtn }}</button>
+    </div>
+  </nav>
+
+  <main>
+    <div class="grid-layout">
+      <div class="left-panel">
+        <feature-list :features="features" :selected="selectedFeature" @select="selectFeature" @refresh="refreshFeatures" />
+        <config-panel :config="config" @update="updateConfig" />
+      </div>
+      <div class="right-panel">
+        <command-panel :feature="selectedFeature" :running="isRunning" @run="runCommand" />
+        <live-terminal :lines="terminalLines" :status="taskStatus" />
+      </div>
+    </div>
+  </main>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

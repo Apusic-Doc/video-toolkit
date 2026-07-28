@@ -109,6 +109,14 @@ case "${1:-}" in
     git reset --hard origin/main 2>&1 | tail -1
     echo "✅ 更新完成 ($(cat VERSION 2>/dev/null || echo '?'))"
     exit 0 ;;
+  ui)
+    cd "$INSTALL_DIR"
+    echo "🎬 Video Toolkit UI → http://localhost:9876"
+    python3 backend/server.py &
+    sleep 1
+    open http://localhost:9876 2>/dev/null || xdg-open http://localhost:9876 2>/dev/null || true
+    wait
+    exit 0 ;;
   config)
     CONFIG="$HOME/.config/video-toolkit/config"
     shift
