@@ -301,6 +301,14 @@ if __name__ == "__main__":
                     shutil.copytree(os.path.join(old_samples, item), dest)
         if os.listdir(PROJECTS_DIR): os.makedirs(demo_proj, exist_ok=True)
 
-    httpd = http.server.HTTPServer(("0.0.0.0", PORT), APIHandler)
+    # 端口占用自动杀旧进程
+    try:
+        httpd = http.server.HTTPServer(("0.0.0.0", PORT), APIHandler)
+    except OSError:
+        import subprocess as sp
+        sp.run(["lsof", "-ti", f":{PORT}", "-sTCP:LISTEN", "|", "xargs", "kill", "-9"],
+               shell=True, capture_output=True)
+        time.sleep(1)
+        httpd = http.server.HTTPServer(("0.0.0.0", PORT), APIHandler)
     print(f"✅ Video Toolkit UI → http://localhost:{PORT}")
     httpd.serve_forever()
