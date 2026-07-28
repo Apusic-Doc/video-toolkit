@@ -7,6 +7,16 @@
 # 功能: 封面 + 内容 + 封底 + BGM + 水印 = final.mp4
 # ============================================================
 
+# ── 生成标题封面（白屏 + 居中文字）──
+gen_title_card() {
+  local title="$1" subtitle="$2" duration="${3:-3}" out="$4"
+  [ -z "$title" ] && return 1
+  local vf="drawtext=fontsize=56:fontcolor=black:box=0:x=(w-text_w)/2:y=(h-text_h)/2-30:text='$title'"
+  [ -n "$subtitle" ] && vf="$vf,drawtext=fontsize=36:fontcolor=gray:box=0:x=(w-text_w)/2:y=(h+text_h)/2+10:text='$subtitle'"
+  ffmpeg -f lavfi -i "color=c=white:s=1920x1080:d=$duration:r=30" \
+    -vf "$vf" -c:v h264_videotoolbox -b:v 5M -pix_fmt yuv420p -an "$out" -y 2>/dev/null
+}
+
 # ── 生成封面片段（图片或视频） ──
 gen_cover() {
   local asset="$1" dur="$2" out="$3"
