@@ -606,14 +606,18 @@ cmd_slide_v2() {
     local pages=$(build_pages "$dir" "$meta")
     local content="$dir/_content.mp4"
     
-    # 智能缓存：所有片段未变 + final.mp4 已是新于片段 → 跳过
+    # 智能缓存：clips未变 + meta未变 → 跳过
     if [ "${FORCE:-0}" != "1" ] && [ -f "$dir/final.mp4" ]; then
       local newer=1
+      # 1. 检查所有 page clips 是否比 final.mp4 新
       for clip in "$dir/_clips"/page_*.mp4; do
-        [ "$clip" -nt "$dir/final.mp4" ] && newer=0 && break
+        [ -f "$clip" ] && [ "$clip" -nt "$dir/final.mp4" ] && newer=0 && break
       done
+      # 2. 检查 meta.json 是否比 final.mp4 新
+      [ -f "$dir/meta.json" ] && [ "$dir/meta.json" -nt "$dir/final.mp4" ] && newer=0
+      [ -f "$(dirname "$dir")/meta.json" ] && [ "$(dirname "$dir")/meta.json" -nt "$dir/final.mp4" ] && newer=0
       if [ "$newer" -eq 1 ]; then
-        info "所有页面未变，直接使用已有 final.mp4"
+        info "clips 和 meta 均未变化，跳过合成"
         return
       fi
     fi
