@@ -191,8 +191,6 @@ for i, p in enumerate(pages):
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     
     clips.append(clip)
-    preview = (txt[:30] + '...') if len(txt) > 30 else (txt or '...')
-    print(f'  [{num}/{total}] {img} ({preview})', flush=True)
 
 # 构建缓存数据
 for i, p in enumerate(pages):
@@ -231,8 +229,16 @@ if '${DEBUG:-0}' == '1':
         print(f'    _clips/{os.path.basename(c)}', flush=True)
     print(f'  ffmpeg -f concat -safe 0 -i _clips/concat.txt -c:v h264_videotoolbox ... -y', flush=True)
 
+# 合并 + 旋转等待
+stop_concat = threading.Event()
+t3 = threading.Thread(target=show_spinner, args=(f'合并 {len(clips)} 片段', stop_concat))
+t3.start()
+concat_start = time.time()
 subprocess.run(['ffmpeg','-f','concat','-safe','0','-i',concat,'-c:v','h264_videotoolbox','-b:v','5M','-r','30','-c:a','aac',out_mp4,'-y'],
               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+concat_elapsed = time.time() - concat_start
+stop_concat.set(); t3.join()
+print(f'\r  ✅ final.mp4 ({concat_elapsed:.0f}s)  {out_mp4}', flush=True)
 "
 
   rm -rf "$tmp"
