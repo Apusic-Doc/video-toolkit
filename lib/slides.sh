@@ -105,6 +105,18 @@ for i, p in enumerate(pages):
                 if i < len(lines): txt = lines[i]
     
     clip = f'$dir/_page_{num:03d}.mp4'  # 保存到 feature 目录便于调试
+
+    # 缓存：图+文未变则跳过
+    if force or not os.path.exists(clip):
+        pass  # 需要重新生成
+    else:
+        img_md5 = file_md5(os.path.join(slide_dir, img))
+        txt_h = text_hash(txt)
+        ck = str(num)
+        if ck in cache and cache[ck].get('img_md5') == img_md5 and cache[ck].get('txt_h') == txt_h:
+            print(f'  ✅ 缓存 [{num}/{total}] {img}', flush=True)
+            clips.append(clip)
+            continue
     
     if txt:
         mp3 = f'$tmp/_speech_{num:03d}.mp3'
@@ -155,6 +167,29 @@ for i, p in enumerate(pages):
     clips.append(clip)
     preview = (txt[:30] + '...') if len(txt) > 30 else (txt or '...')
     print(f'  [{num}/{total}] {img} ({preview})', flush=True)
+
+# 构建缓存数据
+for i, p in enumerate(pages):
+    img = p.get('image','')
+    txt = p.get('text') or ''
+    if not txt:
+        base = os.path.splitext(img)[0]
+        paired = os.path.join(slide_dir, base + '.txt')
+        if os.path.exists(paired):
+            with open(paired) as f: txt = f.read().strip()
+        else:
+            nar = os.path.join(slide_dir, 'narration.txt')
+            if os.path.exists(nar):
+                with open(nar) as f:
+                    lines = [l.strip() for l in f if l.strip()]
+                if i < len(lines): txt = lines[i]
+    img_md5 = file_md5(os.path.join(slide_dir, img))
+    txt_h = text_hash(txt)
+    cache[str(i+1)] = {'img_md5': img_md5, 'txt_h': txt_h}
+
+# 保存缓存
+with open(cache_file, 'w') as f:
+    json.dump(cache, f, ensure_ascii=False, indent=2)
 
 # 拼接
 concat = f'$tmp/concat.txt'
