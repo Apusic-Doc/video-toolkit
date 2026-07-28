@@ -1,245 +1,125 @@
 #!/bin/bash
 # ============================================================
-# Video Toolkit — 一键安装脚本
-# 用法: curl -sSf https://video-toolkit.bitey.ai/install.sh | bash
+# Video Toolkit 一键安装
+# curl -sSf https://video-toolkit.bitey.ai/install.sh | bash
 # ============================================================
 set -e
 
-RED='\033[0;31m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
+GREEN='\033[0;32m'; CYAN='\033[0;36m'; YELLOW='\033[0;33m'; NC='\033[0m'
+ok() { echo -e "  ${GREEN}✅${NC} $1"; }
+warn() { echo -e "  ${YELLOW}⚠${NC}  $1"; }
+info() { echo -e "  ${CYAN}➜${NC} $1"; }
 
-INSTALL_DIR="${VIDEO_TOOLKIT_HOME:-$HOME/.video-toolkit}"
-REPO_URL="https://github.com/Apusic-Doc/video-toolkit.git"
+INSTALL_DIR="$HOME/.local/share/video-toolkit"
+INSTALL_BIN="$HOME/.local/bin/vt"
 
 echo ""
-echo -e "${CYAN}${BOLD}🎬 Video Toolkit Installer${NC}"
-echo "========================================"
+info "Video Toolkit — 一键安装"
 echo ""
 
-# ── 环境检查 ──
-check_cmd() {
-  command -v "$1" &>/dev/null && echo -e "  ${GREEN}✅${NC} $1" || { echo -e "  ${RED}❌${NC} $1 (请先安装)"; exit 1; }
-}
-check_cmd bash
-check_cmd curl
-check_cmd git
-check_cmd python3
-check_cmd ffmpeg
+# ── 依赖检测 ──
+missing=""
+command -v python3 &>/dev/null || missing="python3 $missing"
+command -v ffmpeg &>/dev/null || missing="ffmpeg $missing"
+command -v git &>/dev/null || missing="git $missing"
+
+if [ -n "$missing" ]; then
+    echo "  缺少依赖: $missing"
+    echo "  macOS:   brew install $missing"
+    echo "  Ubuntu:  sudo apt install $missing"
+    exit 1
+fi
+ok "依赖就绪 (python3 + ffmpeg + git)"
 
 # ── 下载 ──
+info "下载 Video Toolkit..."
 if [ -d "$INSTALL_DIR" ]; then
-  echo ""
-  echo -e "  ${CYAN}➜${NC} 更新现有安装..."
-  cd "$INSTALL_DIR"
-  git pull --rebase 2>/dev/null || true
+    cd "$INSTALL_DIR" && git pull --ff-only origin main 2>/dev/null && ok "已更新" || warn "git pull 失败，使用本地版本"
 else
-  echo ""
-  echo -e "  ${CYAN}➜${NC} 下载到 $INSTALL_DIR..."
-  git clone --depth 1 "$REPO_URL" "$INSTALL_DIR"
+    git clone --depth 1 https://github.com/Apusic-Doc/video-toolkit.git "$INSTALL_DIR" 2>/dev/null || \
+        die "下载失败，请检查网络: https://github.com/Apusic-Doc/video-toolkit"
+    ok "下载完成"
 fi
 
-# ── 安装依赖 ──
-echo ""
-echo -e "  ${CYAN}➜${NC} 配置 Python 虚拟环境..."
+# ── Python venv ──
+info "配置 Python 虚拟环境..."
 cd "$INSTALL_DIR"
-echo -ne "  ⏳ 安装中..."
-
-python3 -m venv .venv 2>/dev/null || true
-
-# 后台安装 + 旋转等待
-(
-.venv/bin/pip install -q edge-tts faster-whisper 2>/dev/null
-) &
-pid=$!
-spin='⣾⣽⣻⢿⡿⣟⣯⣷'
-i=0
-while kill -0 "$pid" 2>/dev/null; do
-  c=${spin:$((i % 8)):1}
-  echo -ne "\r  ${c} 安装依赖中..."
-  sleep 0.5
-  ((i++))
-done
-wait $pid
-echo -e "\r  ${GREEN}✅${NC} 依赖安装完成"
-
-# ── 配置文件 ──
-CONFIG_DIR="$HOME/.config/video-toolkit"
-mkdir -p "$CONFIG_DIR"
-if [ ! -f "$CONFIG_DIR/config" ]; then
-  cat > "$CONFIG_DIR/config" << 'CONF'
-# Video Toolkit 配置文件
-# 用法: vt config [KEY=value]
-
-# DeepSeek API Key（翻译功能）
-DEEPSEEK_API_KEY=
-
-# ASR 引擎: faster-whisper | openai-whisper | funasr
-VIDEO_ASR=faster-whisper
-
-# AI 配音语音
-VIDEO_VOICE=zh-CN-XiaoxiaoNeural
-VIDEO_VOICE_EN=en-US-AvaNeural
-
-# 是否烧录字幕 (1=是 0=否，默认关闭需 ffmpeg --enable-libass)
-VIDEO_BURN_SUB=0
-
-# 字幕样式（仅在 ffmpeg 支持 libass 时生效）
-VIDEO_SUB_FONTSIZE=18
-VIDEO_SUB_COLOR=&H00FFFFFF
-VIDEO_SUB_OUTLINE=&H00000000
-VIDEO_SUB_OUTLINE_W=2
-CONF
+if [ ! -d ".venv" ]; then
+    python3 -m venv .venv 2>/dev/null || python3 -m venv --without-pip .venv 2>/dev/null || true
 fi
 
-# ── 创建全局命令 ──
-mkdir -p "$HOME/.local/bin"
+if [ -f ".venv/bin/activate" ]; then
+    source .venv/bin/activate
+    ok "venv 就绪"
+else
+    warn "venv 创建失败，将使用系统 Python"
+fi
 
-cat > "$HOME/.local/bin/video-toolkit" << 'WRAPPER'
+# ── 安装 Python 依赖 ──
+info "安装 Python 依赖..."
+PIP="$INSTALL_DIR/.venv/bin/pip"
+if [ -f "$PIP" ]; then
+    "$PIP" install --quiet edge-tts faster-whisper 2>/dev/null && ok "edge-tts + faster-whisper" || \
+    "$PIP" install --quiet --break-system-packages edge-tts faster-whisper 2>/dev/null || \
+        warn "依赖安装失败，请手动: $PIP install edge-tts faster-whisper"
+else
+    pip3 install --quiet edge-tts faster-whisper 2>/dev/null && ok "edge-tts + faster-whisper (system pip)" || \
+        warn "pip3 不可用，跳过 Python 依赖"
+fi
+
+# ── 安装命令 ──
+info "安装 vt 命令..."
+mkdir -p "$(dirname "$INSTALL_BIN")"
+
+cat > "$INSTALL_BIN" << CMDEOF
 #!/bin/bash
-INSTALL_DIR="${VIDEO_TOOLKIT_HOME:-$HOME/.video-toolkit}"
-export VIDEO_FEATURES_DIR="${VIDEO_FEATURES_DIR:-$PWD}"
+export VT_HOME="$INSTALL_DIR"
+export VIDEO_PROJECTS_DIR="\${VIDEO_PROJECTS_DIR:-\$HOME/Apusic/Product/ApusicAS/Videos/projects}"
 
-case "${1:-}" in
-  --version|-v|version)
-    cat "$INSTALL_DIR/VERSION" 2>/dev/null || echo "unknown"
-    exit 0 ;;
-  --update|update|upgrade)
-    echo "🔄 更新 Video Toolkit..."
-    cd "$INSTALL_DIR"
-    git fetch origin 2>&1 | tail -1
-    git reset --hard origin/main 2>&1 | tail -1
-    echo "✅ 更新完成 ($(cat VERSION 2>/dev/null || echo '?'))"
-    exit 0 ;;
-  ui)
-    cd "$INSTALL_DIR"
-    echo "🎬 Video Toolkit UI → http://localhost:9876"
-    python3 backend/server.py &
-    sleep 1
-    open http://localhost:9876 2>/dev/null || xdg-open http://localhost:9876 2>/dev/null || true
-    wait
-    exit 0 ;;
-  config)
-    CONFIG="$HOME/.config/video-toolkit/config"
-    shift
+vt_main() {
+    local cmd="\$1"; shift
+    if [ "\$cmd" = "ui" ]; then
+        cd "\$VT_HOME"
+        [ -f "\$VT_HOME/.venv/bin/activate" ] && source "\$VT_HOME/.venv/bin/activate"
+        VT_PORT="\${VT_PORT:-9876}" python3 "\$VT_HOME/backend/server.py" "\$@"
+    elif [ "\$cmd" = "upgrade" ]; then
+        cd "\$VT_HOME" && git pull origin main 2>/dev/null && \\
+            echo "✅ 已更新" || echo "⚠️  更新失败，请手动: cd \$VT_HOME && git pull"
+    else
+        [ -f "\$VT_HOME/.venv/bin/activate" ] && source "\$VT_HOME/.venv/bin/activate" 2>/dev/null
+        "\$VT_HOME/video-toolkit.sh" "\$cmd" "\$@"
+    fi
+}
+vt_main "\$@"
+CMDEOF
+
+chmod +x "$INSTALL_BIN"
+ok "vt 命令已安装 ($INSTALL_BIN)"
+
+# ── PATH ──
+if ! echo "$PATH" | grep -q "$(dirname "$INSTALL_BIN")"; then
+    SHELL_RC=""
+    [ -f "$HOME/.zshrc" ] && SHELL_RC="$HOME/.zshrc"
+    [ -f "$HOME/.bashrc" ] && SHELL_RC="$HOME/.bashrc"
     
-    # vt config list <key> — 列出某个 key 的可选值
-    if [ "${1:-}" = "list" ]; then
-      case "${2:-}" in
-        voice|voices)
-          echo "中文 (VIDEO_VOICE):"
-          echo "  zh-CN-XiaoxiaoNeural    ★ 温暖清晰（默认）"
-          echo "  zh-CN-YunyangNeural       专业可靠"
-          echo "  zh-CN-YunjianNeural       激情有力"
-          echo "  zh-CN-YunxiNeural         活泼阳光"
-          echo "  zh-CN-XiaoyiNeural        可爱轻快"
-          echo ""
-          echo "英文 (VIDEO_VOICE_EN):"
-          echo "  en-US-AvaNeural         ★ 清晰亲和（默认）"
-          echo "  en-US-AriaNeural          自信"
-          echo "  en-US-ChristopherNeural   权威"
-          echo "  en-GB-SoniaNeural         英式女声"
-          echo "  en-GB-RyanNeural          英式男声"
-          ;;
-        asr|engine)
-          echo "ASR 引擎 (VIDEO_ASR):"
-          echo "  faster-whisper     ★ 默认"
-          echo "  openai-whisper        OpenAI Whisper"
-          echo "  funasr                SenseVoice (阿里达摩院)"
-          ;;
-        *)
-          echo "用法: vt config list <voice|asr>"
-          ;;
-      esac
-      exit 0
-    fi
-    
-    if [ -z "${1:-}" ]; then
-      cat "$CONFIG" 2>/dev/null || echo "无配置"
+    if [ -n "$SHELL_RC" ]; then
+        if ! grep -q "$(dirname "$INSTALL_BIN")" "$SHELL_RC" 2>/dev/null; then
+            echo "export PATH=\"$(dirname "$INSTALL_BIN"):\$PATH\"" >> "$SHELL_RC"
+            ok "已添加到 $SHELL_RC"
+        fi
     else
-      KEY="${1%%=*}"; VAL="${1#*=}"
-      if grep -q "^$KEY=" "$CONFIG" 2>/dev/null; then
-        sed -i '' "s/^$KEY=.*/$KEY=$VAL/" "$CONFIG" 2>/dev/null || sed -i "s/^$KEY=.*/$KEY=$VAL/" "$CONFIG"
-      else
-        echo "$KEY=$VAL" >> "$CONFIG"
-      fi
-      echo "✅ $KEY=$VAL"
+        warn "请手动添加: export PATH=\"$(dirname "$INSTALL_BIN"):\$PATH\""
     fi
-    exit 0 ;;
-  play)
-    shift
-    if [ -z "${1:-}" ]; then
-      echo "用法: vt play <feature> <target>"
-      echo "       vt play 01 dub        播放 feature-01 中文配音"
-      echo "       vt play 01 dub        播放 feature-01 中文配音"
-      echo "       vt play 01 dub-en     播放 feature-01 英文配音"
-      echo "       vt play 01 final      播放 feature-01 中文成片"
-      echo "       vt play 01 final-en   播放 feature-01 英文成片"
-      exit 0
-    fi
-    FEAT="$1"; TARGET="${2:-}"
-    # resolve feature dir same as main script
-    if [ -d "$FEAT" ] && [[ "$FEAT" == */* ]]; then
-      DIR="$FEAT"
-    elif [ -d "$VIDEO_FEATURES_DIR/$FEAT" ]; then
-      DIR="$VIDEO_FEATURES_DIR/$FEAT"
-    else
-      DIR=$(ls -d "$VIDEO_FEATURES_DIR"/feature-${FEAT#feature-}* 2>/dev/null | head -1)
-    fi
-    [ -z "$DIR" ] && { echo "❌ 找不到 feature: $FEAT"; exit 1; }
-    case "$TARGET" in
-      dub) FILE="$DIR/ai_dub.wav"; TYPE="audio" ;;
-      dub-en) FILE="$DIR/ai_dub_en.wav"; TYPE="audio" ;;
-      final) FILE="$DIR/final.mp4"; TYPE="video" ;;
-      final-en) FILE="$DIR/final_en.mp4"; TYPE="video" ;;
-      *) echo "用法: vt play $FEAT <dub|dub-en|final|final-en>"; exit 1 ;;
-    esac
-    [ ! -f "$FILE" ] && { echo "❌ 文件不存在: $FILE"; exit 1; }
-    echo "▶️ $FILE"
-    if [ "$TYPE" = "audio" ]; then
-      afplay "$FILE" 2>/dev/null || echo "❌ 播放失败"
-    else
-      open "$FILE" 2>/dev/null || xdg-open "$FILE" 2>/dev/null || echo "❌ 播放失败"
-    fi
-    exit 0 ;;
-esac
-
-# 加载配置
-[ -f "$HOME/.config/video-toolkit/config" ] && export $(grep -v '^#' "$HOME/.config/video-toolkit/config" | grep -v '^$' | xargs)
-
-cd "$INSTALL_DIR"
-source .venv/bin/activate 2>/dev/null
-exec bash "$INSTALL_DIR/video-toolkit.sh" "$@"
-WRAPPER
-chmod +x "$HOME/.local/bin/video-toolkit"
-
-# ── vt 别名 ──
-ln -sf "$HOME/.local/bin/video-toolkit" "$HOME/.local/bin/vt"
-
-# ── PATH 检测 ──
-if ! echo "$PATH" | grep -q "$HOME/.local/bin"; then
-  SHELL_RC="$HOME/.zshrc"
-  [ -f "$HOME/.bashrc" ] && SHELL_RC="$HOME/.bashrc"
-  echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_RC"
-  echo ""
-  echo -e "  ${CYAN}➜${NC} 已将 ~/.local/bin 加入 PATH ($SHELL_RC)"
-  echo "     source $SHELL_RC  或重开终端生效"
 fi
 
-# ── 完成 ──
+# ── 配置目录 ──
+mkdir -p "$HOME/.config/video-toolkit"
+mkdir -p "$VIDEO_PROJECTS_DIR" 2>/dev/null || mkdir -p "$HOME/video-projects"
+
 echo ""
-echo "========================================"
-echo -e "  ${GREEN}${BOLD}✅ 安装完成！${NC}"
+ok "安装完成！"
 echo ""
-echo "  全局命令:   video-toolkit"
-echo "  安装目录:   $INSTALL_DIR"
+echo "  重启终端或执行:  source $SHELL_RC"
+echo "  然后:             vt --version"
+echo "  启动 UI:           vt ui"
 echo ""
-echo "  快速开始:"
-echo "    video-toolkit status --help"
-echo "    video-toolkit all <feature-dir>"
-echo ""
-echo "  ASR 引擎 (默认 faster-whisper):"
-echo "    pip3 install funasr-onnx modelscope  # 可选：SenseVoice"
-echo "    export VIDEO_ASR=funasr"
-echo ""
-echo "  更新: curl -sSf https://video-toolkit.bitey.ai/install.sh | bash"
-echo "  卸载: rm -rf $INSTALL_DIR ~/.local/bin/video-toolkit ~/.local/bin/vt"
-echo "========================================"
