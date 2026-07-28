@@ -7,3 +7,5 @@ _tmp*
 trace-*.sh
 final.mp4
 *.mp4
+.slide-cache.json
+_clips/
