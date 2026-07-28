@@ -125,6 +125,12 @@ for i, p in enumerate(pages):
     # 创建输出目录
     os.makedirs(os.path.dirname(clip), exist_ok=True)
 
+    # 图片文件检查
+    img_path = os.path.join(slide_dir, img)
+    if not os.path.exists(img_path):
+        print(f'  ⚠ 图片不存在 [{num}/{total}] {img}', flush=True)
+        continue
+
     # 缓存：图+文未变则跳过
     if force or not os.path.exists(clip):
         pass  # 需要重新生成
@@ -212,7 +218,7 @@ with open(cache_file, 'w') as f:
     json.dump(cache, f, ensure_ascii=False, indent=2)
 
 # 拼接
-concat = f'$tmp/concat.txt'
+concat = f'$dir/_clips/concat.txt'
 with open(concat, 'w') as f:
     for c in clips:
         f.write(f\"file '{c}'\n\")
