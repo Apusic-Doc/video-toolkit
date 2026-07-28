@@ -82,6 +82,7 @@ edge = '$EDGE'
 padding = float('$page_padding' or 1.5)
 total = len(pages)
 clips = []
+force = '${FORCE:-0}' == '1'
 
 for i, p in enumerate(pages):
     num = i + 1
