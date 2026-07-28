@@ -35,11 +35,23 @@ compose_final() {
   local parts=()
   local audio_src="$content"
 
-  # ── 1. 封面 ──
+  # ── 1. 标题封面 ──
   local cover=$(resolve_asset "$dir" "$meta" "cover")
-  if [ -n "$cover" ]; then
+  local title=$(meta_get "$meta" "title")
+  local subtitle=$(meta_get "$meta" "subtitle")
+  local cover_dur=$(meta_get "$meta" "cover_duration")
+  
+  if [ "$cover" = "true" ] || [ -n "$title" ]; then
+    echo "➜ 添加标题封面..."
+    local cover_clip="$tmp/cover.mp4"
+    gen_title_card "$title" "${subtitle:-}" "${cover_dur:-3}" "$cover_clip" 2>/dev/null
+    if [ -f "$cover_clip" ]; then
+      parts+=("$cover_clip")
+    else
+      echo "⚠  封面生成失败"
+    fi
+  elif [ -n "$cover" ] && [ "$cover" != "false" ]; then
     echo "➜ 添加封面..."
-    local cover_dur=$(meta_get "$meta" "cover_duration")
     local cover_clip="$tmp/cover.mp4"
     if gen_cover "$cover" "${cover_dur:-3}" "$cover_clip"; then
       parts+=("$cover_clip")
