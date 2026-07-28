@@ -8,8 +8,18 @@ gen_title_card() {
   local title="$1" subtitle="$2" duration="${3:-3}" out="$4"
   [ -z "$title" ] && return 1
   local png="/tmp/_vt_cover_$$.png"
-  magick -size 1920x1080 xc:white     -gravity center     -font "/System/Library/Fonts/STHeiti Medium.ttc"     -fill '#222222' -pointsize 60 -draw "text 0,-60 '$title'"     -fill '#666666' -pointsize 42 -draw "text 0,30 '$subtitle'"     "$png" 2>/dev/null || return 1
-  ffmpeg -loop 1 -i "$png" -c:v libx264 -preset fast -crf 23     -t "$duration" -pix_fmt yuv420p -an "$out" -y 2>/dev/null
+  local font=""
+  for f in "/System/Library/Fonts/Supplemental/Songti.ttc"            "/System/Library/Fonts/STHeiti Medium.ttc"            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"            "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc"; do
+    [ -f "$f" ] && { font="$f"; break; }
+  done
+  magick -size 1920x1080 xc:white \
+    -gravity center \
+    ${font:+-font "$font"} \
+    -fill '#222222' -pointsize 60 -draw "text 0,-60 '$title'" \
+    -fill '#666666' -pointsize 42 -draw "text 0,30 '$subtitle'" \
+    "$png" 2>/dev/null || return 1
+  ffmpeg -loop 1 -i "$png" -c:v libx264 -preset fast -crf 23 \
+    -t "$duration" -pix_fmt yuv420p -an "$out" -y 2>/dev/null
   rm -f "$png"
 }
 
