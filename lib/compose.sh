@@ -106,5 +106,4 @@ compose_final() {
   # ── 6. 输出 ──
   cp "$tmp/base.mp4" "$out"
   rm -rf "$tmp"
-  echo "✅ 生成: $out"
 }

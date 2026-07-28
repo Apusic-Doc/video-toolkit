@@ -120,7 +120,10 @@ for i, p in enumerate(pages):
                     lines = [l.strip() for l in f if l.strip()]
                 if i < len(lines): txt = lines[i]
     
-    clip = f'$dir/_page_{num:03d}.mp4'  # 保存到 feature 目录便于调试
+    clip = f'$dir/_clips/page_{num:03d}.mp4'
+
+    # 创建输出目录
+    os.makedirs(os.path.dirname(clip), exist_ok=True)
 
     # 缓存：图+文未变则跳过
     if force or not os.path.exists(clip):
@@ -221,11 +224,9 @@ print(f'  ffmpeg -f concat -safe 0 -i {concat} -c:v h264_videotoolbox -b:v 5M -r
 
 subprocess.run(['ffmpeg','-f','concat','-safe','0','-i',concat,'-c:v','h264_videotoolbox','-b:v','5M','-r','30','-c:a','aac',out_mp4,'-y'],
               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-print('  ✅ slides.mp4')
 "
 
   rm -rf "$tmp"
-  echo "  ✅ slides.mp4"
 }
 
 build_subtitle() {
