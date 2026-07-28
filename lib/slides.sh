@@ -223,11 +223,13 @@ with open(concat, 'w') as f:
     for c in clips:
         f.write(f\"file '{c}'\n\")
 
-# 调试：打印拼接命令
-print(f'  拼接 {len(clips)} 个片段:', flush=True)
-for c in clips:
-    print(f'    {c}', flush=True)
-print(f'  ffmpeg -f concat -safe 0 -i {concat} -c:v h264_videotoolbox -b:v 5M -r 30 -c:a aac {out_mp4} -y', flush=True)
+# 调试：打印拼接命令（仅 DEBUG 模式）
+if '${DEBUG:-0}' == '1':
+    print(f'  拼接 {len(clips)} 个片段:', flush=True)
+    for c in clips:
+        rel = os.path.relpath(c, '$dir')
+        print(f'    _clips/{os.path.basename(c)}', flush=True)
+    print(f'  ffmpeg -f concat -safe 0 -i _clips/concat.txt -c:v h264_videotoolbox ... -y', flush=True)
 
 subprocess.run(['ffmpeg','-f','concat','-safe','0','-i',concat,'-c:v','h264_videotoolbox','-b:v','5M','-r','30','-c:a','aac',out_mp4,'-y'],
               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
