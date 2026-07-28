@@ -705,7 +705,14 @@ case "${1:-}" in
         dub-en)  afplay "$dir/ai_dub_en.wav" 2>/dev/null || err "播放失败" ;;
         final)   open "$dir/final.mp4" 2>/dev/null || xdg-open "$dir/final.mp4" 2>/dev/null || err "播放失败" ;;
         final-en) open "$dir/final_en.mp4" 2>/dev/null || xdg-open "$dir/final_en.mp4" 2>/dev/null || err "播放失败" ;;
-        *) fail "用法: video-toolkit play <feature> <dub|dub-en|final|final-en>" ;;
+        *)
+          echo "可用资源:"
+          [ -f "$dir/ai_dub.wav" ]    && echo "  dub     → ai_dub.wav ($(ls -lh "$dir/ai_dub.wav" | awk '{print $5}'))"
+          [ -f "$dir/ai_dub_en.wav" ] && echo "  dub-en  → ai_dub_en.wav ($(ls -lh "$dir/ai_dub_en.wav" | awk '{print $5}'))"
+          [ -f "$dir/final.mp4" ]     && echo "  final   → final.mp4 ($(ls -lh "$dir/final.mp4" | awk '{print $5}'))"
+          [ -f "$dir/final_en.mp4" ]  && echo "  final-en → final_en.mp4 ($(ls -lh "$dir/final_en.mp4" | awk '{print $5}'))"
+          echo ""
+          err "用法: vt play <feature> <dub|dub-en|final|final-en>" ;;
       esac ;;  
     status) cmd_status "${2:-}" ;;
     config) cmd_config "${2:-}" "${3:-}" ;;
