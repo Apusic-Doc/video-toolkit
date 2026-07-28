@@ -70,7 +70,11 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
 
     def _read_body(self):
         length = int(self.headers.get("Content-Length", 0))
-        return json.loads(self.rfile.read(length)) if length > 0 else {}
+        if length == 0: return {}
+        ct = self.headers.get("Content-Type", "")
+        if "application/json" in ct:
+            return json.loads(self.rfile.read(length))
+        return self.rfile.read(length)  # raw bytes for file uploads
 
     def _match_proj_feat(self, path, method):
         """Parse /api/projects/{pname}/features/{fname}[/{action}]"""
@@ -132,16 +136,19 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
 
     def _list_features_in(self, proj_dir):
         features = []
-        for name in sorted(os.listdir(proj_dir)):
-            d = os.path.join(proj_dir, name)
-            if not os.path.isdir(d) or name.startswith("."): continue
-            features.append({
-                "name": name,
-                "type": "slide" if os.path.isdir(os.path.join(d, "slides")) else "video",
-                "has_recording": any(f for f in os.listdir(d) if f.startswith("recording") and os.path.isfile(os.path.join(d, f))),
-                "has_slides": os.path.isdir(os.path.join(d, "slides")) and len(os.listdir(os.path.join(d, "slides"))) > 0,
-                "has_final": os.path.isfile(os.path.join(d, "final.mp4"))
-            })
+        try:
+            for name in sorted(os.listdir(proj_dir)):
+                d = os.path.join(proj_dir, name)
+                if not os.path.isdir(d) or name.startswith("."): continue
+                features.append({
+                    "name": name,
+                    "type": "slide" if os.path.isdir(os.path.join(d, "slides")) else "video",
+                    "has_recording": any(f for f in os.listdir(d) if f.startswith("recording") and os.path.isfile(os.path.join(d, f))),
+                    "has_slides": os.path.isdir(os.path.join(d, "slides")) and len(os.listdir(os.path.join(d, "slides"))) > 0,
+                    "has_final": os.path.isfile(os.path.join(d, "final.mp4"))
+                })
+        except OSError:
+            pass
         return features
 
     # ── Files ──
