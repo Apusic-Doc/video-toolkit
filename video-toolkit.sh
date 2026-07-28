@@ -671,6 +671,7 @@ case "${1:-}" in
         *) fail "用法: video-toolkit play <feature> <dub|dub-en|final|final-en>" ;;
       esac ;;  
     status) cmd_status "${2:-}" ;;
+    config) cmd_config "${2:-}" "${3:-}" ;;
     *)
         echo "Video Toolkit — 录屏处理工具 v2"
         echo ""
