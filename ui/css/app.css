@@ -31,6 +31,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);line-height:
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:0.95rem}
 .brand-logo{width:28px;height:28px;border-radius:7px;background:var(--gradient);display:flex;align-items:center;justify-content:center;font-size:0.8rem}
 .topbar-actions{display:flex;align-items:center;gap:8px}
+.topbar-nav{display:flex;gap:2px}
+.topbar-nav a{
+  color:var(--text3);text-decoration:none;font-size:0.82rem;padding:6px 14px;
+  border-radius:var(--radius-xs);cursor:pointer;transition:all .2s;white-space:nowrap;
+  border:1px solid transparent
+}
+.topbar-nav a:hover{color:var(--text);border-color:var(--border)}
+.topbar-nav a.active{color:var(--accent2);border-color:var(--accent);background:rgba(108,92,231,0.08)}
+.brand-text{background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:800}
+@media(max-width:768px){.topbar-nav{display:none}}
 .icon-btn{
   width:34px;height:34px;border-radius:var(--radius-xs);border:1px solid var(--border);
   background:var(--bg2);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;
