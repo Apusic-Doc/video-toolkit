@@ -133,7 +133,8 @@ for i, p in enumerate(pages):
         txt_h = text_hash(txt)
         ck = str(num)
         if ck in cache and cache[ck].get('img_md5') == img_md5 and cache[ck].get('txt_h') == txt_h:
-            print(f'  ✅ 缓存 [{num}/{total}] {img}', flush=True)
+            preview = (txt[:35] + '...') if len(txt) > 35 else txt
+            print(f'  ✅ 缓存 [{num}/{total}] {img}  {preview}', flush=True)
             clips.append(clip)
             continue
     
@@ -151,15 +152,13 @@ for i, p in enumerate(pages):
         stop_tts.set(); t.join()
         
         if result.returncode == 0 and os.path.exists(mp3):
-            print(f'\r  ✅ TTS [{num}/{total}] {img} ({tts_elapsed:.1f}s)', flush=True)
-            
             r = subprocess.run(['ffprobe','-v','quiet','-show_entries','format=duration','-of','csv=p=0',mp3],
                              capture_output=True, text=True)
             dur = float(r.stdout.strip() or 3) + pp
             
             # 编码 + 旋转等待
             stop_enc = threading.Event()
-            t2 = threading.Thread(target=show_spinner, args=(f'编码 [{num}/{total}]', stop_enc))
+            t2 = threading.Thread(target=show_spinner, args=(f'[{num}/{total}] {img} 编码', stop_enc))
             t2.start()
             enc_start = time.time()
             subprocess.run(['ffmpeg','-loop','1','-i',os.path.join(slide_dir,img),
@@ -169,13 +168,15 @@ for i, p in enumerate(pages):
             enc_elapsed = time.time() - enc_start
             stop_enc.set(); t2.join()
             os.remove(mp3)
-            print(f'\r  ✅ 编码 [{num}/{total}] {img} ({enc_elapsed:.1f}s)', flush=True)
+            preview = (txt[:35] + '...') if len(txt) > 35 else txt
+            print(f'\r  [{num}/{total}] {img} 🎙️{tts_elapsed:.0f}s 🎬{enc_elapsed:.0f}s  {preview}', flush=True)
         else:
             print(f'\r  ⚠ TTS 失败 [{num}/{total}] {img}', flush=True)
             subprocess.run(['ffmpeg','-loop','1','-i',os.path.join(slide_dir,img),
                           '-vf','scale=1920:-2','-c:v','h264_videotoolbox','-b:v','5M','-r','30',
                           '-t',str(pd or 3),'-pix_fmt','yuv420p','-an',clip,'-y'],
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            print(f'  ⚠ TTS 失败 [{num}/{total}] {img}', flush=True)
     else:
         print(f'  [{num}/{total}] {img} (静默)', flush=True)
         subprocess.run(['ffmpeg','-loop','1','-i',os.path.join(slide_dir,img),
