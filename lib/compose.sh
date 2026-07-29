@@ -6,20 +6,22 @@
 # ── 生成标题封面（白屏 + 居中文字）──
 gen_title_card() {
   local title="$1" subtitle="$2" duration="${3:-3}" out="$4"
+  local logo="$5" company="$6"
   [ -z "$title" ] && return 1
   local png="/tmp/_vt_cover_$$.png"
   local font=""
   for f in "/System/Library/Fonts/Supplemental/Songti.ttc"            "/System/Library/Fonts/STHeiti Medium.ttc"            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"            "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc"; do
     [ -f "$f" ] && { font="$f"; break; }
   done
-  magick -size 1920x1080 xc:white \
-    -gravity center \
-    ${font:+-font "$font"} \
-    -fill '#222222' -pointsize 60 -draw "text 0,-60 '$title'" \
-    -fill '#666666' -pointsize 42 -draw "text 0,30 '$subtitle'" \
-    "$png" 2>/dev/null || return 1
-  ffmpeg -loop 1 -i "$png" -f lavfi -i "anullsrc=r=48000:cl=mono" \
-    -c:v libx264 -preset fast -crf 23 -t "$duration" -pix_fmt yuv420p -c:a aac -shortest "$out" -y 2>/dev/null
+  magick -size 1920x1080 xc:white     -gravity center     ${font:+-font "$font"}     -fill '#222222' -pointsize 60 -draw "text 0,-60 '$title'"     -fill '#666666' -pointsize 42 -draw "text 0,30 '$subtitle'"     "$png" 2>/dev/null || return 1
+  # 叠加 logo + 公司名称
+  if [ -n "$logo" ] && [ -f "$logo" ]; then
+    magick "$png" "$logo" -geometry +40+30 -composite "$png" 2>/dev/null
+    [ -n "$company" ] && magick "$png" ${font:+-font "$font"} -fill '#444444' -pointsize 28       -draw "text 100,58 '$company'" "$png" 2>/dev/null
+  elif [ -n "$company" ]; then
+    magick "$png" ${font:+-font "$font"} -fill '#444444' -pointsize 28       -draw "text 40,58 '$company'" "$png" 2>/dev/null
+  fi
+  ffmpeg -loop 1 -i "$png" -f lavfi -i "anullsrc=r=48000:cl=mono"     -c:v libx264 -preset fast -crf 23 -t "$duration" -pix_fmt yuv420p -c:a aac -shortest "$out" -y 2>/dev/null
   rm -f "$png"
 }
 
@@ -54,7 +56,9 @@ compose_final() {
   if [ "$cover" = "true" ] || [ -n "$title" ]; then
     echo "➜ 添加标题封面..."
     local cover_clip="$tmp/cover.mp4"
-    gen_title_card "$title" "${subtitle:-}" "${cover_dur:-3}" "$cover_clip" 2>/dev/null
+    local logo=$(resolve_asset "$dir" "$meta" "logo")
+    local company=$(meta_get "$meta" "company")
+    gen_title_card "$title" "${subtitle:-}" "${cover_dur:-3}" "$cover_clip" "$logo" "$company" 2>/dev/null
     if [ -f "$cover_clip" ]; then
       parts+=("$cover_clip")
     else
