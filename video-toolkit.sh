@@ -579,7 +579,8 @@ cmd_record() {
         # 从 config 文件读取密码
         [ -z "$ADMIN_PW" ] && [ -f "$HOME/.config/video-toolkit/config" ] && ADMIN_PW=$(grep '^ADMIN_PW=' "$HOME/.config/video-toolkit/config" 2>/dev/null | cut -d= -f2-)
         export ADMIN_PW
-        npx playwright test "$dir/record.spec.js" --headed --timeout=120000
+        cd "$dir"  # playwright 需要在 feature 目录运行（读取 playwright.config.js）
+        npx playwright test record.spec.js --headed --timeout=120000
         
         # 停止录屏
         kill "$ffmpeg_pid" 2>/dev/null
