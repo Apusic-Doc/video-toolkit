@@ -856,6 +856,24 @@ cmd_dub() {
     srt_to_dub "$dir"
 }
 
+# ── 手改 subtitles.srt 之后，跳过重录/重新转写，直接重新配音+合成 ──
+# 用法: vt redub <feature>（改完字幕文件后跑这个，几十秒就出新的 mp4，不用等 vt record）
+cmd_redub() {
+    local dir="$1"
+    local rec="$dir/recording.mov"
+    local srt="$dir/subtitles.srt"
+    [ ! -f "$rec" ] && { err "缺少 recording.mov，请先 vt record"; return 1; }
+    [ ! -f "$srt" ] && { err "缺少 subtitles.srt"; return 1; }
+    info "重新配音+合成: $(basename "$dir")（复用已有的 recording.mov，不重新录制）"
+    echo ""
+    srt_to_dub "$dir" || return 1
+    echo ""
+    compose "$dir"
+    echo ""
+    ok "$(basename "$dir").mp4"
+    show_status "$dir"
+}
+
 # ==================== 幻灯片自动生成 ====================
 cmd_slide_v2() {
     local dir="$1"
@@ -937,6 +955,7 @@ case "${1:-}" in
     all)    dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_all "$dir" ;;
     srt)    dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_srt "$dir" ;;
     dub)    dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_dub "$dir" ;;
+    redub)  dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_redub "$dir" ;;
     mix)    dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_mix "$dir" ;;
     cover)  dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_cover "$dir" ;;
     record) dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_record "$dir" ;;
