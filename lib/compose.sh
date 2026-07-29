@@ -14,7 +14,7 @@ gen_title_card() {
     [ -f "$f" ] && { font="$f"; break; }
   done
   # 1. 白色背景 + 居中标题/副标题
-  magick -size 1920x1080 xc:white     -gravity center     ${font:+-font "$font"}     -fill '#222222' -pointsize 60 -draw "text 0,-60 '$title'"     -fill '#666666' -pointsize 42 -draw "text 0,30 '$subtitle'"     "$png" 2>/dev/null || return 1
+  magick -size 1920x1080 xc:'#FFFFFF'     -gravity center     ${font:+-font "$font"}     -fill '#222222' -pointsize 60 -draw "text 0,-60 '$title'"     -fill '#666666' -pointsize 42 -draw "text 0,30 '$subtitle'"     "$png" 2>/dev/null || return 1
   # 2. Logo 左上角（缩放到 60px 高，保留原色）
   if [ -n "$logo" ] && [ -f "$logo" ]; then
     local logo_small="/tmp/_vt_logo_$$.png"
