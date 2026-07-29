@@ -67,6 +67,46 @@ warn() { echo -e "${YELLOW}⚠️${NC} $1"; }
 err()  { echo -e "${RED}❌${NC} $1"; }
 info() { echo -e "${CYAN}➜${NC} $1"; }
 
+# avfoundation 的屏幕序号（"Capture screen N"）不是稳定 ID，接/拔外接显示器后会重新编号，
+# 硬编码序号会导致某次录制悄悄录到错误的屏幕（实测发生过：外接屏被当成录制目标，
+# 屏幕上不管显示什么全部录了进去）。这里动态识别出内置/主屏对应哪个序号，每次录制前调用。
+detect_recording_screen() {
+    local devices count ext_res idx frame res
+    devices=$(ffmpeg -f avfoundation -list_devices true -i "" 2>&1 | grep "Capture screen" | sed -E 's/.*\[([0-9]+)\].*/\1/')
+    count=$(echo "$devices" | wc -l | tr -d ' ')
+    if [ "$count" -le 1 ]; then
+        echo "$devices" | head -1
+        return
+    fi
+    # 非主屏分辨率通常跟 avfoundation 实际抓到的像素分辨率精确一致（内置 Retina 屏有缩放倍数，不会精确相等），
+    # 用这个特征找出外接屏对应的序号并排除，剩下的当作内置/主屏
+    ext_res=$(system_profiler SPDisplaysDataType -json 2>/dev/null | python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    for gpu in data.get('SPDisplaysDataType', []):
+        for disp in gpu.get('spdisplays_ndrvs', []):
+            if disp.get('spdisplays_main') != 'spdisplays_yes':
+                res = disp.get('_spdisplays_resolution', '')
+                w, h = res.split(' @ ')[0].split(' x ')
+                print(f'{w.strip()}x{h.strip()}')
+except Exception:
+    pass
+" 2>/dev/null)
+    for idx in $devices; do
+        if [ -n "$ext_res" ]; then
+            frame="/tmp/_vt_screen_probe_${idx}_$$.png"
+            ffmpeg -f avfoundation -i "$idx:none" -frames:v 1 "$frame" -y 2>/dev/null
+            res=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0:s=x "$frame" 2>/dev/null)
+            rm -f "$frame"
+            [ "$res" = "$ext_res" ] && continue
+        fi
+        echo "$idx"
+        return
+    done
+    echo "$devices" | head -1
+}
+
 # 旋转等待动画
 spinner() {
   local pid=$1 msg="${2:-处理中...}"
@@ -158,7 +198,16 @@ extract_srt() {
     local srt="$dir/subtitles.srt"
     
     [ ! -f "$rec" ] && { err "找不到 $rec"; return 1; }
-    
+
+    # vt record（Playwright 自动化）会从 timeline.json 直接生成准确字幕，
+    # 比 ASR 识别更准（原文本，非猜测），且录屏音轨往往没有真人说话，ASR 会跑出垃圾字幕。
+    # 字幕文件比录屏新 => 已经是可信来源，不要覆盖。
+    if [ -f "$srt" ] && [ "$srt" -nt "$rec" ]; then
+        info "字幕已存在且比录屏新（多半来自 vt record 的 timeline），跳过 ASR 识别: $srt"
+        info "如需强制重新识别，先删除该文件再运行"
+        return 0
+    fi
+
     # 检查模型是否已缓存
     local model_cached=0
     case "$ASR_ENGINE" in
@@ -245,18 +294,35 @@ compose() {
     
     [ ! -f "$rec" ] && { err "缺少 recording.mov"; return 1; }
     [ ! -f "$dub" ] && { err "缺少 ai_dub.wav，请先运行 dub"; return 1; }
-    
+
+    # vt record 会算出"ffmpeg 启动→浏览器真正打开"这段空档的秒数
+    # （这段时间屏幕上显示什么不可控，可能露出别的窗口/文件夹名），合成时精确剪掉
+    local trim_args=()
+    if [ -f "$dir/record-offset.txt" ]; then
+        local offset=$(cat "$dir/record-offset.txt")
+        if python3 -c "exit(0 if float('$offset') > 0.3 else 1)" 2>/dev/null; then
+            local safe_offset=$(python3 -c "print(round(float('$offset') + 0.3, 2))")
+            info "裁剪录屏开头 ${safe_offset}s（屏幕内容不进成片）"
+            trim_args=(-ss "$safe_offset")
+        fi
+    fi
+
     # 生成 AI 配音替换后的中间视频
     info "生成 AI 配音视频..."
     local content="$dir/_dubbed.mp4"
-    ffmpeg -i "$rec" -i "$dub" \
-        -c:v h264_videotoolbox -b:v 5M -r 30 -vf "scale=1920:-2" \
-        -c:a aac -ar 48000 -map 0:v:0 -map 1:a:0 -shortest "$content" -y 2>/dev/null
+    ffmpeg "${trim_args[@]}" -i "$rec" -i "$dub" \
+        -c:v h264_videotoolbox -b:v 5M -r 30 -vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=black" -pix_fmt yuv420p \
+        -c:a aac -ar 48000 -ac 2 -map 0:v:0 -map 1:a:0 -shortest "$content" -y 2>/dev/null
     
     # 统一走 compose_final（无 meta 时自动使用默认值）
     local meta=$(load_meta "$dir" 2>/dev/null || echo "{}")
     compose_final "$content" "$meta" "$dir" "$out"
+
+    # 保留两个版本：带封面（$out）+ 不带封面（画面+配音，没有封面/封底/BGM）
+    local no_cover="$dir/$(basename "$dir")-no-cover.mp4"
+    cp "$content" "$no_cover"
     rm -f "$content"
+    ok "不带封面版本: $no_cover"
 }
 
 # ==================== Step 4: 翻译字幕（DeepSeek） ====================
@@ -555,23 +621,58 @@ cmd_mix_en() {
 cmd_record() {
     local dir="$1"
     local rec="$dir/recording.mov"
-    
+
+    # 防御：清理任何已存在的、写入同一文件的孤儿 ffmpeg 进程
+    # （上次录制若被 Ctrl+C / 终端关闭中断，trap 之前不会走到 kill，会留下后台孤儿）
+    local stale_pids=$(pgrep -f "ffmpeg .*avfoundation.*$rec" 2>/dev/null)
+    if [ -n "$stale_pids" ]; then
+        warn "发现残留录屏进程，清理: $stale_pids"
+        kill -9 $stale_pids 2>/dev/null || true
+        sleep 1
+    fi
+
+    # 每次录制 record.spec.js 都会新建一个 Terminal 窗口（ensureTerminal），
+    # 跑多次从不关闭，旧窗口会一直堆在屏幕上，边缘重叠导致画面看起来像文字错乱。
+    # quit 之后 macOS/Terminal 默认会"恢复上次窗口"，越关越多；先关掉这个恢复行为，
+    # 再用 SIGKILL 而不是正常 quit（避免它有机会保存"下次要恢复"的状态）。
+    defaults write com.apple.Terminal NSQuitAlwaysKeepsWindows -bool false 2>/dev/null || true
+    pkill -9 -x Terminal 2>/dev/null || true
+    sleep 0.5
+    # SIGKILL 之前 macOS 已经把窗口状态写进"已保存应用程序状态"了，
+    # 跟上面那个偏好设置是两套独立机制，删掉这个才是真正的"下次打开不恢复"
+    rm -rf ~/Library/Saved\ Application\ State/com.apple.Terminal.savedState 2>/dev/null || true
+    sleep 1
+
     # 如果已有 Playwright 脚本
     if [ -f "$dir/record.spec.js" ]; then
         info "Playwright 自动化 + 录屏: $(basename "$dir")"
-        
+
         # 安装 Playwright（如果需要）
         if ! npx playwright --version 2>/dev/null; then
             warn "安装 Playwright..."
             npm install -g playwright 2>/dev/null && npx playwright install chromium 2>/dev/null
         fi
-        
-        # 启动 ffmpeg 录屏（后台）
+
+        # 录屏开始到浏览器真正打开之间有几秒空档，屏幕上这段时间显示什么不可控
+        # （运行本脚本的终端/聊天窗口都可能露出来，这对录制的内容是敏感信息）。
+        # 不试图"隐藏某个窗口"（不可靠，猜不全），而是精确记录 ffmpeg 启动的墙钟时间，
+        # 合成阶段按 record.spec.js 算出的偏移量把这段空档从最终视频里剪掉。
+        export VT_REC_START_EPOCH=$(date +%s.%N)
+
+        # 屏幕序号不是稳定 ID，接了外接显示器之后可能会指向错误的屏幕——
+        # 动态识别内置/主屏，不要每次都硬编码同一个序号
+        local screen_idx=$(detect_recording_screen)
+        info "录制屏幕: 序号 $screen_idx（自动识别的内置/主屏）"
+
+        # 启动 ffmpeg 录屏（后台，硬件编码降低 CPU 占用，给同时运行的自动化留余量）
         info "开始录屏 → $rec"
-        ffmpeg -f avfoundation -i "1:none" -c:v libx264 -preset ultrafast -crf 28 "$rec" -y 2>/dev/null &
+        ffmpeg -f avfoundation -i "${screen_idx}:none" -c:v h264_videotoolbox -b:v 8M "$rec" -y 2>/dev/null &
         local ffmpeg_pid=$!
+        # 无论后面 playwright 是否失败/脚本被中断，都保证 ffmpeg 被停止，不留孤儿进程
+        # kill/wait 在进程已按信号终止时返回非 0，脚本开着 set -e，必须 || true 否则直接整体退出
+        trap 'kill "$ffmpeg_pid" 2>/dev/null || true; wait "$ffmpeg_pid" 2>/dev/null || true' EXIT INT TERM
         sleep 1
-        
+
         # 运行 Playwright 自动化
         export BASE_URL="${BASE_URL:-http://localhost:6888}"
         export ADMIN_URL="${ADMIN_URL:-https://localhost:6848}"
@@ -579,14 +680,28 @@ cmd_record() {
         # 从 config 文件读取密码
         [ -z "$ADMIN_PW" ] && [ -f "$HOME/.config/video-toolkit/config" ] && ADMIN_PW=$(grep '^ADMIN_PW=' "$HOME/.config/video-toolkit/config" 2>/dev/null | cut -d= -f2-)
         export ADMIN_PW
-        # 从 toolkit 目录运行（共用 node_modules/@playwright/test）
+        # 从 toolkit 目录运行（共用 node_modules/@playwright/test），
+        # 通过 VT_TEST_DIR 让 playwright.config.js 扫描目标 feature 目录
         local cfg="$TOOLKIT_DIR/playwright.config.js"
-        npx playwright test --config "$cfg" "$dir/record.spec.js" --headed --timeout=120000
-        
-        # 停止录屏
-        kill "$ffmpeg_pid" 2>/dev/null
-        wait "$ffmpeg_pid" 2>/dev/null
-        
+        export VT_TEST_DIR="$dir"
+        (cd "$TOOLKIT_DIR" && npx playwright test --config "$cfg" --headed --timeout=600000)
+        local pw_exit=$?
+
+        # 停止录屏（trap 会兜底，这里主动触发一次以便后续步骤能立刻用到文件）
+        kill "$ffmpeg_pid" 2>/dev/null || true
+        wait "$ffmpeg_pid" 2>/dev/null || true
+        trap - EXIT INT TERM
+
+        # 校验录屏文件完整性（moov atom 是否存在），避免产出损坏文件却没人发现
+        if [ -f "$rec" ]; then
+            if ! ffprobe -v error "$rec" 2>&1 | grep -qi "moov atom not found"; then
+                ok "录屏文件完整性校验通过"
+            else
+                err "录屏文件损坏（moov atom 缺失），请重新录制: $rec"
+            fi
+        fi
+        [ "$pw_exit" -ne 0 ] && warn "Playwright 脚本以非 0 状态退出（exit=$pw_exit），请检查录制内容是否完整"
+
         # timeline.json → subtitles.srt
         if [ -f "$dir/timeline.json" ]; then
             local srt="$dir/subtitles.srt"
@@ -607,10 +722,25 @@ print(f'✅ SRT: {len(lines)} 段')
         fi
     else
         # 回退：纯录屏
+        local screen_idx=$(detect_recording_screen)
+        info "录制屏幕: 序号 $screen_idx（自动识别的内置/主屏）"
         info "录屏 (Ctrl+C 停止) → $rec"
-        ffmpeg -f avfoundation -i "1:none" -c:v libx264 -preset ultrafast -crf 28 "$rec" -y
+        ffmpeg -f avfoundation -i "${screen_idx}:none" -c:v h264_videotoolbox -b:v 8M "$rec" -y
     fi
     ok "录制完成: $rec"
+}
+
+# ── 交互式录制导航路径（供人工走一遍，生成可靠选择器，避免脚本反复猜选择器）──
+cmd_codegen() {
+    local dir="$1"
+    local out="$dir/nav-draft.spec.js"
+    local admin="${ADMIN_URL:-https://localhost:6848}"
+    info "启动 Playwright codegen（中文界面，与实际录制一致）→ $admin"
+    info "在弹出的窗口里手动走一遍要自动化的操作路径，关闭窗口后自动保存到:"
+    info "  $out"
+    warn "生成的选择器需要手动搬进对应的 record.spec.js（尤其是 checkbox/button 等文本相关的）"
+    npx playwright codegen --ignore-https-errors --lang=zh-CN --output="$out" "$admin"
+    [ -f "$out" ] && ok "已生成: $out"
 }
 
 # ── 封面预览 ──
@@ -766,6 +896,7 @@ case "${1:-}" in
     mix)    dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_mix "$dir" ;;
     cover)  dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_cover "$dir" ;;
     record) dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_record "$dir" ;;
+    codegen) dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_codegen "$dir" ;;
     trans)  dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_trans "$dir" ;;
     en)     dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_en "$dir" ;;
     dub-en) dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_dub_en "$dir" ;;
