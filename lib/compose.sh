@@ -18,7 +18,7 @@ gen_title_card() {
   # 2. Logo 左上角（缩放到 60px 高，保留原色）
   if [ -n "$logo" ] && [ -f "$logo" ]; then
     local logo_small="/tmp/_vt_logo_$$.png"
-    magick "$logo" -resize x60 "$logo_small" 2>/dev/null
+    magick "$logo" -resize x80 "$logo_small" 2>/dev/null
     magick "$png" "$logo_small" -geometry +40+30 -composite "$png" 2>/dev/null
     rm -f "$logo_small"
   fi
