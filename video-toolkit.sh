@@ -137,16 +137,16 @@ show_status() {
     local rec="$dir/recording.mov"
     local srt="$dir/subtitles.srt"
     local dub="$dir/ai_dub.wav"
-    local out="$dir/final.mp4"
+    local out="$dir/$(basename "$dir").mp4"
     
     local en_srt="$dir/subtitles_en.srt"
     local en_dub="$dir/ai_dub_en.wav"
-    local en_out="$dir/final_en.mp4"
+    local en_out="$dir/$(basename "$dir")_en.mp4"
     
     [ -f "$rec" ]   && ok "recording.mov   ($(du -h "$rec" | cut -f1))"    || warn "recording.mov   缺失"
     [ -f "$srt" ]   && ok "subtitles.srt   ($(grep -c '^[0-9]' "$srt" 2>/dev/null || echo 0) 条)"  || warn "subtitles.srt   缺失"
     [ -f "$dub" ]   && ok "ai_dub.wav      ($(du -h "$dub" | cut -f1))"     || warn "ai_dub.wav      缺失"
-    [ -f "$out" ]   && ok "final.mp4       ($(du -h "$out" | cut -f1))"     || warn "final.mp4       缺失"
+    [ -f "$out" ]   && ok "$(basename "$out")       ($(du -h "$out" | cut -f1))"     || warn "$(basename "$dir").mp4       缺失"
     [ -f "$en_srt" ] && ok "subtitles_en.srt ($(grep -c '^[0-9]' "$en_srt" 2>/dev/null || echo 0) 条)" || true
     [ -f "$en_out" ] && ok "final_en.mp4    ($(du -h "$en_out" | cut -f1))"  || true
 }
@@ -241,7 +241,7 @@ compose() {
     local dir="$1"
     local rec="$dir/recording.mov"
     local dub="$dir/ai_dub.wav"
-    local out="$dir/final.mp4"
+    local out="$dir/$(basename "$dir").mp4"
     
     [ ! -f "$rec" ] && { err "缺少 recording.mov"; return 1; }
     [ ! -f "$dub" ] && { err "缺少 ai_dub.wav，请先运行 dub"; return 1; }
@@ -251,7 +251,7 @@ compose() {
     local content="$dir/_dubbed.mp4"
     ffmpeg -i "$rec" -i "$dub" \
         -c:v h264_videotoolbox -b:v 5M -r 30 -vf "scale=1920:-2" \
-        -c:a aac -map 0:v:0 -map 1:a:0 -shortest "$content" -y 2>/dev/null
+        -c:a aac -ar 48000 -map 0:v:0 -map 1:a:0 -shortest "$content" -y 2>/dev/null
     
     # 统一走 compose_final（无 meta 时自动使用默认值）
     local meta=$(load_meta "$dir" 2>/dev/null || echo "{}")
@@ -481,7 +481,7 @@ compose_en() {
     local rec="$dir/recording.mov"
     local dub="$dir/ai_dub_en.wav"
     local srt="$dir/subtitles_en.srt"
-    local out="$dir/final_en.mp4"
+    local out="$dir/$(basename "$dir")_en.mp4"
     
     [ ! -f "$rec" ] && { err "缺少 recording.mov"; return 1; }
     [ ! -f "$dub" ] && { err "缺少 ai_dub_en.wav"; return 1; }
@@ -531,7 +531,7 @@ cmd_en() {
     echo ""
     ok "英文版完成！"
     show_status "$dir"
-    [ -f "$dir/final_en.mp4" ] && ok "final_en.mp4 ($(du -h "$dir/final_en.mp4" | cut -f1))"
+    [ -f "$dir/$(basename "$dir")_en.mp4" ] && ok "final_en.mp4 ($(du -h "$dir/$(basename "$dir")_en.mp4" | cut -f1))"
 }
 
 cmd_trans() {
@@ -583,9 +583,9 @@ cmd_all() {
         local pages=$(build_pages "$dir" "$meta")
         local content="$dir/_content.mp4"
         gen_slide_video "$pages" "$meta" "$dir" "$content"
-        compose_final "$content" "$meta" "$dir" "$dir/final.mp4"
+        compose_final "$content" "$meta" "$dir" "$dir/$(basename "$dir").mp4"
         rm -f "$content"
-        ok "final.mp4"
+        ok "$(basename "$dir").mp4"
         return
         ;;
       error:*)
@@ -602,7 +602,7 @@ cmd_all() {
     echo ""
     compose "$dir"
     echo ""
-    ok "final.mp4"
+    ok "$(basename "$dir").mp4"
     show_status "$dir"
 }
 
@@ -627,15 +627,15 @@ cmd_slide_v2() {
     local content="$dir/_content.mp4"
     
     # 智能缓存：clips未变 + meta未变 → 跳过
-    if [ "${FORCE:-0}" != "1" ] && [ -f "$dir/final.mp4" ]; then
+    if [ "${FORCE:-0}" != "1" ] && [ -f "$dir/$(basename "$dir").mp4" ]; then
       local newer=1
       # 1. 检查所有 page clips 是否比 final.mp4 新
       for clip in "$dir/_clips"/page_*.mp4; do
-        [ -f "$clip" ] && [ "$clip" -nt "$dir/final.mp4" ] && newer=0 && break
+        [ -f "$clip" ] && [ "$clip" -nt "$dir/$(basename "$dir").mp4" ] && newer=0 && break
       done
       # 2. 检查 meta.json 是否比 final.mp4 新
-      [ -f "$dir/meta.json" ] && [ "$dir/meta.json" -nt "$dir/final.mp4" ] && newer=0
-      [ -f "$(dirname "$dir")/meta.json" ] && [ "$(dirname "$dir")/meta.json" -nt "$dir/final.mp4" ] && newer=0
+      [ -f "$dir/meta.json" ] && [ "$dir/meta.json" -nt "$dir/$(basename "$dir").mp4" ] && newer=0
+      [ -f "$(dirname "$dir")/meta.json" ] && [ "$(dirname "$dir")/meta.json" -nt "$dir/$(basename "$dir").mp4" ] && newer=0
       if [ "$newer" -eq 1 ]; then
         info "clips 和 meta 均未变化，跳过合成"
         return
@@ -643,7 +643,7 @@ cmd_slide_v2() {
     fi
     
     gen_slide_video "$pages" "$meta" "$dir" "$content"
-    compose_final "$content" "$meta" "$dir" "$dir/final.mp4"
+    compose_final "$content" "$meta" "$dir" "$dir/$(basename "$dir").mp4"
     rm -f "$content"
 }
 
@@ -711,14 +711,14 @@ case "${1:-}" in
       case "${3:-}" in
         dub)     afplay "$dir/ai_dub.wav" 2>/dev/null || err "播放失败" ;;
         dub-en)  afplay "$dir/ai_dub_en.wav" 2>/dev/null || err "播放失败" ;;
-        final)   open "$dir/final.mp4" 2>/dev/null || xdg-open "$dir/final.mp4" 2>/dev/null || err "播放失败" ;;
-        final-en) open "$dir/final_en.mp4" 2>/dev/null || xdg-open "$dir/final_en.mp4" 2>/dev/null || err "播放失败" ;;
+        final)   open "$dir/$(basename "$dir").mp4" 2>/dev/null || xdg-open "$dir/$(basename "$dir").mp4" 2>/dev/null || err "播放失败" ;;
+        final-en) open "$dir/$(basename "$dir")_en.mp4" 2>/dev/null || xdg-open "$dir/$(basename "$dir")_en.mp4" 2>/dev/null || err "播放失败" ;;
         *)
           echo "可用资源:"
           [ -f "$dir/ai_dub.wav" ]    && echo "  dub     → ai_dub.wav ($(ls -lh "$dir/ai_dub.wav" | awk '{print $5}'))"
           [ -f "$dir/ai_dub_en.wav" ] && echo "  dub-en  → ai_dub_en.wav ($(ls -lh "$dir/ai_dub_en.wav" | awk '{print $5}'))"
-          [ -f "$dir/final.mp4" ]     && echo "  final   → final.mp4 ($(ls -lh "$dir/final.mp4" | awk '{print $5}'))"
-          [ -f "$dir/final_en.mp4" ]  && echo "  final-en → final_en.mp4 ($(ls -lh "$dir/final_en.mp4" | awk '{print $5}'))"
+          [ -f "$dir/$(basename "$dir").mp4" ]     && echo "  final   → final.mp4 ($(ls -lh "$dir/$(basename "$dir").mp4" | awk '{print $5}'))"
+          [ -f "$dir/$(basename "$dir")_en.mp4" ]  && echo "  final-en → final_en.mp4 ($(ls -lh "$dir/$(basename "$dir")_en.mp4" | awk '{print $5}'))"
           echo ""
           err "用法: vt play <feature> <dub|dub-en|final|final-en>" ;;
       esac ;;  
