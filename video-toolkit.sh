@@ -580,7 +580,7 @@ cmd_record() {
         [ -z "$ADMIN_PW" ] && [ -f "$HOME/.config/video-toolkit/config" ] && ADMIN_PW=$(grep '^ADMIN_PW=' "$HOME/.config/video-toolkit/config" 2>/dev/null | cut -d= -f2-)
         export ADMIN_PW
         # 从 toolkit 目录运行（共用 node_modules/@playwright/test）
-        npx playwright test "$dir/record.spec.js" --headed --timeout=120000
+        npx playwright test --config playwright.config.js "$dir/record.spec.js" --headed --timeout=120000
         
         # 停止录屏
         kill "$ffmpeg_pid" 2>/dev/null
