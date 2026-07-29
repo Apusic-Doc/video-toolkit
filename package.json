@@ -1,0 +1,29 @@
+{
+  "name": "toolkit",
+  "version": "1.0.0",
+  "description": "> 产品演示录屏自动化工具链 — 从原始录屏到多语言成片，一键完成。支持幻灯片模式，截图+解说文字自动生成演示视频。",
+  "main": "playwright.config.js",
+  "directories": {
+    "doc": "docs",
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Apusic-Doc/video-toolkit.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Apusic-Doc/video-toolkit/issues"
+  },
+  "homepage": "https://github.com/Apusic-Doc/video-toolkit#readme",
+  "dependencies": {
+    "@playwright/test": "^1.62.0"
+  }
+}
