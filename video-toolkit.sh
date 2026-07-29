@@ -576,6 +576,9 @@ cmd_record() {
         export BASE_URL="${BASE_URL:-http://localhost:6888}"
         export ADMIN_URL="${ADMIN_URL:-https://localhost:6848}"
         export VT_TIMELINE="$dir/timeline.json"
+        # 从 config 文件读取密码
+        [ -z "$ADMIN_PW" ] && [ -f "$HOME/.config/video-toolkit/config" ] && ADMIN_PW=$(grep '^ADMIN_PW=' "$HOME/.config/video-toolkit/config" 2>/dev/null | cut -d= -f2-)
+        export ADMIN_PW
         npx playwright test "$dir/record.spec.js" --headed --timeout=120000
         
         # 停止录屏
