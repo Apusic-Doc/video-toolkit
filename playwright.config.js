@@ -1,4 +1,7 @@
 import { defineConfig } from '@playwright/test';
 export default defineConfig({
-  use: { ignoreHTTPSErrors: true },
+  use: {
+    channel: 'chrome',
+    ignoreHTTPSErrors: true,
+  },
 });
