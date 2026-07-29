@@ -554,24 +554,38 @@ cmd_mix_en() {
 # ── 自动化录制 ──
 cmd_record() {
     local dir="$1"
-    # 如果有 Playwright 脚本，优先使用
+    local rec="$dir/recording.mov"
+    
+    # 如果已有 Playwright 脚本
     if [ -f "$dir/record.spec.js" ]; then
-        info "Playwright 自动化录制: $(basename "$dir")"
-        local script="$dir/record.spec.js"
+        info "Playwright 自动化 + 录屏: $(basename "$dir")"
+        
+        # 安装 Playwright（如果需要）
         if ! npx playwright --version 2>/dev/null; then
             warn "安装 Playwright..."
             npm install -g playwright 2>/dev/null && npx playwright install chromium 2>/dev/null
         fi
+        
+        # 启动 ffmpeg 录屏（后台）
+        info "开始录屏 → $rec"
+        ffmpeg -f avfoundation -i "1:none" -c:v libx264 -preset ultrafast -crf 28 "$rec" -y 2>/dev/null &
+        local ffmpeg_pid=$!
+        sleep 1
+        
+        # 运行 Playwright 自动化
         export BASE_URL="${BASE_URL:-http://localhost:6888}"
         export ADMIN_URL="${ADMIN_URL:-https://localhost:6848}"
-        npx playwright test "$script" --headed --timeout=120000
+        npx playwright test "$dir/record.spec.js" --headed --timeout=120000
+        
+        # 停止录屏
+        kill "$ffmpeg_pid" 2>/dev/null
+        wait "$ffmpeg_pid" 2>/dev/null
     else
-        # 回退：ffmpeg 录屏
-        local out="$dir/recording.mov"
-        info "录屏 (Ctrl+C 停止) → $out"
-        ffmpeg -f avfoundation -i "1:none" -c:v libx264 -preset ultrafast -crf 28 "$out" -y
+        # 回退：纯录屏
+        info "录屏 (Ctrl+C 停止) → $rec"
+        ffmpeg -f avfoundation -i "1:none" -c:v libx264 -preset ultrafast -crf 28 "$rec" -y
     fi
-    ok "录制完成"
+    ok "录制完成: $rec"
 }
 
 # ── 封面预览 ──
