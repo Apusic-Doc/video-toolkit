@@ -575,11 +575,31 @@ cmd_record() {
         # 运行 Playwright 自动化
         export BASE_URL="${BASE_URL:-http://localhost:6888}"
         export ADMIN_URL="${ADMIN_URL:-https://localhost:6848}"
+        export VT_TIMELINE="$dir/timeline.json"
         npx playwright test "$dir/record.spec.js" --headed --timeout=120000
         
         # 停止录屏
         kill "$ffmpeg_pid" 2>/dev/null
         wait "$ffmpeg_pid" 2>/dev/null
+        
+        # timeline.json → subtitles.srt
+        if [ -f "$dir/timeline.json" ]; then
+            local srt="$dir/subtitles.srt"
+            python3 -c "
+import json
+tl = json.load(open('$dir/timeline.json'))
+lines = []
+for i, s in enumerate(tl):
+    t = s['t']
+    next_t = tl[i+1]['t'] if i+1 < len(tl) else t + 5
+    t1 = f'{int(t//3600):02d}:{int((t%3600)//60):02d}:{int(t%60):02d},{int((t%1)*1000):03d}'
+    t2 = f'{int(next_t//3600):02d}:{int((next_t%3600)//60):02d}:{int(next_t%60):02d},{int((next_t%1)*1000):03d}'
+    lines.append(f'{i+1}\n{t1} --> {t2}\n{s[\"text\"]}\n')
+with open('$srt','w') as f: f.write('\n'.join(lines))
+print(f'✅ SRT: {len(lines)} 段')
+" 2>/dev/null
+            ok "字幕: $srt"
+        fi
     else
         # 回退：纯录屏
         info "录屏 (Ctrl+C 停止) → $rec"
