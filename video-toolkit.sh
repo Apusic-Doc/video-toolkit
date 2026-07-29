@@ -724,6 +724,8 @@ case "${1:-}" in
       esac ;;  
     status) cmd_status "${2:-}" ;;
     config) cmd_config "${2:-}" "${3:-}" ;;
+    --version) echo "Video Toolkit v2 ($(cat "$TOOLKIT_DIR/VERSION" 2>/dev/null || echo "?"))" ;;
+    --update) echo "请用 vt upgrade 命令更新" ;;
     *)
         echo "Video Toolkit — 录屏处理工具 v2"
         echo ""
