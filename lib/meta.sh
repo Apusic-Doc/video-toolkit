@@ -139,7 +139,7 @@ resolve_asset() {
     echo ""
     return
   fi
-  if [ -n "$val" ] && [ "$val" != "" ]; then
+  if [ -n "$val" ] && [ "$val" != "" ] && [ "$val" != "true" ] && [ "$val" != "false" ]; then
     # 路径相对 project 根
     local path="$project_dir/$val"
     if [ -f "$path" ]; then echo "$path"; return; fi
