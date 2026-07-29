@@ -743,6 +743,16 @@ cmd_codegen() {
     [ -f "$out" ] && ok "已生成: $out"
 }
 
+# ── 同步 codegen → record.spec.js ──
+cmd_sync() {
+    local dir="$1"
+    local draft="$dir/nav-draft.spec.js"
+    [ ! -f "$draft" ] && { err "缺少 $draft，请先运行 vt codegen"; return 1; }
+    info "nav-draft.spec.js → record.spec.js"
+    info "请手动将 codegen 生成的选择器搬进 record.spec.js（尤其是管控台树形导航的 Toggle 链接和 exact: true 项）"
+    ok "准备就绪，编辑 $dir/record.spec.js 后运行 vt record"
+}
+
 # ── 封面预览 ──
 cmd_cover() {
     local dir="$1"
@@ -897,6 +907,7 @@ case "${1:-}" in
     cover)  dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_cover "$dir" ;;
     record) dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_record "$dir" ;;
     codegen) dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_codegen "$dir" ;;
+    sync)    dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_sync "$dir" ;;
     trans)  dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_trans "$dir" ;;
     en)     dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_en "$dir" ;;
     dub-en) dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_dub_en "$dir" ;;
