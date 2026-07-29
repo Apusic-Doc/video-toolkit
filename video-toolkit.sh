@@ -551,6 +551,29 @@ cmd_mix_en() {
 }
 
 # ── 合成（包装 compose_final） ──
+# ── 自动化录制 ──
+cmd_record() {
+    local dir="$1"
+    # 如果有 Playwright 脚本，优先使用
+    if [ -f "$dir/record.spec.js" ]; then
+        info "Playwright 自动化录制: $(basename "$dir")"
+        local script="$dir/record.spec.js"
+        if ! npx playwright --version 2>/dev/null; then
+            warn "安装 Playwright..."
+            npm install -g playwright 2>/dev/null && npx playwright install chromium 2>/dev/null
+        fi
+        export BASE_URL="${BASE_URL:-http://localhost:6888}"
+        export ADMIN_URL="${ADMIN_URL:-https://localhost:6848}"
+        npx playwright test "$script" --headed --timeout=120000
+    else
+        # 回退：ffmpeg 录屏
+        local out="$dir/recording.mov"
+        info "录屏 (Ctrl+C 停止) → $out"
+        ffmpeg -f avfoundation -i "1:none" -c:v libx264 -preset ultrafast -crf 28 "$out" -y
+    fi
+    ok "录制完成"
+}
+
 # ── 封面预览 ──
 cmd_cover() {
     local dir="$1"
@@ -703,6 +726,7 @@ case "${1:-}" in
     dub)    dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_dub "$dir" ;;
     mix)    dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_mix "$dir" ;;
     cover)  dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_cover "$dir" ;;
+    record) dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_record "$dir" ;;
     trans)  dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_trans "$dir" ;;
     en)     dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_en "$dir" ;;
     dub-en) dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_dub_en "$dir" ;;
