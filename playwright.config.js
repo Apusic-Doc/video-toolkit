@@ -18,6 +18,15 @@ export default defineConfig({
     // viewport:null + --start-maximized = 窗口最大化铺满屏幕（任务栏/地址栏仍可见），
     // 不是浏览器 Fullscreen 模式（那样会连地址栏一起隐藏，录制要求里明确要保留浏览器导航栏）
     viewport: null,
-    launchOptions: { args: ['--start-maximized', '--window-name=Apusic 功能验证'] },
+    // 用重新签名、改过 CFBundleName/CFBundleDisplayName/CFBundleExecutable 的 Chromium 副本，
+    // 菜单栏/进程名显示"Apusic 功能验证"而不是"Google Chrome for Testing"（--window-name 只影响
+    // X11 窗口类名，在 macOS 上对菜单栏应用名不起作用，已实测排除）。
+    // 副本由 toolkit/rebranded-chromium/build.sh 生成，不随仓库分发。
+    launchOptions: {
+      // --disable-features=Translate 之前只在品牌版 Chrome 上试过没用，没在自带 Chromium 上试过；
+      // 这次录制发现自带 Chromium 也会弹翻译条，补上这个开关防御一下
+      args: ['--start-maximized', '--disable-features=Translate,TranslateUI'],
+      executablePath: '/Users/martin/Apusic/Product/ApusicAS/Videos/toolkit/rebranded-chromium/Apusic 功能验证.app/Contents/MacOS/Apusic 功能验证',
+    },
   },
 });

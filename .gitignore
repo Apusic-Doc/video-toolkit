@@ -12,3 +12,5 @@ _clips/
 ai_dub.wav
 final.mp4
 .DS_Store
+# build.sh 从 Playwright 缓存生成的改名/重签名 Chromium 副本（~370MB，机器本地产物，不入库）
+rebranded-chromium/*.app/

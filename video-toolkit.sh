@@ -653,25 +653,10 @@ cmd_record() {
             npm install -g playwright 2>/dev/null && npx playwright install chromium 2>/dev/null
         fi
 
-        # 录屏开始到浏览器真正打开之间有几秒空档，屏幕上这段时间显示什么不可控
-        # （运行本脚本的终端/聊天窗口都可能露出来，这对录制的内容是敏感信息）。
-        # 不试图"隐藏某个窗口"（不可靠，猜不全），而是精确记录 ffmpeg 启动的墙钟时间，
-        # 合成阶段按 record.spec.js 算出的偏移量把这段空档从最终视频里剪掉。
-        export VT_REC_START_EPOCH=$(date +%s.%N)
-
         # 屏幕序号不是稳定 ID，接了外接显示器之后可能会指向错误的屏幕——
         # 动态识别内置/主屏，不要每次都硬编码同一个序号
         local screen_idx=$(detect_recording_screen)
         info "录制屏幕: 序号 $screen_idx（自动识别的内置/主屏）"
-
-        # 启动 ffmpeg 录屏（后台，硬件编码降低 CPU 占用，给同时运行的自动化留余量）
-        info "开始录屏 → $rec"
-        ffmpeg -f avfoundation -i "${screen_idx}:none" -c:v h264_videotoolbox -b:v 8M "$rec" -y 2>/dev/null &
-        local ffmpeg_pid=$!
-        # 无论后面 playwright 是否失败/脚本被中断，都保证 ffmpeg 被停止，不留孤儿进程
-        # kill/wait 在进程已按信号终止时返回非 0，脚本开着 set -e，必须 || true 否则直接整体退出
-        trap 'kill "$ffmpeg_pid" 2>/dev/null || true; wait "$ffmpeg_pid" 2>/dev/null || true' EXIT INT TERM
-        sleep 1
 
         # 运行 Playwright 自动化
         export BASE_URL="${BASE_URL:-http://localhost:6888}"
@@ -687,12 +672,59 @@ cmd_record() {
         local node_path="$TOOLKIT_DIR/node_modules"
         [ -x "$play_bin" ] || { play_bin="npx playwright"; node_path=""; }
         [ -d "$node_path/@playwright/test" ] || node_path="/Users/martin/Apusic/Product/ApusicAS/Videos/toolkit/node_modules"
-        NODE_PATH="$node_path" "$play_bin" test --config "$cfg" --headed --timeout=600000
+
+        # 先开浏览器、导航好、切到前台，确认"现在开始录屏是安全的"之后才启动 ffmpeg——
+        # 而不是先录屏、留几秒空档等浏览器打开再事后裁剪。空档期间屏幕上真实显示的是
+        # 别的窗口（出现过好几次真实的敏感内容泄露），裁剪只是补救，raw 文件已经写到磁盘了。
+        # ready/go 用文件做跨进程信号：record.spec.js 就绪后写 ready 文件；
+        # 这边看到 ready 才启动 ffmpeg，ffmpeg 稳定输出后写 go 文件，脚本收到 go 才开始正式操作。
+        local ready_flag="$dir/.record-ready.flag"
+        local go_flag="$dir/.record-go.flag"
+        rm -f "$ready_flag" "$go_flag"
+        export VT_READY_FLAG="$ready_flag"
+        export VT_GO_FLAG="$go_flag"
+
+        NODE_PATH="$node_path" "$play_bin" test --config "$cfg" --headed --timeout=600000 &
+        local pw_pid=$!
+
+        info "等待浏览器就绪（最多 60 秒）..."
+        local waited=0
+        while [ ! -f "$ready_flag" ]; do
+            sleep 0.5
+            waited=$(python3 -c "print($waited + 0.5)")
+            if ! kill -0 "$pw_pid" 2>/dev/null; then
+                err "Playwright 进程在浏览器就绪前已退出，录屏未启动"
+                wait "$pw_pid" 2>/dev/null; pw_exit=$?
+                rm -f "$ready_flag" "$go_flag"
+                return 1
+            fi
+            if python3 -c "exit(0 if $waited > 60 else 1)" 2>/dev/null; then
+                err "等待浏览器就绪超时（60s），放弃本次录制"
+                kill "$pw_pid" 2>/dev/null || true; wait "$pw_pid" 2>/dev/null || true
+                rm -f "$ready_flag" "$go_flag"
+                return 1
+            fi
+        done
+
+        # 启动 ffmpeg 录屏（后台，硬件编码降低 CPU 占用，给同时运行的自动化留余量）
+        info "浏览器已就绪，开始录屏 → $rec"
+        ffmpeg -f avfoundation -i "${screen_idx}:none" -c:v h264_videotoolbox -b:v 8M "$rec" -y 2>/dev/null &
+        local ffmpeg_pid=$!
+        # 无论后面 playwright 是否失败/脚本被中断，都保证 ffmpeg 被停止，不留孤儿进程
+        # kill/wait 在进程已按信号终止时返回非 0，脚本开着 set -e，必须 || true 否则直接整体退出
+        trap 'kill "$ffmpeg_pid" 2>/dev/null || true; wait "$ffmpeg_pid" 2>/dev/null || true; rm -f "$ready_flag" "$go_flag"' EXIT INT TERM
+        sleep 1  # ffmpeg 从进程启动到真正稳定写帧需要一点时间
+
+        touch "$go_flag"
+        info "已发出录屏启动信号，等待自动化流程跑完..."
+        pw_exit=0
+        wait "$pw_pid" || pw_exit=$?
 
         # 停止录屏（trap 会兜底，这里主动触发一次以便后续步骤能立刻用到文件）
         kill "$ffmpeg_pid" 2>/dev/null || true
         wait "$ffmpeg_pid" 2>/dev/null || true
         trap - EXIT INT TERM
+        rm -f "$ready_flag" "$go_flag"
 
         # 校验录屏文件完整性（moov atom 是否存在），避免产出损坏文件却没人发现
         if [ -f "$rec" ]; then
