@@ -680,12 +680,14 @@ cmd_record() {
         # 从 config 文件读取密码
         [ -z "$ADMIN_PW" ] && [ -f "$HOME/.config/video-toolkit/config" ] && ADMIN_PW=$(grep '^ADMIN_PW=' "$HOME/.config/video-toolkit/config" 2>/dev/null | cut -d= -f2-)
         export ADMIN_PW
-        # 用本地 playwright 二进制（避免"Requiring second time"多版本冲突）
+        # NODE_PATH 确保所有模块从同一位置加载，避免 "Requiring second time"
         local cfg="$TOOLKIT_DIR/playwright.config.js"
         export VT_TEST_DIR="$dir"
         local play_bin="$TOOLKIT_DIR/node_modules/.bin/playwright"
-        [ -x "$play_bin" ] || play_bin="npx playwright"
-        NODE_PATH="$TOOLKIT_DIR/node_modules" "$play_bin" test --config "$cfg" --headed --timeout=600000
+        local node_path="$TOOLKIT_DIR/node_modules"
+        [ -x "$play_bin" ] || { play_bin="npx playwright"; node_path=""; }
+        [ -d "$node_path/@playwright/test" ] || node_path="/Users/martin/Apusic/Product/ApusicAS/Videos/toolkit/node_modules"
+        NODE_PATH="$node_path" "$play_bin" test --config "$cfg" --headed --timeout=600000
 
         # 停止录屏（trap 会兜底，这里主动触发一次以便后续步骤能立刻用到文件）
         kill "$ffmpeg_pid" 2>/dev/null || true
