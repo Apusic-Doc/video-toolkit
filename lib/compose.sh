@@ -10,6 +10,43 @@ gen_title_card() {
   [ -z "$title" ] && return 1
   local png="/tmp/_vt_cover_$$.png"
   local font=""
+  for f in "/System/Library/Fonts/Supplemental/Songti.ttc" \
+           "/System/Library/Fonts/STHeiti Medium.ttc" \
+           "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc" \
+           "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc"; do
+    [ -f "$f" ] && { font="$f"; break; }
+  done
+  
+  # Step 1: base + title + subtitle
+  magick -size 1920x1080 xc:'#FFFFFF' -gravity center \
+    ${font:+-font "$font"} \
+    -fill '#222222' -pointsize 60 -draw "text 0,-60 '$title'" \
+    -fill '#666666' -pointsize 42 -draw "text 0,30 '$subtitle'" \
+    "$png" 2>/dev/null || return 1
+
+  # Step 2: logo composite (force sRGB)
+  if [ -n "$logo" ] && [ -f "$logo" ]; then
+    local logo_small="/tmp/_vt_logo_$$.png"
+    magick "$logo" -resize x80 "$logo_small" 2>/dev/null
+    magick "$png" "$logo_small" -geometry +40+30 -composite -colorspace sRGB "$png" 2>/dev/null
+    rm -f "$logo_small"
+  fi
+
+  # Step 3: company name (bottom center)
+  if [ -n "$company" ] && [ -n "$font" ]; then
+    magick "$png" -font "$font" -gravity south -fill '#999999' -pointsize 24 \
+      -draw "text 0,50 '$company'" -colorspace sRGB "$png" 2>/dev/null
+  fi
+
+  ffmpeg -loop 1 -i "$png" -f lavfi -i "anullsrc=r=48000:cl=mono" \
+    -c:v libx264 -preset fast -crf 23 -t "$duration" -pix_fmt yuv420p -c:a aac -shortest "$out" -y 2>/dev/null
+  rm -f "$png"
+}
+" out="$4"
+  local logo="$5" company="$6"
+  [ -z "$title" ] && return 1
+  local png="/tmp/_vt_cover_$$.png"
+  local font=""
   for f in "/System/Library/Fonts/Supplemental/Songti.ttc"            "/System/Library/Fonts/STHeiti Medium.ttc"            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"            "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc"; do
     [ -f "$f" ] && { font="$f"; break; }
   done
