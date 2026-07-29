@@ -747,39 +747,10 @@ cmd_codegen() {
 cmd_sync() {
     local dir="$1"
     local draft="$dir/nav-draft.spec.js"
-    local spec="$dir/record.spec.js"
     [ ! -f "$draft" ] && { err "缺少 $draft，请先运行 vt codegen"; return 1; }
-    [ ! -f "$spec" ] && { err "缺少 $spec"; return 1; }
-    
-    info "nav-draft.spec.js → record.spec.js"
-    
-    # 提取 codegen 选择器
-    python3 -c "
-import re
-with open('$draft') as f: draft = f.read()
-with open('$spec') as f: spec = f.read()
-
-# 提取 codegen 里所有 getByRole/getByText/getByLabel 操作
-selectors = re.findall(r\"page\.(getBy\w+\([^)]+\))\", draft)
-print(f'📋 从 codegen 提取到 {len(selectors)} 个选择器:')
-for s in selectors:
-    print(f'  page.{s}')
-
-# 替换 record.spec.js 里的管控台操作（2/9 ~ 5/9）
-# 注意：codegen 里的顺序可能跟 record 不同，只替换已知明确的 region
-for old, new in [
-    (\"page.fill('input[name=\\\\"j_username\\\\\"]', 'admin')\", \"page.getByRole('textbox', { name: '请输入用户名' }).fill('admin')\"),
-    (\"page.fill('input[name=\\\\"j_password\\\\\"]', process.env.ADMIN_PW\", \"page.getByRole('textbox', { name: '请输入密码' }).fill(process.env.ADMIN_PW\"),
-    (\"page.click('input[type=\\\\"submit\\\\\"]')\", \"page.getByRole('button', { name: '登录' }).click()\"),
-]:
-    if old in spec:
-        spec = spec.replace(old, new)
-        print(f'✅ 已替换: {old[:40]}...')
-
-with open('$spec','w') as f: f.write(spec)
-print('✅ record.spec.js 已更新')
-    "
-    ok "同步完成，可运行 vt record $($(basename "$(dirname "$dir")")/...)"
+    info "codegen 选择器已生成: $draft"
+    info "将该文件内容发给 AI，AI 会将精确选择器同步到 record.spec.js 并更新 timeline.json"
+    ok "请将 nav-draft.spec.js 发给 AI 处理"
 }
 
 # ── 封面预览 ──
