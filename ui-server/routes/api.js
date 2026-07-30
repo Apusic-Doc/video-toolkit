@@ -4,7 +4,7 @@ import path from 'path';
 import {
   listProjects, listFeatures, resolveProjectDir, resolveFeatureDir, featureStatus,
 } from '../lib/paths.js';
-import { readFeatureMeta, writeFeatureMeta, readMergedMeta, readProjectMeta } from '../lib/meta.js';
+import { readFeatureMeta, writeFeatureMeta, readMergedMeta, readProjectMeta, writeProjectMeta } from '../lib/meta.js';
 import { parseSrt, serializeSrt } from '../lib/srt.js';
 import { runTask, getHistory, ALLOWED_COMMANDS } from '../lib/taskRunner.js';
 import { guardScreenCommand } from '../lib/localGuard.js';
@@ -18,6 +18,58 @@ router.get('/projects', (req, res) => {
     name,
     company: readProjectMeta(resolveProjectDir(name)).company || null,
   })));
+});
+
+// ── 项目级 meta.json（字体/字号/语音/封面配色这些"整个项目该统一"的设置放这里，
+// 单个 feature 的 meta.json 留空就会继承这里的值，覆盖了才是这个 feature 自己特殊）──
+router.get('/projects/:project/meta', (req, res) => {
+  const projectDir = resolveProjectDir(req.params.project);
+  if (!projectDir) return res.status(404).json({ error: 'project not found' });
+  res.json({ raw: readProjectMeta(projectDir) });
+});
+
+router.put('/projects/:project/meta', (req, res) => {
+  const projectDir = resolveProjectDir(req.params.project);
+  if (!projectDir) return res.status(404).json({ error: 'project not found' });
+  const data = req.body;
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+    return res.status(400).json({ error: 'meta 必须是一个 JSON 对象' });
+  }
+  writeProjectMeta(projectDir, data);
+  res.json({ ok: true });
+});
+
+// 项目级封面预览：用项目 meta 里的默认值（没有 title 时用项目名占位）渲染一张示例封面
+router.post('/projects/:project/preview-cover', async (req, res) => {
+  const projectDir = resolveProjectDir(req.params.project);
+  if (!projectDir) return res.status(404).json({ error: 'project not found' });
+  const { execFile } = await import('child_process');
+  const { promisify } = await import('util');
+  const execFileAsync = promisify(execFile);
+  const { TOOLKIT_DIR } = await import('../lib/paths.js');
+  const data = req.body || {};
+  const tmpPng = path.join(projectDir, '.ui_preview_cover.png');
+
+  let logoPath = '';
+  if (data.logo && typeof data.logo === 'string') {
+    const candidate = path.join(projectDir, data.logo);
+    if (fs.existsSync(candidate)) logoPath = candidate;
+  } else {
+    const auto = path.join(projectDir, 'resources', 'logo.png');
+    if (fs.existsSync(auto)) logoPath = auto;
+  }
+  const script = `source "${TOOLKIT_DIR}/lib/compose.sh"; gen_title_card_png "$1" "$2" "$3" "$4" "$5" "$6"`;
+  try {
+    await execFileAsync('bash', ['-c', script, '--',
+      data.title || '示例标题 Sample Title', data.subtitle || '示例副标题', tmpPng, logoPath,
+      data.company || '', data.cover_accent_color || '#222222']);
+    if (!fs.existsSync(tmpPng)) return res.status(400).json({ error: '生成失败' });
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'no-store');
+    fs.createReadStream(tmpPng).pipe(res).on('close', () => fs.unlink(tmpPng, () => {}));
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
 });
 
 router.get('/projects/:project/features', (req, res) => {
@@ -108,6 +160,13 @@ router.put('/projects/:project/features/:feature/subtitles', requireFeature, (re
   res.json({ ok: true });
 });
 
+// ── 说明文档（README.md，纯展示，不可编辑——改文档去改 README.md 本身）──
+router.get('/projects/:project/features/:feature/readme', requireFeature, (req, res) => {
+  const p = path.join(req.featureDir, 'README.md');
+  if (!fs.existsSync(p)) return res.json({ content: '' });
+  res.json({ content: fs.readFileSync(p, 'utf8') });
+});
+
 // ── tasks ──
 router.get('/projects/:project/features/:feature/tasks', requireFeature, (req, res) => {
   res.json(getHistory(req.params.project, req.params.feature));
@@ -126,6 +185,9 @@ router.get('/projects/:project/features/:feature/files/:filename', requireFeatur
   if (filename.includes('/') || filename.includes('..')) return res.status(400).end();
   const fp = path.join(req.featureDir, filename);
   if (!fs.existsSync(fp) || !fs.statSync(fp).isFile()) return res.status(404).end();
+  // 录制/字幕/成片这些文件经常在原地被重新生成（文件名不变，内容变了），
+  // 不能让浏览器无条件信任本地缓存，每次都强制回源校验（有 ETag 命中还是走 304，不是整个重下）
+  res.setHeader('Cache-Control', 'no-cache');
   res.sendFile(fp);
 });
 

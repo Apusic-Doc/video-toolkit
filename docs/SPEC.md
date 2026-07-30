@@ -44,13 +44,19 @@ project/
   "type": "auto",
   "voice": "zh-CN-XiaoxiaoNeural",
   "voice_en": "en-US-AvaNeural",
+  "dub_offset": 0,
+
+  "title": "",
+  "subtitle": "",
+  "company": "",
 
   "cover": null,
-  "outro": null,
+  "outro": false,
   "cover_duration": 3,
+  "cover_accent_color": "#222222",
   "outro_duration": 3,
 
-  "bgm": null,
+  "bgm": false,
   "bgm_volume": 0.15,
   "bgm_loop": true,
 
@@ -59,9 +65,10 @@ project/
   "logo": null,
   "logo_position": "bottom-right",
 
-  "subtitle": { "mode": "auto", "burn": false },
   "subtitle_style": {
-    "font_size": 22,
+    "font_name": "PingFang SC",
+    "font_size": 44,
+    "margin_v": 45,
     "color": "&H00FFFFFF",
     "outline": "&H00000000"
   },
@@ -77,6 +84,8 @@ project/
 }
 ```
 
+> 注：`subtitle` 曾是 `{mode, burn}` 对象字段（内部合成开关，日常不用碰），字体渲染相关配置全在 `subtitle_style` 里；`title`/`subtitle`（此处指封面标题/副标题文案）在实际使用里是字符串——两者字面重名但含义不同，勿混淆。`cover`/`logo` 未显式设置时会从 `resources/` 自动探测（视觉品牌类元素，自动带出是安全的）；`outro`/`bgm` 则必须显式传路径或 `true` 才会生效，不会自动从 `resources/` 带出（改变时长/音轨的元素必须是主动选择）。`dub_offset` 见下方字段说明。
+
 ### 2.1 字段说明
 
 **顶层**
@@ -86,14 +95,18 @@ project/
 | `type` | `auto` | `auto` / `video` / `slide` |
 | `voice` | Xiaoxiao | 中文 AI 语音 |
 | `voice_en` | Ava | 英文 AI 语音 |
-| `cover` | null | 封面路径（相对 project 根），null=不启用 |
-| `outro` | null | 封底路径，null=不启用 |
+| `dub_offset` | 0 | 配音手工偏移（秒，可负），负=配音提前；`vt burn` 烧字幕时会同步偏移，保持画面/字幕/配音三者对齐 |
+| `title` / `subtitle` | "" | 封面标题/副标题文案 |
+| `company` | "" | 封面落款/公司名 |
+| `cover` | null | 封面路径（相对 project 根），未设置时自动探测 `resources/cover.png` |
+| `cover_accent_color` | `#222222` | 封面标题文字颜色，建议取产品实际品牌色 |
+| `outro` | false | 封底路径，`false`=禁用；必须显式设为路径或 `true` 才启用 |
 | `cover_duration` | 3 | 封面静态图展示秒数（视频封面忽略） |
-| `bgm` | null | 背景音乐路径（相对 project 根） |
+| `bgm` | false | 背景音乐路径，`false`=禁用；必须显式设为路径或 `true` 才启用 |
 | `bgm_volume` | 0.15 | BGM 音量 0~1 |
 | `bgm_loop` | true | BGM 短于视频时循环 |
 | `resolution` | 1920x1080 | 输出分辨率 |
-| `logo` | null | 水印图片路径 |
+| `logo` | null | 水印图片路径，未设置时自动探测 `resources/logo.png` |
 | `logo_position` | bottom-right | 水印位置 |
 
 **slides**
@@ -211,7 +224,9 @@ else:
 | 5 | 入口整合：vt all/slide/mix 统一接入 | ~50 |
 | 6 | 文档 + samples 示例 | — |
 
-**本期不做**：复杂 transition / zoom / logo 水印 / subtitle_style
+**本期不做**：复杂 transition / zoom
+
+> 以上 `subtitle_style` / logo 水印均已实现（见上方 Schema）；字幕硬烧录（`vt burn`）与可视化管理台（`vt ui`）为后续新增，不在本文档最初的开发计划范围内，详见 [README.md](../README.md)。
 
 ---
 
@@ -226,4 +241,7 @@ else:
 | `vt dub 01` | 不变 |
 | `vt play 01 dub` | 不变 |
 | `vt config` | 不变 |
-| `vt --version / --update` | 不变 |
+| `vt burn 01` | 字幕硬烧录（读 `subtitle_style` + `dub_offset`），新增 |
+| `vt redub 01` | 改了字幕/meta 后重新配音，不重新合成，新增 |
+| `vt ui [01]` | 打开可视化管理台，新增 |
+| `vt --version / vt upgrade` | 不变 |

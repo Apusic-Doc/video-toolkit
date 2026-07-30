@@ -15,8 +15,9 @@ function ipInPrivateRange(ip) {
   return false;
 }
 
-// 只对"会真实控制屏幕"的命令生效，其余命令（dub/burn/mix/srt 等纯后台合成）不受限
-const SCREEN_CONTROL_COMMANDS = new Set(['record']);
+// 只对"会真实控制屏幕"的命令生效，其余命令（dub/burn/mix/srt 等纯后台合成）不受限。
+// codegen 弹出的是一个要人工操作的真实浏览器窗口，跟 record 同一类风险。
+const SCREEN_CONTROL_COMMANDS = new Set(['record', 'codegen']);
 
 export function guardScreenCommand(req, res, next) {
   const cmd = req.body?.cmd || req.params?.cmd;

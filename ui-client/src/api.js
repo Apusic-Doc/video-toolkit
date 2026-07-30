@@ -28,6 +28,11 @@ export const api = {
   meta: (project, feature) => req('GET', `/api/projects/${encodeURIComponent(project)}/features/${encodeURIComponent(feature)}/meta`),
   saveMeta: (project, feature, data) => req('PUT', `/api/projects/${encodeURIComponent(project)}/features/${encodeURIComponent(feature)}/meta`, data),
   previewCoverUrl: (project, feature) => `/api/projects/${encodeURIComponent(project)}/features/${encodeURIComponent(feature)}/preview-cover`,
+  readme: (project, feature) => req('GET', `/api/projects/${encodeURIComponent(project)}/features/${encodeURIComponent(feature)}/readme`),
+
+  projectMeta: (project) => req('GET', `/api/projects/${encodeURIComponent(project)}/meta`),
+  saveProjectMeta: (project, data) => req('PUT', `/api/projects/${encodeURIComponent(project)}/meta`, data),
+  projectPreviewCoverUrl: (project) => `/api/projects/${encodeURIComponent(project)}/preview-cover`,
 
   subtitles: (project, feature) => req('GET', `/api/projects/${encodeURIComponent(project)}/features/${encodeURIComponent(feature)}/subtitles`),
   saveSubtitles: (project, feature, cues) => req('PUT', `/api/projects/${encodeURIComponent(project)}/features/${encodeURIComponent(feature)}/subtitles`, { cues }),

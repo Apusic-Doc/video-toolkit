@@ -5,12 +5,17 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const TOOLKIT_DIR = path.resolve(__dirname, '..', '..');
-export const VIDEOS_ROOT = path.dirname(TOOLKIT_DIR);
-export const VT_BIN = '/Users/martin/.local/bin/vt';
+// "toolkit 自己装在哪" 跟 "视频项目目录在哪" 是两回事——装到 ~/.local/share/video-toolkit
+// 之后，它的上一级目录（~/.local/share）跟用户的 Videos/ 项目目录完全没关系，
+// 只有直接跑仓库源码副本（Videos/toolkit/）时两者才恰好重合。
+// 真正可靠的来源是 vt ui 启动时传进来的 VT_UI_VIDEOS_ROOT（cmd_ui 用当时的
+// 工作目录算出来的），退回到 dirname(TOOLKIT_DIR) 只是本地开发时的兜底。
+export const VIDEOS_ROOT = process.env.VT_UI_VIDEOS_ROOT || path.dirname(TOOLKIT_DIR);
+export const VT_BIN = path.join(process.env.HOME || '', '.local', 'bin', 'vt');
 
 // 一个"project"就是 VIDEOS_ROOT 下任意一个直接子目录，
 // 判定标准：里面至少有一个 feature-* 子目录（不要求叫 projects/xxx，跟实际用法一致——
-// zhejiang-mobile 就是直接挂在 Videos/ 下面，不是套在 projects/ 里）
+// 项目目录就是直接挂在 Videos/ 下面，不是套在 projects/ 里）
 function isFeatureDir(p) {
   try { return fs.statSync(p).isDirectory(); } catch { return false; }
 }
@@ -68,5 +73,8 @@ export function featureStatus(featureDir) {
     mp4: has(`${base}.mp4`),
     noCoverMp4: has(`${base}-no-cover.mp4`),
     subMp4: has(`${base}-sub.mp4`),
+    // 英文流水线（trans → dub-en → mix-en），默认不生产，高级面板里按需露出
+    dubEn: has('ai_dub_en.wav'),
+    mp4En: has(`${base}_en.mp4`),
   };
 }

@@ -78,11 +78,7 @@ export VIDEO_PROJECTS_DIR="\${VIDEO_PROJECTS_DIR:-\$HOME/Apusic/Product/ApusicAS
 
 vt_main() {
     local cmd="\$1"; shift
-    if [ "\$cmd" = "ui" ]; then
-        cd "\$VT_HOME"
-        [ -f "\$VT_HOME/.venv/bin/activate" ] && source "\$VT_HOME/.venv/bin/activate"
-        VT_PORT="\${VT_PORT:-9876}" python3 "\$VT_HOME/backend/server.py" "\$@"
-    elif [ "\$cmd" = "upgrade" ]; then
+    if [ "\$cmd" = "upgrade" ]; then
         cd "\$VT_HOME" && git pull origin main 2>/dev/null && \\
             echo "✅ 已更新" || echo "⚠️  更新失败，请手动: cd \$VT_HOME && git pull"
     else

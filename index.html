@@ -219,9 +219,9 @@ footer {
       data-en="From <span>recording</span> to <span>final cut</span>,<br>one command.">
     From <span>recording</span> to <span>final cut</span>,<br>one command.
   </h1>
-  <p data-zh="录屏处理 · 幻灯片生成 · AI 配音 · 多语言翻译。<br>v2 meta.json 配置，封面/封底/BGM 一键合成。"
-     data-en="Recording · Slideshow · AI Dubbing · Multilingual.<br>v2 meta.json config with cover/outro/BGM.">
-    录屏处理 · 幻灯片生成 · AI 配音 · 多语言翻译。<br>v2 meta.json 配置，封面/封底/BGM 一键合成。
+  <p data-zh="录屏处理 · 幻灯片生成 · AI 配音 · 字幕硬烧录 · 多语言翻译。<br>新增可视化管理台 <code>vt ui</code>，网页里改封面/字体/语音，一键生效。"
+     data-en="Recording · Slideshow · AI Dubbing · Subtitle burn-in · Multilingual.<br>New visual control panel <code>vt ui</code> — edit cover/font/voice in the browser, apply with one click.">
+    录屏处理 · 幻灯片生成 · AI 配音 · 字幕硬烧录 · 多语言翻译。<br>新增可视化管理台 <code>vt ui</code>，网页里改封面/字体/语音，一键生效。
   </p>
   <div class="cta">
     <a href="#quickstart" class="cta-prim" data-zh="🚀 快速开始" data-en="🚀 Get Started">🚀 快速开始</a>
@@ -293,6 +293,22 @@ footer {
       <p data-zh="项目/Feature/单页三级合并，voice/bgm/cover/outro 灵活覆盖。无配置文件完全向后兼容。"
          data-en="Project/Feature/Page 3-level merge. voice/bgm/cover/outro per-level override. No config needed for legacy use.">
         项目/Feature/单页三级合并，voice/bgm/cover/outro 灵活覆盖。无配置文件完全向后兼容。
+      </p>
+    </div>
+    <div class="card">
+      <div class="num">07 / vt ui ⭐</div>
+      <h4 data-zh="可视化管理台" data-en="Visual Control Panel">可视化管理台</h4>
+      <p data-zh="网页里改封面/字体/语音/字幕，字体点开真实渲染放大预览，语音点击直接试听。任务面板实时日志，配音/成片直接在线听/看，不用等整条视频合成完。"
+         data-en="Edit cover/font/voice/subtitles in the browser. Click a font to preview its real rendering, click a voice to hear a sample. Live task logs, listen/watch dub and final cut inline — no need to wait for a full render.">
+        网页里改封面/字体/语音/字幕，字体点开真实渲染放大预览，语音点击直接试听。任务面板实时日志，配音/成片直接在线听/看，不用等整条视频合成完。
+      </p>
+    </div>
+    <div class="card">
+      <div class="num">08 / libass</div>
+      <h4 data-zh="字幕硬烧录" data-en="Hard-burned Subtitles">字幕硬烧录</h4>
+      <p data-zh="真烧进画面像素，不是外挂 .srt——字体/字号/颜色/描边/位置全部可配。配音手工偏移 dub_offset 微调整体快慢，字幕自动跟着同步。"
+         data-en="Real pixel burn-in, not a sidecar .srt — font/size/color/outline/position all configurable. Manual dub_offset fine-tunes overall pacing, subtitles auto-sync to match.">
+        真烧进画面像素，不是外挂 .srt——字体/字号/颜色/描边/位置全部可配。配音手工偏移 dub_offset 微调整体快慢，字幕自动跟着同步。
       </p>
     </div>
   </div>
@@ -445,17 +461,25 @@ footer {
   <table class="tbl">
     <thead><tr><th data-zh="命令" data-en="Command">命令</th><th data-zh="说明" data-en="Description">说明</th><th data-zh="依赖" data-en="Requires">依赖</th></tr></thead>
     <tbody>
-      <tr><td><code>all 01</code></td><td data-zh="全流程: 字幕 → AI配音 → 合成" data-en="Full: extract → dub → compose">全流程: 字幕 → AI配音 → 合成</td><td>ffmpeg + whisper</td></tr>
+      <tr><td><code>ui [01]</code></td><td data-zh="打开可视化管理台" data-en="Open the visual control panel"><strong data-zh="⭐ 打开可视化管理台" data-en="⭐ Open visual control panel">⭐ 打开可视化管理台</strong></td><td>node</td></tr>
+      <tr><td><code>codegen 01</code></td><td data-zh="生成录制脚本 record.spec.js（本机专用）" data-en="Generate record.spec.js (local only)">生成录制脚本 record.spec.js（本机专用）</td><td>playwright</td></tr>
+      <tr><td><code>record 01</code></td><td data-zh="按脚本自动录屏（本机专用）" data-en="Auto-record screen from script (local only)">按脚本自动录屏（本机专用）</td><td>playwright</td></tr>
+      <tr><td><code>all 01</code></td><td data-zh="全流程: 配音 → 合成（不烧字幕）" data-en="Full: dub → compose (no subtitle burn)">全流程: 配音 → 合成（<strong>不烧字幕</strong>）</td><td>ffmpeg</td></tr>
+      <tr><td><code>redub 01</code></td><td data-zh="改了字幕/meta 后：重新配音（不合成）" data-en="Regenerate dub only after editing srt/meta">改了字幕/meta 后：重新配音（不合成）</td><td>edge-tts</td></tr>
       <tr><td><code>srt 01</code></td><td data-zh="仅提取字幕" data-en="Extract subtitles only">仅提取字幕</td><td>whisper</td></tr>
       <tr><td><code>dub 01</code></td><td data-zh="仅生成 AI 配音（试听）" data-en="Generate AI dub only (preview)">仅生成 AI 配音（试听）</td><td>edge-tts</td></tr>
       <tr><td><code>mix 01</code></td><td data-zh="合成视频 + cover/outro/bgm" data-en="Compose + cover/outro/bgm">合成视频 + cover/outro/bgm</td><td>ffmpeg</td></tr>
+      <tr><td><code>burn 01</code></td><td data-zh="字幕硬烧录进画面" data-en="Hard-burn subtitles into the video"><strong data-zh="🔥 字幕硬烧录进画面" data-en="🔥 Hard-burn subtitles">🔥 字幕硬烧录进画面</strong></td><td>ffmpeg-full (libass)</td></tr>
+      <tr><td><code>cover 01</code></td><td data-zh="仅预览生成封面图" data-en="Preview-generate the cover image only">仅预览生成封面图</td><td>ImageMagick</td></tr>
       <tr><td><code>slide 01</code></td><td data-zh="幻灯片模式" data-en="Slideshow mode"><strong data-zh="⭐ 幻灯片模式" data-en="⭐ Slideshow">⭐ 幻灯片模式</strong></td><td>edge-tts + ffmpeg</td></tr>
       <tr><td><code>trans 01</code></td><td data-zh="翻译字幕: 中文 → 英文" data-en="Translate: CN → EN">翻译字幕: 中文 → 英文</td><td>DeepSeek API</td></tr>
       <tr><td><code>en 01</code></td><td data-zh="英文全流程" data-en="English full pipeline"><strong data-zh="英文全流程" data-en="English full pipeline">英文全流程</strong></td><td>whisper + DeepSeek + edge-tts</td></tr>
       <tr><td><code>dub-en 01</code></td><td data-zh="仅生成英文配音" data-en="English dub only">仅生成英文配音</td><td>edge-tts</td></tr>
       <tr><td><code>mix-en 01</code></td><td data-zh="仅合成英文视频" data-en="Compose EN video">仅合成英文视频</td><td>ffmpeg</td></tr>
+      <tr><td><code>sync 01</code></td><td data-zh="同步 meta.json 默认字段" data-en="Sync meta.json default fields">同步 meta.json 默认字段</td><td>—</td></tr>
       <tr><td><code>status 01</code></td><td data-zh="查看单个功能状态" data-en="Check feature status">查看单个功能状态</td><td>—</td></tr>
       <tr><td><code>status --all</code></td><td data-zh="查看全部功能状态" data-en="Check all features">查看全部功能状态</td><td>—</td></tr>
+      <tr><td><code>upgrade</code></td><td data-zh="升级到最新版本" data-en="Upgrade to the latest version">升级到最新版本</td><td>git</td></tr>
     </tbody>
   </table>
 </section>
@@ -529,11 +553,25 @@ footer {
        data-en="<code>vt play 01 dub</code>"><code>vt play 01 dub</code></p>
   </div>
   <div class="card" style="margin-bottom:12px">
-    <h4 data-zh="📹 字幕没有烧录到视频"
-        data-en="📹 Subtitles not burned into video">📹 字幕没有烧录到视频</h4>
-    <p style="color:var(--text2);margin-top:4px" 
-       data-zh="当前 ffmpeg 默认不含 libass。字幕以 <code>.srt</code> 外挂文件，QuickTime/VLC 自动加载。"
-       data-en="Brew ffmpeg lacks libass. Subtitles are external <code>.srt</code> files — QuickTime/VLC auto-load them.">当前 ffmpeg 默认不含 libass。字幕以 <code>.srt</code> 外挂文件，QuickTime/VLC 自动加载。</p>
+    <h4 data-zh="🔥 vt burn 报错找不到 ffmpeg-full"
+        data-en="🔥 vt burn fails: ffmpeg-full not found">🔥 <code>vt burn</code> 报错找不到 ffmpeg-full</h4>
+    <p style="color:var(--text2);margin-top:4px"
+       data-zh="标准 Homebrew ffmpeg 不含 libass，无法硬烧字幕。安装 <code>brew install ffmpeg-full</code> 即可，它是 keg-only，不会覆盖默认 ffmpeg。"
+       data-en="Standard Homebrew ffmpeg lacks libass, so hard-burning subtitles fails. Run <code>brew install ffmpeg-full</code> — it's keg-only and won't override the default ffmpeg.">标准 Homebrew ffmpeg 不含 libass，无法硬烧字幕。安装 <code>brew install ffmpeg-full</code> 即可，它是 keg-only，不会覆盖默认 ffmpeg。</p>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <h4 data-zh="⏱️ 配音和画面/字幕不同步"
+        data-en="⏱️ Dub is out of sync with video/subtitles">⏱️ 配音和画面/字幕不同步</h4>
+    <p style="color:var(--text2);margin-top:4px"
+       data-zh="在 <code>vt ui</code> 或 meta.json 里设置 <code>dub_offset</code>（秒，可负数，负数=配音提前）微调，然后 <code>vt redub 01 && vt burn 01</code> 重新生成，字幕会跟着配音一起偏移。"
+       data-en="Set <code>dub_offset</code> (seconds, negative = earlier) in <code>vt ui</code> or meta.json, then run <code>vt redub 01 && vt burn 01</code> — subtitles shift together with the dub.">在 <code>vt ui</code> 或 meta.json 里设置 <code>dub_offset</code>（秒，可负数，负数=配音提前）微调，然后 <code>vt redub 01 && vt burn 01</code> 重新生成，字幕会跟着配音一起偏移。</p>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <h4 data-zh="🖥️ vt ui 打不开 / 页面报错找不到某个模块"
+        data-en="🖥️ vt ui won't open / module not found error">🖥️ <code>vt ui</code> 打不开 / 页面报错找不到某个模块</h4>
+    <p style="color:var(--text2);margin-top:4px"
+       data-zh="多半是前端缓存的旧构建。清理后重开: <code>rm -rf ~/.local/share/video-toolkit/ui-client/{node_modules,dist} && vt ui</code>，会自动重新安装依赖并构建。"
+       data-en="Usually a stale cached frontend build. Clear and reopen: <code>rm -rf ~/.local/share/video-toolkit/ui-client/{node_modules,dist} && vt ui</code> — dependencies and the build regenerate automatically.">多半是前端缓存的旧构建。清理后重开: <code>rm -rf ~/.local/share/video-toolkit/ui-client/{node_modules,dist} && vt ui</code>，会自动重新安装依赖并构建。</p>
   </div>
 </section>
 

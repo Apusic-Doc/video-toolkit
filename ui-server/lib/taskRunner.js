@@ -3,10 +3,11 @@ import { EventEmitter } from 'events';
 import { VT_BIN } from './paths.js';
 
 // 只允许这些子命令通过 UI 触发——跟 video-toolkit.sh 里真实存在的 case 分支比对过，
-// 排除了 codegen（要人工在浏览器里点，不适合后台任务）和 config/sync（参数形状不一样，
-// 是全局命令不是"对某个 feature 操作"）。cmd 只能是这个集合里的字面量，不会拼接任意字符串。
+// 排除了 config/sync（参数形状不一样，是全局命令不是"对某个 feature 操作"）。
+// cmd 只能是这个集合里的字面量，不会拼接任意字符串。
+// codegen 会真的弹出一个浏览器窗口等人工点击操作路径，跟 record 一样要走 guardScreenCommand。
 export const ALLOWED_COMMANDS = new Set([
-  'record', 'redub', 'dub', 'dub-en', 'mix', 'mix-en',
+  'record', 'codegen', 'redub', 'dub', 'dub-en', 'mix', 'mix-en',
   'burn', 'srt', 'trans', 'en', 'all', 'status', 'cover',
 ]);
 

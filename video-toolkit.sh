@@ -307,12 +307,31 @@ compose() {
         fi
     fi
 
+    # 配音手工偏移——理论上录制时按实测配音时长停留已经该对齐了，但不同 feature
+    # 偶尔还是会感觉到配音跟画面差一点（正数=配音整体延后一点，负数=配音整体提前一点），
+    # 留一个手工兜底，在 meta.json 里配 dub_offset（单位秒，默认 0）
+    local meta_for_offset=$(load_meta "$dir" 2>/dev/null || echo "{}")
+    local dub_offset=$(meta_get "$meta_for_offset" "dub_offset")
+    dub_offset="${dub_offset:-0}"
+    local dub_input_args=() audio_filter_args=()
+    if python3 -c "exit(0 if abs(float('$dub_offset')) > 0.001 else 1)" 2>/dev/null; then
+        if python3 -c "exit(0 if float('$dub_offset') < 0 else 1)" 2>/dev/null; then
+            local skip=$(python3 -c "print(-float('$dub_offset'))")
+            info "配音整体提前 ${skip}s（dub_offset=$dub_offset）"
+            dub_input_args=(-ss "$skip")
+        else
+            info "配音整体延后 ${dub_offset}s（dub_offset=$dub_offset）"
+            local delay_ms=$(python3 -c "print(int(float('$dub_offset')*1000))")
+            audio_filter_args=(-af "adelay=${delay_ms}|${delay_ms}")
+        fi
+    fi
+
     # 生成 AI 配音替换后的中间视频
     info "生成 AI 配音视频..."
     local content="$dir/_dubbed.mp4"
-    ffmpeg "${trim_args[@]}" -i "$rec" -i "$dub" \
+    ffmpeg "${trim_args[@]}" -i "$rec" "${dub_input_args[@]}" -i "$dub" \
         -c:v h264_videotoolbox -b:v 5M -r 30 -vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=black" -pix_fmt yuv420p \
-        -c:a aac -ar 48000 -ac 2 -map 0:v:0 -map 1:a:0 -shortest "$content" -y 2>/dev/null
+        -c:a aac -ar 48000 -ac 2 -map 0:v:0 -map 1:a:0 "${audio_filter_args[@]}" -shortest "$content" -y 2>/dev/null
     
     # 统一走 compose_final（无 meta 时自动使用默认值）
     local meta=$(load_meta "$dir" 2>/dev/null || echo "{}")
@@ -940,7 +959,7 @@ with open(ass, 'w') as f:
 
 # ── 在已合成好的成片上烧录硬字幕 ──
 # 用法: vt burn <feature>（对 xxx.mp4 / xxx-no-cover.mp4 各产出一份 -sub.mp4，原文件不动）
-# 样式来自 meta 的 subtitle_style（项目级 meta.json 可统一覆盖，见 zhejiang-mobile/meta.json）
+# 样式来自 meta 的 subtitle_style（项目级 meta.json 可统一覆盖，见项目根目录的 meta.json）
 # 依赖 ffmpeg-full（标准 ffmpeg 不带 libass，烧不了字幕）: brew install ffmpeg-full
 _burn_one() {
     local ff="$1" src="$2" srt="$3" meta="$4"
@@ -965,24 +984,40 @@ cmd_burn() {
     local meta=$(load_meta "$dir" 2>/dev/null || echo "{}")
     local any=0
 
-    # 不带封面版本：正文从 0 秒开始，字幕时间轴本来就对齐，直接烧
+    # dub_offset 会真实挪动配音在时间轴上的位置（compose() 里用 -ss/adelay 实现），
+    # 字幕必须跟着同一个方向、同一个量级偏移，否则配音已经提前/延后了，字幕还对着
+    # 画面原本的节奏，两者对不上——这是配音偏移功能上线后必须同步的一环，之前漏了。
+    local dub_offset=$(meta_get "$meta" "dub_offset")
+    dub_offset="${dub_offset:-0}"
+
+    # 不带封面版本：正文从 0 秒开始，只需要叠加 dub_offset
     if [ -f "$base-no-cover.mp4" ]; then
         any=1
-        _burn_one "$ff" "$base-no-cover.mp4" "$srt" "$meta"
+        local use_srt="$srt"
+        if python3 -c "exit(0 if abs(float('$dub_offset')) > 0.001 else 1)" 2>/dev/null; then
+            use_srt="$dir/_burn_shifted_nc.srt"
+            shift_srt "$srt" "$dub_offset" "$use_srt"
+        fi
+        _burn_one "$ff" "$base-no-cover.mp4" "$use_srt" "$meta"
+        [ "$use_srt" != "$srt" ] && rm -f "$use_srt"
     fi
 
     # 带封面版本：正文整体后移了 cover_duration 秒（跟 compose_final 同一套判断逻辑），
-    # 字幕要同步后移，否则字幕会提前 cover_duration 秒出现（早于对应画面）
+    # 再叠加 dub_offset——字幕要跟着一起偏移，否则字幕会提前/延后于对应画面和配音
     if [ -f "$base.mp4" ]; then
         any=1
         local cover=$(meta_get "$meta" "cover")
         local title=$(meta_get "$meta" "title")
         local cover_dur=$(meta_get "$meta" "cover_duration")
         cover_dur="${cover_dur:-3}"
-        local use_srt="$srt"
+        local total_shift="$dub_offset"
         if { [ "$cover" = "true" ] || [ -n "$title" ]; } || { [ -n "$cover" ] && [ "$cover" != "false" ]; }; then
+            total_shift=$(python3 -c "print(float('$cover_dur') + float('$dub_offset'))")
+        fi
+        local use_srt="$srt"
+        if python3 -c "exit(0 if abs(float('$total_shift')) > 0.001 else 1)" 2>/dev/null; then
             use_srt="$dir/_burn_shifted.srt"
-            shift_srt "$srt" "$cover_dur" "$use_srt"
+            shift_srt "$srt" "$total_shift" "$use_srt"
         fi
         _burn_one "$ff" "$base.mp4" "$use_srt" "$meta"
         [ "$use_srt" != "$srt" ] && rm -f "$use_srt"
@@ -1081,23 +1116,42 @@ cmd_ui() {
         return 1
     fi
 
-    # 前端没 build 过，或者源码比上次 build 新，重新 build 一次
+    # package.json 比 node_modules 新（新增/改过依赖）就重装一次，不能只看 node_modules 存不存在——
+    # 之前吃过这个亏：装完 marked 之后没重新 npm install，装机版直接 build 报错找不到模块
+    _vt_ui_deps_stale() {
+        [ ! -d "$1/node_modules" ] && return 0
+        [ "$1/package.json" -nt "$1/node_modules" ] && return 0
+        return 1
+    }
+    if _vt_ui_deps_stale "$client_dir"; then
+        info "安装/更新前端依赖…"
+        (cd "$client_dir" && npm install) || { err "前端依赖安装失败"; return 1; }
+    fi
+    if _vt_ui_deps_stale "$server_dir"; then
+        info "安装/更新后端依赖…"
+        (cd "$server_dir" && npm install) || { err "后端依赖安装失败"; return 1; }
+    fi
+
+    # 前端没 build 过，或者源码/依赖比上次 build 新，重新 build 一次
     local need_build=0
     [ ! -d "$client_dir/dist" ] && need_build=1
-    if [ -d "$client_dir/dist" ] && [ -n "$(find "$client_dir/src" -newer "$client_dir/dist/index.html" 2>/dev/null)" ]; then
-        need_build=1
+    if [ -d "$client_dir/dist" ]; then
+        [ -n "$(find "$client_dir/src" -newer "$client_dir/dist/index.html" 2>/dev/null)" ] && need_build=1
+        [ "$client_dir/package.json" -nt "$client_dir/dist/index.html" ] && need_build=1
     fi
     if [ "$need_build" = "1" ]; then
         info "构建 vt-ui 前端…"
-        [ -d "$client_dir/node_modules" ] || (cd "$client_dir" && npm install) || { err "前端依赖安装失败"; return 1; }
         (cd "$client_dir" && npm run build) || { err "前端构建失败"; return 1; }
     fi
-    [ -d "$server_dir/node_modules" ] || (cd "$server_dir" && npm install) || { err "后端依赖安装失败"; return 1; }
 
     # 端口已经在跑就直接复用，不重复起进程
     if ! lsof -i ":$port" -sTCP:LISTEN >/dev/null 2>&1; then
         info "启动 vt-ui-server → http://localhost:$port"
-        (cd "$server_dir" && nohup node index.js > /tmp/vt-ui-server.log 2>&1 &)
+        # toolkit 装在哪（~/.local/share/video-toolkit）跟视频项目目录在哪（Videos/xxx）
+        # 是两回事，不能让 server 自己瞎猜——用当前工作目录（约定就是在项目目录下跑 vt ui）
+        # 的上一级，显式告诉它去哪找 project
+        local videos_root="$(cd "$BASE/.." && pwd)"
+        (cd "$server_dir" && VT_UI_VIDEOS_ROOT="$videos_root" nohup node index.js > /tmp/vt-ui-server.log 2>&1 &)
         sleep 1
     fi
 

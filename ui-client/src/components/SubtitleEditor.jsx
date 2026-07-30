@@ -24,12 +24,15 @@ export default function SubtitleEditor({ project, feature, onToast, onRunTask })
     setCues((prev) => [...prev, emptyCue()]);
   }
 
-  async function save(andRedub) {
+  // 只跑 redub 不跑 burn 的话，成片预览用的 xxx-sub.mp4 里烧的还是改之前的字幕文案——
+  // 语音是对的（redub 真的用新文案重新配了音），画面上的硬字幕却没换，容易被当成 bug。
+  // 默认给的"保存并生效"按钮直接把 redub→burn 一起串起来，避免这个坑。
+  async function save(chain) {
     setSaving(true);
     try {
       await api.saveSubtitles(project, feature, cues);
       onToast('字幕已保存', 'ok');
-      if (andRedub) onRunTask('redub');
+      if (chain) onRunTask(chain);
     } catch (e) {
       onToast(`保存失败: ${e.message}`, 'err');
     } finally {
@@ -66,8 +69,10 @@ export default function SubtitleEditor({ project, feature, onToast, onRunTask })
 
       <div className="form-actions">
         <button className="btn" onClick={addRow}>+ 新增一行</button>
-        <button className="btn btn-pri" onClick={() => save(false)} disabled={saving}>{saving ? '保存中…' : '保存字幕'}</button>
-        <button className="btn" onClick={() => save(true)} disabled={saving}>保存并重新配音合成（vt redub）</button>
+        <button className="btn" onClick={() => save(null)} disabled={saving}>{saving ? '保存中…' : '仅保存字幕文件'}</button>
+        <button className="btn btn-pri" onClick={() => save(['redub', 'burn'])} disabled={saving}>
+          保存并生效（配音+合成+烧字幕）
+        </button>
       </div>
     </div>
   );

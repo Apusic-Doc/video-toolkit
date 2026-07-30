@@ -25,6 +25,7 @@ meta_defaults() {
     'fps': 30,
     'logo': None,
     'logo_position': 'bottom-right',
+    'dub_offset': 0,
     'subtitle': {'mode': 'auto', 'burn': False},
     'subtitle_style': {'font_name': 'PingFang SC', 'font_size': 44, 'color': '&H00FFFFFF', 'outline': '&H00000000', 'margin_v': 45},
     'slides': {'mode': 'auto', 'page_duration': 3, 'page_padding': 1.5, 'transition': 'fade', 'zoom': 'none', 'pages': []}

@@ -5,11 +5,14 @@ import Sidebar from './components/Sidebar.jsx';
 import MetaForm from './components/MetaForm.jsx';
 import SubtitleEditor from './components/SubtitleEditor.jsx';
 import TaskPanel from './components/TaskPanel.jsx';
+import ReadmeView from './components/ReadmeView.jsx';
+import ProjectSettings from './components/ProjectSettings.jsx';
 
 const TABS = [
   { id: 'meta', label: '封面 / 配置' },
   { id: 'subtitles', label: '字幕' },
   { id: 'tasks', label: '任务 / 预览' },
+  { id: 'readme', label: '说明' },
 ];
 
 function useQueryParam(name) {
@@ -26,6 +29,7 @@ export default function App() {
   const [tab, setTab] = useState('meta');
   const [toast, setToast] = useState(null);
   const [runSignal, setRunSignal] = useState(null);
+  const [showProjectSettings, setShowProjectSettings] = useState(false);
 
   useEffect(() => {
     api.session().then((s) => {
@@ -79,6 +83,7 @@ export default function App() {
       <Sidebar
         projects={projects} project={project} onProject={setProject}
         features={features} selected={selected} onSelect={setSelected}
+        onOpenProjectSettings={() => setShowProjectSettings(true)}
       />
       <div className="main">
         {selectedFeature ? (
@@ -110,6 +115,7 @@ export default function App() {
                   onToast={showToast} runSignal={runSignal}
                 />
               )}
+              {tab === 'readme' && <ReadmeView project={project} feature={selected} />}
             </div>
           </>
         ) : (
@@ -117,6 +123,9 @@ export default function App() {
         )}
       </div>
       {toast && <div className={`toast ${toast.kind}`}>{toast.text}</div>}
+      {showProjectSettings && (
+        <ProjectSettings project={project} onClose={() => setShowProjectSettings(false)} onToast={showToast} />
+      )}
     </div>
   );
 }

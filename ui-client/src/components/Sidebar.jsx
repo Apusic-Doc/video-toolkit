@@ -6,7 +6,7 @@ function statusGroup(f) {
 }
 const GROUP_ORDER = ['已完成', '已合成', '已录制', '未开始'];
 
-export default function Sidebar({ projects, project, onProject, features, selected, onSelect }) {
+export default function Sidebar({ projects, project, onProject, features, selected, onSelect, onOpenProjectSettings }) {
   const groups = {};
   for (const f of features) {
     const g = statusGroup(f);
@@ -20,6 +20,9 @@ export default function Sidebar({ projects, project, onProject, features, select
         <select value={project} onChange={(e) => onProject(e.target.value)}>
           {projects.map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
         </select>
+        <button className="btn btn-sm" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} onClick={onOpenProjectSettings}>
+          ⚙ 项目设置（字体/语音/封面统一样式）
+        </button>
       </div>
       <div className="feature-list">
         {GROUP_ORDER.filter((g) => groups[g]?.length).map((g) => (

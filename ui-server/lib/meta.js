@@ -26,6 +26,11 @@ export function readProjectMeta(projectDir) {
   catch { return {}; }
 }
 
+export function writeProjectMeta(projectDir, data) {
+  const p = path.join(projectDir, 'meta.json');
+  fs.writeFileSync(p, JSON.stringify(data, null, 2) + '\n', 'utf8');
+}
+
 // 三级合并后的"最终生效值"，直接复用真实的 lib/meta.sh:load_meta，
 // 不在 JS 里重新实现一遍合并逻辑（避免跟 bash 那边的行为长出两套不一样的结果）
 export async function readMergedMeta(featureDir) {
