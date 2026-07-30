@@ -4,12 +4,11 @@
 # ============================================================
 
 # ── 生成标题封面（白屏 + 居中文字 + logo + 公司名）──
-gen_title_card() {
-  local title="$1" subtitle="$2" duration="${3:-3}" out="$4"
-  local logo="$5" company="$6"
+# 只生成封面静态图（不转视频）——vt ui 的实时预览和 gen_title_card 共用这一份，
+# 避免 magick 拼图逻辑在两个地方各写一遍、以后改一处忘了改另一处
+gen_title_card_png() {
+  local title="$1" subtitle="$2" out="$3" logo="$4" company="$5" accent="${6:-#222222}"
   [ -z "$title" ] && return 1
-  local png="/tmp/_vt_cover_$$.png"
-  # 找可用中文字体
   local font=""
   for f in "/System/Library/Fonts/Supplemental/Songti.ttc" \
            "/System/Library/Fonts/STHeiti Medium.ttc" \
@@ -17,25 +16,33 @@ gen_title_card() {
            "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc"; do
     [ -f "$f" ] && { font="$f"; break; }
   done
-  # 1. 白底 + 标题 + 副标题
+  # 1. 白底 + 标题（默认深灰，meta.cover_accent_color 可覆盖成跟管控台一致的品牌色）+ 副标题
   magick -size 1920x1080 xc:'#FFFFFF' -gravity center \
     ${font:+-font "$font"} \
-    -fill '#222222' -pointsize 60 -draw "text 0,-60 '$title'" \
+    -fill "$accent" -pointsize 60 -draw "text 0,-60 '$title'" \
     -fill '#666666' -pointsize 42 -draw "text 0,30 '$subtitle'" \
-    "$png" 2>/dev/null || return 1
+    "$out" 2>/dev/null || return 1
   # 2. Logo（缩放+叠加，保留原色）
   if [ -n "$logo" ] && [ -f "$logo" ]; then
     local logo_small="/tmp/_vt_logo_$$.png"
     magick "$logo" -resize x80 "$logo_small" 2>/dev/null
-    magick "$png" "$logo_small" -geometry +40+30 -composite -colorspace sRGB "$png" 2>/dev/null
+    magick "$out" "$logo_small" -geometry +40+30 -composite -colorspace sRGB "$out" 2>/dev/null
     rm -f "$logo_small"
   fi
   # 3. 公司名（底部居中）
   if [ -n "$company" ] && [ -n "$font" ]; then
-    magick "$png" -font "$font" -gravity south -fill '#999999' -pointsize 24 \
-      -draw "text 0,50 '$company'" -colorspace sRGB "$png" 2>/dev/null
+    magick "$out" -font "$font" -gravity south -fill '#999999' -pointsize 24 \
+      -draw "text 0,50 '$company'" -colorspace sRGB "$out" 2>/dev/null
   fi
-  # 4. 转视频（带静音轨，编码参数与正文对齐以便拼接时 stream-copy）
+}
+
+gen_title_card() {
+  local title="$1" subtitle="$2" duration="${3:-3}" out="$4"
+  local logo="$5" company="$6" accent="${7:-#222222}"
+  [ -z "$title" ] && return 1
+  local png="/tmp/_vt_cover_$$.png"
+  gen_title_card_png "$title" "$subtitle" "$png" "$logo" "$company" "$accent" || return 1
+  # 转视频（带静音轨，编码参数与正文对齐以便拼接时 stream-copy）
   ffmpeg -loop 1 -i "$png" -f lavfi -i "anullsrc=r=48000:cl=stereo" \
     -c:v h264_videotoolbox -b:v 5M -r 30 -vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=black" -pix_fmt yuv420p \
     -t "$duration" -c:a aac -ar 48000 -ac 2 -shortest "$out" -y 2>/dev/null
@@ -80,7 +87,8 @@ compose_final() {
     local cover_clip="$tmp/cover.mp4"
     local logo=$(resolve_asset "$dir" "$meta" "logo")
     local company=$(meta_get "$meta" "company")
-    gen_title_card "$title" "${subtitle:-}" "${cover_dur:-3}" "$cover_clip" "$logo" "$company" 2>/dev/null
+    local accent=$(meta_get "$meta" "cover_accent_color")
+    gen_title_card "$title" "${subtitle:-}" "${cover_dur:-3}" "$cover_clip" "$logo" "$company" "${accent:-#222222}" 2>/dev/null
     [ -f "$cover_clip" ] && parts+=("$cover_clip") || echo "⚠  封面生成失败"
   elif [ -n "$cover" ] && [ "$cover" != "false" ]; then
     echo "➜ 添加封面..."
@@ -92,7 +100,14 @@ compose_final() {
   parts+=("$content")
 
   # ── 3. 封底 ──
-  local outro=$(resolve_asset "$dir" "$meta" "outro")
+  # 跟 BGM 同理：封底会实打实改变成片结构（多出几秒画面），不能因为 resources/
+  # 目录里刚好放了个 outro.png（还是个占位用的纯黑图）就默默给所有视频都加上，
+  # 必须 meta 显式设成 true 或给具体路径才启用。
+  local outro_flag=$(meta_get "$meta" "outro")
+  local outro=""
+  if [ "$outro_flag" != "false" ] && [ "$outro_flag" != "None" ] && [ "$outro_flag" != "null" ] && [ -n "$outro_flag" ]; then
+    outro=$(resolve_asset "$dir" "$meta" "outro")
+  fi
   if [ -n "$outro" ] && [ "$outro" != "false" ]; then
     echo "➜ 添加封底..."
     local outro_dur=$(meta_get "$meta" "outro_duration")
@@ -119,7 +134,15 @@ compose_final() {
   fi
 
   # ── 5. BGM ──
-  local bgm=$(resolve_asset "$dir" "$meta" "bgm")
+  # BGM 跟 logo/cover 不一样——它会实打实地改变听感，不能因为 resources/ 目录里
+  # 刚好放了个 bgm.mp3 就默默给所有视频都混上（真出过事：resources/bgm.mp3 一直在，
+  # resolve_asset 的 auto-detect 一修好，所有视频封面部分就多出一段没人要的底噪/音乐）。
+  # 必须 meta 显式设成 true 或给具体路径才启用，None/未设置/false 都不启用。
+  local bgm_flag=$(meta_get "$meta" "bgm")
+  local bgm=""
+  if [ "$bgm_flag" != "false" ] && [ "$bgm_flag" != "None" ] && [ "$bgm_flag" != "null" ] && [ -n "$bgm_flag" ]; then
+    bgm=$(resolve_asset "$dir" "$meta" "bgm")
+  fi
   if [ -n "$bgm" ] && [ -f "$bgm" ]; then
     echo "➜ 混入 BGM..."
     local bgm_vol=$(meta_get "$meta" "bgm_volume")

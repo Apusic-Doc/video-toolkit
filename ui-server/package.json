@@ -1,0 +1,17 @@
+{
+  "name": "vt-ui-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "video-toolkit 可视化管理后端：feature 列表、meta.json/字幕编辑、任务队列、字体/语音预览",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "ws": "^8.18.0"
+  }
+}

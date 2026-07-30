@@ -26,7 +26,7 @@ meta_defaults() {
     'logo': None,
     'logo_position': 'bottom-right',
     'subtitle': {'mode': 'auto', 'burn': False},
-    'subtitle_style': {'font_size': 22, 'color': '&H00FFFFFF', 'outline': '&H00000000'},
+    'subtitle_style': {'font_name': 'PingFang SC', 'font_size': 44, 'color': '&H00FFFFFF', 'outline': '&H00000000', 'margin_v': 45},
     'slides': {'mode': 'auto', 'page_duration': 3, 'page_padding': 1.5, 'transition': 'fade', 'zoom': 'none', 'pages': []}
   }))"
 }
@@ -133,13 +133,15 @@ resolve_asset() {
   local dir="$1"; local meta="$2"; local key="$3"
   local project_dir="$(cd "$dir/.." && pwd)"
 
-  # 1. meta 中显式设置（包括 null）
+  # 1. meta 中显式设置成具体路径才当路径用；None/null 只是内置默认值（没人真的设置过），
+  # 不代表"用户禁用"——之前把它当禁用信号直接 return "" 短路，导致下面第 2 步的
+  # resources/ 目录自动探测永远跑不到（cover/outro/bgm/logo 的默认值全是 None，
+  # 相当于每次都被短路），实测 logo.png 明明放在 resources/ 下却从来没被拿到过。
+  # 真正的"禁用"信号是显式 false，交给下面 true/false 分支处理，继续往下走到自动探测。
   local val=$(meta_get "$meta" "$key")
-  if [ "$val" = "None" ] || [ "$val" = "null" ]; then
-    echo ""
-    return
-  fi
-  if [ -n "$val" ] && [ "$val" != "" ] && [ "$val" != "true" ] && [ "$val" != "false" ]; then
+  [ "$val" = "None" ] && val=""
+  [ "$val" = "null" ] && val=""
+  if [ -n "$val" ] && [ "$val" != "true" ] && [ "$val" != "false" ]; then
     # 路径相对 project 根
     local path="$project_dir/$val"
     if [ -f "$path" ]; then echo "$path"; return; fi

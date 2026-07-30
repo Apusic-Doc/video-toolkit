@@ -874,6 +874,124 @@ cmd_redub() {
     show_status "$dir"
 }
 
+# 把 subtitles.srt 里所有时间戳整体后移 $2 秒，写到 $3
+# （带封面的成片正文整体后移了 cover_dur 秒，字幕要跟着后移，否则会提前 cover_dur 秒出现）
+shift_srt() {
+    local src="$1" offset="$2" out="$3"
+    python3 - "$src" "$offset" "$out" << 'PYEOF'
+import re, sys
+src, offset, out = sys.argv[1], float(sys.argv[2]), sys.argv[3]
+
+def shift(ts):
+    h, m, s_ms = ts.split(':')
+    s, ms = s_ms.split(',')
+    total = int(h) * 3600 + int(m) * 60 + int(s) + int(ms) / 1000 + offset
+    total = max(0, total)
+    h = int(total // 3600); total -= h * 3600
+    m = int(total // 60); total -= m * 60
+    s = int(total)
+    ms = round((total - s) * 1000)
+    return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
+
+with open(src) as f:
+    content = f.read()
+
+def repl(m):
+    return f"{shift(m.group(1))} --> {shift(m.group(2))}"
+
+content = re.sub(r'(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})', repl, content)
+with open(out, 'w') as f:
+    f.write(content)
+PYEOF
+}
+
+# ffmpeg 把 .srt 转 .ass 时，不给 PlayResX/PlayResY 一律写死 384x288（老 SSA 时代的默认值），
+# 交给 subtitles 滤镜渲染到 1920x1080 画面时会整体放大约 3.75 倍——FontSize/MarginV 填的数字
+# 跟实际画面上的像素完全对不上（实测 FontSize=20 实际渲染出来接近 75px，字幕又大又占地方，
+# 长一点的解说词会被顶到 3 行甚至逼近左右边缘）。
+# 修法：自己转 .ass，把 PlayResX/PlayResY 改写成视频真实分辨率 1920x1080，Style 行直接写死
+# 像素值——这样 FontSize/MarginV 就是所见即所得的真实像素数，不再有隐藏的放大倍数。
+# 用法: ass=$(srt_to_sized_ass "$srt" "$meta")
+srt_to_sized_ass() {
+    local ff="$1" srt="$2" meta="$3"
+    local ass="/tmp/_vt_burn_$$_$RANDOM.ass"
+    "$ff" -i "$srt" "$ass" -y 2>/dev/null
+    python3 -c "
+import json, sys
+meta, ass = sys.argv[1], sys.argv[2]
+m = json.loads(meta)
+s = m.get('subtitle_style') or {}
+font = s.get('font_name', 'PingFang SC')
+size = s.get('font_size', 44)
+color = s.get('color', '&H00FFFFFF')
+outline = s.get('outline', '&H00000000')
+margin_v = s.get('margin_v', 45)
+with open(ass) as f:
+    content = f.read()
+content = content.replace('PlayResX: 384', 'PlayResX: 1920').replace('PlayResY: 288', 'PlayResY: 1080')
+import re
+style_line = f'Style: Default,{font},{size},{color},{color},{outline},&H00000000,0,0,0,0,100,100,0,0,1,2,0,2,10,10,{margin_v},1'
+content = re.sub(r'^Style: Default,.*$', style_line, content, flags=re.MULTILINE)
+with open(ass, 'w') as f:
+    f.write(content)
+" "$meta" "$ass"
+    echo "$ass"
+}
+
+# ── 在已合成好的成片上烧录硬字幕 ──
+# 用法: vt burn <feature>（对 xxx.mp4 / xxx-no-cover.mp4 各产出一份 -sub.mp4，原文件不动）
+# 样式来自 meta 的 subtitle_style（项目级 meta.json 可统一覆盖，见 zhejiang-mobile/meta.json）
+# 依赖 ffmpeg-full（标准 ffmpeg 不带 libass，烧不了字幕）: brew install ffmpeg-full
+_burn_one() {
+    local ff="$1" src="$2" srt="$3" meta="$4"
+    local out="${src%.mp4}-sub.mp4"
+    info "烧录字幕: $(basename "$src") → $(basename "$out")"
+    local ass; ass=$(srt_to_sized_ass "$ff" "$srt" "$meta")
+    "$ff" -i "$src" -vf "ass=filename=$ass" \
+        -c:v h264_videotoolbox -b:v 5M -c:a copy "$out" -y 2>/dev/null
+    rm -f "$ass"
+    [ -f "$out" ] && ok "$(basename "$out")" || err "烧录失败: $(basename "$src")"
+}
+
+cmd_burn() {
+    local dir="$1"
+    local base="$dir/$(basename "$dir")"
+    local srt="$dir/subtitles.srt"
+    local ff="/usr/local/opt/ffmpeg-full/bin/ffmpeg"
+
+    [ ! -f "$srt" ] && { err "缺少 subtitles.srt"; return 1; }
+    [ ! -x "$ff" ] && { err "找不到 ffmpeg-full（需要 libass 才能烧字幕），请先: brew install ffmpeg-full"; return 1; }
+
+    local meta=$(load_meta "$dir" 2>/dev/null || echo "{}")
+    local any=0
+
+    # 不带封面版本：正文从 0 秒开始，字幕时间轴本来就对齐，直接烧
+    if [ -f "$base-no-cover.mp4" ]; then
+        any=1
+        _burn_one "$ff" "$base-no-cover.mp4" "$srt" "$meta"
+    fi
+
+    # 带封面版本：正文整体后移了 cover_duration 秒（跟 compose_final 同一套判断逻辑），
+    # 字幕要同步后移，否则字幕会提前 cover_duration 秒出现（早于对应画面）
+    if [ -f "$base.mp4" ]; then
+        any=1
+        local cover=$(meta_get "$meta" "cover")
+        local title=$(meta_get "$meta" "title")
+        local cover_dur=$(meta_get "$meta" "cover_duration")
+        cover_dur="${cover_dur:-3}"
+        local use_srt="$srt"
+        if { [ "$cover" = "true" ] || [ -n "$title" ]; } || { [ -n "$cover" ] && [ "$cover" != "false" ]; }; then
+            use_srt="$dir/_burn_shifted.srt"
+            shift_srt "$srt" "$cover_dur" "$use_srt"
+        fi
+        _burn_one "$ff" "$base.mp4" "$use_srt" "$meta"
+        [ "$use_srt" != "$srt" ] && rm -f "$use_srt"
+    fi
+
+    [ "$any" = "0" ] && { err "找不到 $base.mp4 或 $base-no-cover.mp4，请先 vt compose"; return 1; }
+    return 0
+}
+
 # ==================== 幻灯片自动生成 ====================
 cmd_slide_v2() {
     local dir="$1"
@@ -950,12 +1068,61 @@ cmd_status() {
     fi
 }
 
+# ── vt ui：可视化管理台（meta.json 表单编辑、字幕逐条编辑、字体/语音试听、任务面板）──
+# 用法: vt ui [feature]          不带参数只打开首页，带参数直接定位到这个 feature
+cmd_ui() {
+    local arg="${1:-}"
+    local server_dir="$TOOLKIT_DIR/ui-server"
+    local client_dir="$TOOLKIT_DIR/ui-client"
+    local port="${VT_UI_PORT:-5175}"
+
+    if [ ! -d "$server_dir" ] || [ ! -d "$client_dir" ]; then
+        err "vt-ui 还没装（缺 ui-server/ui-client 目录）"
+        return 1
+    fi
+
+    # 前端没 build 过，或者源码比上次 build 新，重新 build 一次
+    local need_build=0
+    [ ! -d "$client_dir/dist" ] && need_build=1
+    if [ -d "$client_dir/dist" ] && [ -n "$(find "$client_dir/src" -newer "$client_dir/dist/index.html" 2>/dev/null)" ]; then
+        need_build=1
+    fi
+    if [ "$need_build" = "1" ]; then
+        info "构建 vt-ui 前端…"
+        [ -d "$client_dir/node_modules" ] || (cd "$client_dir" && npm install) || { err "前端依赖安装失败"; return 1; }
+        (cd "$client_dir" && npm run build) || { err "前端构建失败"; return 1; }
+    fi
+    [ -d "$server_dir/node_modules" ] || (cd "$server_dir" && npm install) || { err "后端依赖安装失败"; return 1; }
+
+    # 端口已经在跑就直接复用，不重复起进程
+    if ! lsof -i ":$port" -sTCP:LISTEN >/dev/null 2>&1; then
+        info "启动 vt-ui-server → http://localhost:$port"
+        (cd "$server_dir" && nohup node index.js > /tmp/vt-ui-server.log 2>&1 &)
+        sleep 1
+    fi
+
+    local url="http://localhost:$port/"
+    if [ -n "$arg" ]; then
+        local dir=$(resolve_dir "$arg")
+        if [ -n "$dir" ]; then
+            local project=$(basename "$(dirname "$dir")")
+            local feature=$(basename "$dir")
+            url="http://localhost:$port/?project=$project&feature=$feature"
+        else
+            warn "找不到 feature: $arg，先打开首页"
+        fi
+    fi
+    ok "$url"
+    open "$url" 2>/dev/null
+}
+
 # ==================== 入口 ====================
 case "${1:-}" in
     all)    dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_all "$dir" ;;
     srt)    dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_srt "$dir" ;;
     dub)    dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_dub "$dir" ;;
     redub)  dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_redub "$dir" ;;
+    burn)   dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_burn "$dir" ;;
     mix)    dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_mix "$dir" ;;
     cover)  dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_cover "$dir" ;;
     record) dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_record "$dir" ;;
@@ -965,7 +1132,8 @@ case "${1:-}" in
     en)     dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_en "$dir" ;;
     dub-en) dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_dub_en "$dir" ;;
     mix-en) dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_mix_en "$dir" ;;
-    slide)  dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_slide_v2 "$dir" ;;  
+    slide)  dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_slide_v2 "$dir" ;;
+    ui)     cmd_ui "${2:-}" ;;
     play)
       dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }
       case "${3:-}" in
