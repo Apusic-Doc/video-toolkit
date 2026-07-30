@@ -17,22 +17,26 @@ gen_title_card_png() {
     [ -f "$f" ] && { font="$f"; break; }
   done
   # 1. 白底 + 标题（默认深灰，meta.cover_accent_color 可覆盖成跟管控台一致的品牌色）+ 副标题
+  # 注：当 accent/subtitle/company 都是灰阶色（R=G=B，比如默认的 #222222/#666666）时，
+  # 整张画布所有像素都是无彩色的，ImageMagick 写 PNG 会自动优化成 Grayscale 色型（IHDR color_type=0）
+  # 而不是 RGB——之后哪怕叠加真彩色 logo，-composite 也会被拍扁成灰阶（实测复现）。
+  # 用 -define png:color-type=2 强制每一步都按真彩色 RGB 编码，不受像素内容影响。
   magick -size 1920x1080 xc:'#FFFFFF' -gravity center \
     ${font:+-font "$font"} \
     -fill "$accent" -pointsize 60 -draw "text 0,-60 '$title'" \
     -fill '#666666' -pointsize 42 -draw "text 0,30 '$subtitle'" \
-    "$out" 2>/dev/null || return 1
+    -define png:color-type=2 "$out" 2>/dev/null || return 1
   # 2. Logo（缩放+叠加，保留原色）
   if [ -n "$logo" ] && [ -f "$logo" ]; then
     local logo_small="/tmp/_vt_logo_$$.png"
     magick "$logo" -resize x80 "$logo_small" 2>/dev/null
-    magick "$out" "$logo_small" -geometry +40+30 -composite -colorspace sRGB "$out" 2>/dev/null
+    magick "$out" "$logo_small" -geometry +40+30 -composite -colorspace sRGB -define png:color-type=2 "$out" 2>/dev/null
     rm -f "$logo_small"
   fi
   # 3. 公司名（底部居中）
   if [ -n "$company" ] && [ -n "$font" ]; then
     magick "$out" -font "$font" -gravity south -fill '#999999' -pointsize 24 \
-      -draw "text 0,50 '$company'" -colorspace sRGB "$out" 2>/dev/null
+      -draw "text 0,50 '$company'" -colorspace sRGB -define png:color-type=2 "$out" 2>/dev/null
   fi
 }
 

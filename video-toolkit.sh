@@ -816,9 +816,10 @@ cmd_cover() {
     local out="$dir/_cover_test.mp4"
     local logo=$(resolve_asset "$dir" "$meta" "logo")
     local company=$(meta_get "$meta" "company")
+    local accent=$(meta_get "$meta" "cover_accent_color")
     [ -z "$title" ] && { err "meta.json 缺少 title"; return 1; }
     info "生成封面预览: $title"
-    gen_title_card "$title" "${subtitle:-}" "${dur:-3}" "$out" "$logo" "$company"
+    gen_title_card "$title" "${subtitle:-}" "${dur:-3}" "$out" "$logo" "$company" "${accent:-#222222}"
     [ -f "$out" ] && { open "$out" 2>/dev/null || xdg-open "$out" 2>/dev/null; ok "封面预览 (${dur:-3}s)" ; } || err "生成失败"
 }
 
