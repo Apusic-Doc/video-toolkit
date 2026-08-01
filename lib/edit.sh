@@ -12,10 +12,14 @@
 #      [{"start": "00:00:59", "end": "00:01:02"}, {"start": "00:02:10", "end": "00:02:15"}]
 #      （要去掉的时间区间，可以写多个，顺序、有无重叠都会校验）
 #   2. vt recut <feature>
+#   3. 想撤销上一次剪辑：vt recut restore <feature>
 #
-# 每次剪之前都会把当前文件备份到 backups/<原文件名>-<时间戳>.mp4，不覆盖旧备份、
-# 原文件名不变——cuts.json 是可重复执行的"最后一道精修步骤"：如果之后重新
-# vt redub/vt burn 生成了新的成片，再跑一次 vt recut 就能重新应用同一批剪辑点。
+# 关键设计：cuts.json 里的时间点是相对"从未剪过的原始成片"写的，所以每次
+# vt recut 实际剪辑的源头永远是第一次运行时存下来的 backups/<文件名>.pristine.mp4，
+# 不是上一次剪辑之后的结果——如果从上一次的结果再剪一刀，同一个时间点对应的
+# 画面内容已经不一样了（前面剪掉的部分让后面整体提前了），会剪错地方。
+# 也就是说改 cuts.json 之后可以放心重跑 vt recut 任意多次，每次都是"从原始版本
+# 重新剪一遍"，而不是在已经剪过的版本上累加剪辑。
 # ============================================================
 
 # 读 cuts.json，校验区间合法（结束>开始、不超出时长、互相不重叠），
@@ -72,19 +76,29 @@ _recut_apply_one() {
     [ ! -f "$src" ] && return 0   # 这个变体本来就不存在，跳过，不算错误
 
     local name; name=$(basename "$src")
+    mkdir -p "$dir/backups"
+
+    # pristine：第一次对这个文件跑 recut 时，把"当时的样子"当成原始未剪版本
+    # 永久存一份，以后每次剪辑都从这份重新剪，不是在上一次的结果上再剪一刀
+    local pristine="$dir/backups/${name%.mp4}.pristine.mp4"
+    if [ ! -f "$pristine" ]; then
+        cp "$src" "$pristine"
+        info "已保存原始版本（后续 recut 的剪辑源头）: backups/$(basename "$pristine")"
+    fi
+
     local duration
-    duration=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$src" 2>/dev/null)
+    duration=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$pristine" 2>/dev/null)
     if [ -z "$duration" ]; then err "拿不到时长，跳过: $name"; return 1; fi
 
     local ranges
     ranges=$(_recut_parse_cuts "$cuts_json" "$duration") || { err "cuts.json 校验失败: $name"; return 1; }
 
-    # 备份（每次都留一份新的，不覆盖旧备份）
-    mkdir -p "$dir/backups"
+    # 备份当前文件（剪辑前的状态），用于 vt recut restore 撤销这一次操作；
+    # 每次都留一份新的、带时间戳，不覆盖旧备份
     local ts; ts=$(date +%Y%m%d-%H%M%S)
     local backup="$dir/backups/${name%.mp4}-${ts}.mp4"
     cp "$src" "$backup"
-    info "已备份: backups/$(basename "$backup")"
+    info "已备份当前版本: backups/$(basename "$backup")"
 
     # 总时长减去所有 cut 区间 = 要保留的区间列表
     local keep_ranges
@@ -111,7 +125,8 @@ for s, e in keep:
         return 1
     fi
 
-    # 逐段重新编码（输出端 -ss/-to 精确到帧，不用 -c copy 直切避免落在关键帧之间导致的偏差），
+    # 逐段重新编码，源头固定是 pristine（原始未剪版本），不是当前的 $src——
+    # 输出端 -ss/-to 精确到帧，不用 -c copy 直切避免落在关键帧之间导致的偏差，
     # 编码参数跟 compose.sh 用的完全一致，方便后面 concat 阶段能 -c copy 无损拼接
     local tmp="/tmp/_vt_recut_$$"; mkdir -p "$tmp"
     local concat_list="$tmp/concat.txt"; > "$concat_list"
@@ -119,7 +134,7 @@ for s, e in keep:
     while read -r s e; do
         i=$((i + 1))
         local seg="$tmp/seg_$i.mp4"
-        ffmpeg -i "$src" -ss "$s" -to "$e" \
+        ffmpeg -i "$pristine" -ss "$s" -to "$e" \
             -c:v h264_videotoolbox -b:v 5M -r 30 -pix_fmt yuv420p \
             -c:a aac -ar 48000 -ac 2 "$seg" -y 2>/dev/null
         [ -f "$seg" ] && echo "file '$seg'" >> "$concat_list"
@@ -141,7 +156,7 @@ for s, e in keep:
     rm -rf "$tmp"
     local new_duration
     new_duration=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$src" 2>/dev/null)
-    ok "$name: ${duration%.*}s → ${new_duration%.*}s"
+    ok "$name: $(python3 -c "print(round(float('$duration')))")s(原始) → ${new_duration%.*}s"
 }
 
 cmd_recut() {
@@ -160,4 +175,30 @@ cmd_recut() {
     [ "$any" = "0" ] && { err "找不到任何成片（.mp4/-sub.mp4/-no-cover.mp4...），请先 vt mix"; return 1; }
     [ "$failed" = "1" ] && { err "部分文件剪辑失败，见上面的错误信息"; return 1; }
     ok "剪辑完成"
+}
+
+# ── 撤销上一次 vt recut：把每个成片变体恢复成"剪辑前"的那个备份 ──
+# 注意这撤销的是最近一次 recut 操作本身，不是回到 pristine 原始版本——
+# 如果连续剪了三次，restore 一次只退回第二次剪完的状态，不是退回最开始。
+# 想彻底放弃所有剪辑回到原始版本，直接用 backups/<文件名>.pristine.mp4 手动覆盖即可。
+cmd_recut_restore() {
+    local dir="$1"
+    local backups_dir="$dir/backups"
+    [ ! -d "$backups_dir" ] && { err "没有 backups/ 目录，还没剪辑过，无法恢复"; return 1; }
+
+    local base="$dir/$(basename "$dir")"
+    local restored=0
+    for variant in "$base.mp4" "$base-sub.mp4" "$base-no-cover.mp4" "$base-no-cover-sub.mp4" "${base}_en.mp4"; do
+        local name; name=$(basename "$variant")
+        # 按文件名里的时间戳排序取最新一份（不会匹配到 .pristine.mp4，
+        # 那个文件名里没有 "-时间戳" 这个分隔符）
+        local latest
+        latest=$(ls -t "$backups_dir/${name%.mp4}-"*.mp4 2>/dev/null | head -1)
+        if [ -n "$latest" ]; then
+            cp "$latest" "$variant"
+            ok "已恢复: $name ← backups/$(basename "$latest")"
+            restored=1
+        fi
+    done
+    [ "$restored" = "0" ] && { err "没有找到可恢复的备份"; return 1; }
 }

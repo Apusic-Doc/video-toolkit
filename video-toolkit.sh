@@ -1287,7 +1287,15 @@ case "${1:-}" in
     redub)  dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_redub "$dir" ;;
     burn)   dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_burn "$dir" ;;
     mix)    dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_mix "$dir" ;;
-    recut)  dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_recut "$dir" ;;
+    recut)
+        if [ "${2:-}" = "restore" ]; then
+            dir=$(resolve_dir "${3:-}"); [ -z "$dir" ] && { err "找不到 feature: $3"; exit 1; }
+            cmd_recut_restore "$dir"
+        else
+            dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }
+            cmd_recut "$dir"
+        fi
+        ;;
     group-merge) cmd_group_merge "${2:-}" ;;
     cover)  dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_cover "$dir" ;;
     record) dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_record "$dir" ;;
@@ -1328,6 +1336,7 @@ case "${1:-}" in
         echo "  vt dub     <feature>    仅生成 AI 配音"
         echo "  vt mix     <feature>    合成视频 + 可选 cover/outro/bgm"
         echo "  vt recut   <feature>    按 cuts.json 剪掉成片里的时间区间（先备份再覆盖）"
+        echo "  vt recut   restore <feature>   撤销上一次 recut，恢复剪辑前的版本"
         echo ""
         echo "  vt group-merge <group-id>   按项目 meta.json 里 groups 定义的顺序合并成片，输出到 groups/<id>.mp4"
         echo ""
