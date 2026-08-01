@@ -236,23 +236,6 @@ router.post('/projects/:project/groups', (req, res) => {
   res.json({ ok: true });
 });
 
-// 分组列表的显示顺序就是 groups 数组本身的顺序（跟组内 feature 排序是同一个
-// 设计），不用另外维护一个数字 index 字段——传完整的 id 顺序列表，按这个顺序
-// 重排数组，group 自己的 title/features 内容不受影响
-router.put('/projects/:project/groups-order', (req, res) => {
-  const projectDir = resolveProjectDir(req.params.project);
-  if (!projectDir) return res.status(404).json({ error: 'project not found' });
-  const { order } = req.body || {};
-  if (!Array.isArray(order)) return res.status(400).json({ error: 'order 必须是数组' });
-  const groups = readGroups(projectDir);
-  const byId = new Map(groups.map((g) => [g.id, g]));
-  if (order.length !== groups.length || !order.every((id) => byId.has(id))) {
-    return res.status(400).json({ error: 'order 必须恰好包含所有现有分组的 id' });
-  }
-  writeGroups(projectDir, order.map((id) => byId.get(id)));
-  res.json({ ok: true });
-});
-
 router.put('/projects/:project/groups/:id', (req, res) => {
   const projectDir = resolveProjectDir(req.params.project);
   if (!projectDir) return res.status(404).json({ error: 'project not found' });
