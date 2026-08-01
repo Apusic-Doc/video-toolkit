@@ -7,6 +7,9 @@ import NewGroupModal from './NewGroupModal.jsx';
 // 增删分组、调整顺序都是安全的，原始成片永远不受影响，参照 lib/groups.sh 顶部注释。
 // 独立页面（不是弹层）：点"分组"导航进来就是这个列表，新建走单独的弹窗，
 // 不在列表页常驻一行输入框——跟 Dashboard 的"新建 Feature/Project"是同一个交互习惯。
+//
+// 分组列表本身的显示顺序 = groups 数组顺序，跟组内 feature 排序同一个设计，
+// 不单独维护一个数字 index 字段——上下箭头调整的就是这个数组顺序。
 export default function GroupManager({ project, projectLabel, features, onToast }) {
   const { t } = useLang();
   const [groups, setGroups] = useState(null);
@@ -38,6 +41,20 @@ export default function GroupManager({ project, projectLabel, features, onToast 
     }
   }
 
+  async function moveGroup(i, dir) {
+    const j = i + dir;
+    if (j < 0 || j >= groups.length) return;
+    const next = [...groups];
+    [next[i], next[j]] = [next[j], next[i]];
+    setGroups(next); // 先乐观更新，界面立刻响应
+    try {
+      await api.reorderGroups(project, next.map((g) => g.id));
+    } catch (e) {
+      onToast(`排序保存失败: ${e.message}`, 'err');
+      refresh();
+    }
+  }
+
   return (
     <div>
       <div className="dash-section-head">
@@ -50,7 +67,7 @@ export default function GroupManager({ project, projectLabel, features, onToast 
 
       {groups === null ? <div className="empty-state">{t('loading')}</div> : (
         <>
-          {groups.map((g) => (
+          {groups.map((g, i) => (
             <GroupRow
               key={g.id} project={project} group={g} features={features}
               open={openId === g.id}
@@ -58,6 +75,10 @@ export default function GroupManager({ project, projectLabel, features, onToast 
               onChanged={refresh}
               onDelete={() => removeGroup(g.id)}
               onToast={onToast}
+              onMoveUp={() => moveGroup(i, -1)}
+              onMoveDown={() => moveGroup(i, 1)}
+              isFirst={i === 0}
+              isLast={i === groups.length - 1}
             />
           ))}
           {groups.length === 0 && <div className="empty-state">{t('groups_empty')}</div>}
@@ -71,7 +92,7 @@ export default function GroupManager({ project, projectLabel, features, onToast 
   );
 }
 
-function GroupRow({ project, group, features, open, onToggleOpen, onChanged, onDelete, onToast }) {
+function GroupRow({ project, group, features, open, onToggleOpen, onChanged, onDelete, onToast, onMoveUp, onMoveDown, isFirst, isLast }) {
   const [order, setOrder] = useState(group.features);
   const [addPick, setAddPick] = useState('');
   const [saving, setSaving] = useState(false);
@@ -138,24 +159,28 @@ function GroupRow({ project, group, features, open, onToggleOpen, onChanged, onD
   }
 
   return (
-    <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', marginBottom: 10 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={onToggleOpen}>
-        <div>
-          <strong>{group.title || group.id}</strong>
-          <span style={{ color: 'var(--text3)', fontSize: '0.8rem', marginLeft: 8 }}>{group.id} · {group.features.length} 个 feature</span>
+    <div className="group-card">
+      <div className="group-card-head">
+        <div className="order-btns" onClick={(e) => e.stopPropagation()}>
+          <button className="btn btn-sm" disabled={isFirst} onClick={onMoveUp}>↑</button>
+          <button className="btn btn-sm" disabled={isLast} onClick={onMoveDown}>↓</button>
         </div>
-        <span style={{ color: 'var(--text3)' }}>{open ? '▾' : '▸'}</span>
+        <div className="info" onClick={onToggleOpen} style={{ cursor: 'pointer' }}>
+          <strong>{group.title || group.id}</strong>
+          <span className="meta">{group.id} · {group.features.length} 个 feature</span>
+        </div>
+        <span style={{ color: 'var(--text3)', cursor: 'pointer' }} onClick={onToggleOpen}>{open ? '▾' : '▸'}</span>
       </div>
 
       {open && (
-        <div style={{ marginTop: 12 }}>
-          {order.length === 0 && <div style={{ color: 'var(--text3)', fontSize: '0.85rem', marginBottom: 8 }}>还没有加入任何 feature</div>}
+        <div className="group-card-body">
+          {order.length === 0 && <div style={{ color: 'var(--text3)', fontSize: '0.85rem', marginTop: 8 }}>还没有加入任何 feature</div>}
           {order.map((name, i) => {
             const f = features.find((x) => x.name === name);
             return (
-              <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0' }}>
-                <span style={{ width: 20, color: 'var(--text3)', fontSize: '0.8rem' }}>{i + 1}</span>
-                <span style={{ flex: 1 }}>{f?.title || name}</span>
+              <div key={name} className="group-feature-row">
+                <span className="seq">{i + 1}</span>
+                <span className="name">{f?.title || name}</span>
                 <button className="btn btn-sm" disabled={i === 0} onClick={() => move(i, -1)}>↑</button>
                 <button className="btn btn-sm" disabled={i === order.length - 1} onClick={() => move(i, 1)}>↓</button>
                 <button className="btn btn-sm" onClick={() => removeAt(i)}>✕</button>
@@ -163,8 +188,8 @@ function GroupRow({ project, group, features, open, onToggleOpen, onChanged, onD
             );
           })}
 
-          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-            <select value={addPick} onChange={(e) => setAddPick(e.target.value)} style={{ flex: 1 }}>
+          <div className="group-add-row">
+            <select value={addPick} onChange={(e) => setAddPick(e.target.value)}>
               <option value="">+ 选择要加入的 feature…</option>
               {notIncluded.map((f) => <option key={f.name} value={f.name}>{f.title || f.name}</option>)}
             </select>
@@ -176,7 +201,7 @@ function GroupRow({ project, group, features, open, onToggleOpen, onChanged, onD
             <button className="btn btn-pri" onClick={merge} disabled={merging || order.length === 0}>
               {merging ? '合并中…' : '生成合并视频'}
             </button>
-            <button className="btn" style={{ marginLeft: 'auto', color: 'var(--red, #d94040)' }} onClick={onDelete}>删除分组</button>
+            <button className="btn" style={{ marginLeft: 'auto', color: 'var(--red)' }} onClick={onDelete}>删除分组</button>
           </div>
 
           {lines.length > 0 && (

@@ -105,13 +105,16 @@ button, input, select, textarea { font-family: inherit; }
 .form-field textarea { resize: vertical; min-height: 60px; font-family: var(--mono); }
 .form-field input:focus, .form-field select:focus, .form-field textarea:focus { outline: none; border-color: var(--accent); }
 
-/* 弹层里不套 .form-field 结构、直接摆一行输入框的场景（比如分组管理的新建/选择行）
-   复用同一套视觉语言，避免掉回浏览器默认丑样式 */
-.modal-box input[type=text], .modal-box select {
+/* 弹层/页面里不套 .form-field 结构、直接摆一行输入框的场景（比如分组管理的
+   新建/选择行）复用同一套视觉语言，避免掉回浏览器默认丑样式——分组管理现在是
+   独立页面（page-content），不再套在 modal-box 里，两个都要覆盖到 */
+.modal-box input[type=text], .modal-box select,
+.page-content input[type=text], .page-content select {
   background: var(--bg3); border: 1px solid var(--border); color: var(--text);
   padding: 8px 10px; border-radius: var(--radius-sm); font-size: 0.88rem;
 }
-.modal-box input[type=text]:focus, .modal-box select:focus { outline: none; border-color: var(--accent); }
+.modal-box input[type=text]:focus, .modal-box select:focus,
+.page-content input[type=text]:focus, .page-content select:focus { outline: none; border-color: var(--accent); }
 .form-actions { margin-top: 20px; display: flex; gap: 10px; align-items: center; }
 .form-field input[type=color] { padding: 2px; height: 36px; cursor: pointer; }
 
@@ -174,6 +177,24 @@ table.datagrid tbody tr:last-child td { border-bottom: none; }
 .datagrid-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .datagrid-toolbar input[type=text] { flex: 1; max-width: 280px; }
 .datagrid-empty { padding: 30px; text-align: center; color: var(--text3); }
+
+/* ── group manager ── */
+.group-card { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; background: var(--bg2); }
+.group-card-head { display: flex; align-items: center; gap: 10px; padding: 14px 16px; cursor: pointer; }
+.group-card-head:hover { background: var(--bg3); }
+.group-card-head .order-btns { display: flex; flex-direction: column; gap: 2px; }
+.group-card-head .order-btns button { line-height: 1; padding: 2px 6px; font-size: 0.7rem; }
+.group-card-head .info { flex: 1; }
+.group-card-head .meta { color: var(--text3); font-size: 0.8rem; margin-left: 8px; }
+.group-card-body { padding: 4px 16px 16px; border-top: 1px solid var(--border); }
+.group-feature-row {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px; margin-top: 8px;
+  background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+.group-feature-row .seq { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--accent-tint); color: var(--accent); font-size: 0.75rem; font-weight: 700; flex-shrink: 0; }
+.group-feature-row .name { flex: 1; font-size: 0.9rem; }
+.group-add-row { display: flex; gap: 8px; margin-top: 14px; }
+.group-add-row select { flex: 1; }
 
 /* ── dashboard ── */
 .dash-section { margin-bottom: 32px; }
