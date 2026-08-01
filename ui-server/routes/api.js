@@ -221,7 +221,13 @@ function writeGroups(projectDir, groups) {
 router.get('/projects/:project/groups', (req, res) => {
   const projectDir = resolveProjectDir(req.params.project);
   if (!projectDir) return res.status(404).json({ error: 'project not found' });
-  res.json(readGroups(projectDir));
+  // hasOutput 告诉前端"这个分组之前合并过、有成片可以播放"，不依赖当次会话里
+  // 有没有刚跑过合并任务——刷新页面/重新打开详情框也能看到上次生成的结果
+  const groups = readGroups(projectDir).map((g) => ({
+    ...g,
+    hasOutput: fs.existsSync(path.join(projectDir, 'groups', `${g.id}.mp4`)),
+  }));
+  res.json(groups);
 });
 
 router.post('/projects/:project/groups', (req, res) => {

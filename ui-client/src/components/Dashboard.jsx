@@ -10,9 +10,19 @@ function featureStatusLabel(f, t) {
   return t('status_none');
 }
 
+const FEATURE_VIEW_KEY = 'vt-ui-feature-view';
+
 export default function Dashboard({ projects, project, onSelectProject, features, onOpenFeature, onNewProject, onNewFeature }) {
   const { t } = useLang();
   const [groupCount, setGroupCount] = useState(0);
+  // 两种展示模式都留着，不是二选一删掉另一个——列表信息密度高、适合功能点一多
+  // 就要扫状态列；卡片视觉上更直观、适合功能点不多时快速找。默认列表。
+  const [featureView, setFeatureView] = useState(() => localStorage.getItem(FEATURE_VIEW_KEY) || 'list');
+
+  function setView(v) {
+    setFeatureView(v);
+    localStorage.setItem(FEATURE_VIEW_KEY, v);
+  }
   const doneCount = features.filter((f) => f.subMp4).length;
   const projectLabel = projects.find((p) => p.name === project)?.displayName || project;
 
@@ -60,15 +70,39 @@ export default function Dashboard({ projects, project, onSelectProject, features
       <div className="dash-section">
         <div className="dash-section-head">
           <h3>{projectLabel} · {t('nav_features')}</h3>
-          <button className="btn btn-sm btn-pri" onClick={onNewFeature}>{t('sidebar_new_feature')}</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div className="view-toggle">
+              <button className={featureView === 'list' ? 'active' : ''} title="列表" onClick={() => setView('list')}>☰</button>
+              <button className={featureView === 'card' ? 'active' : ''} title="卡片" onClick={() => setView('card')}>▦</button>
+            </div>
+            <button className="btn btn-sm btn-pri" onClick={onNewFeature}>{t('sidebar_new_feature')}</button>
+          </div>
         </div>
-        <DataGrid
-          columns={featureColumns}
-          rows={features}
-          rowKey={(f) => f.name}
-          onRowClick={(f) => onOpenFeature(f.name)}
-          emptyText={t('sidebar_empty')}
-        />
+        {featureView === 'list' ? (
+          <DataGrid
+            columns={featureColumns}
+            rows={features}
+            rowKey={(f) => f.name}
+            onRowClick={(f) => onOpenFeature(f.name)}
+            emptyText={t('sidebar_empty')}
+          />
+        ) : (
+          <div className="group-grid">
+            {features.map((f) => (
+              <div key={f.name} className="group-card-summary" onClick={() => onOpenFeature(f.name)}>
+                <strong>{f.title || f.name}</strong>
+                <div className="meta">{f.name}</div>
+                <div className="status-dots" style={{ marginTop: 8 }} title="录制 / 字幕 / 配音 / 成片">
+                  <span className={`status-dot${f.recording ? ' on' : ''}`} />
+                  <span className={`status-dot${f.subtitles ? ' on' : ''}`} />
+                  <span className={`status-dot${f.dub ? ' on' : ''}`} />
+                  <span className={`status-dot${f.subMp4 ? ' on' : ''}`} />
+                </div>
+              </div>
+            ))}
+            {features.length === 0 && <div className="empty-state">{t('sidebar_empty')}</div>}
+          </div>
+        )}
       </div>
     </div>
   );
