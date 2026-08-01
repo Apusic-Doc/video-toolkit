@@ -8,13 +8,17 @@ import MetaFields, { MetaPickers } from './MetaFields.jsx';
 export default function ProjectSettings({ project, onClose, onToast }) {
   const { t } = useLang();
   const [raw, setRaw] = useState(null);
+  const [merged, setMerged] = useState(null);
   const [coverUrl, setCoverUrl] = useState(null);
   const [saving, setSaving] = useState(false);
   const previewTimer = useRef(null);
 
   useEffect(() => {
     setRaw(null);
-    api.projectMeta(project).then(({ raw }) => setRaw({ subtitle_style: {}, ...raw }));
+    api.projectMeta(project).then(({ raw, merged }) => {
+      setRaw({ subtitle_style: {}, ...raw });
+      setMerged(merged);
+    });
   }, [project]);
 
   useEffect(() => {
@@ -60,6 +64,7 @@ export default function ProjectSettings({ project, onClose, onToast }) {
       for (const k of Object.keys(clean)) if (clean[k] === '') delete clean[k];
       await api.saveProjectMeta(project, clean);
       onToast('项目设置已保存', 'ok');
+      onClose();
     } catch (e) {
       onToast(`保存失败: ${e.message}`, 'err');
     } finally {
@@ -83,7 +88,7 @@ export default function ProjectSettings({ project, onClose, onToast }) {
                 <input type="text" value={raw.name || ''} onChange={(e) => set('name', e.target.value)} placeholder={project} />
               </div>
             </div>
-            <MetaFields raw={raw} merged={null} set={set} showContent={false} />
+            <MetaFields raw={raw} merged={merged} set={set} showContent={false} />
 
             <div style={{ marginTop: 20 }}>
               <label style={{ fontSize: '0.8rem', color: 'var(--text2)', display: 'block', marginBottom: 8 }}>封面样式预览（示例文案）</label>
@@ -93,7 +98,7 @@ export default function ProjectSettings({ project, onClose, onToast }) {
             </div>
 
             <div style={{ marginTop: 24 }}>
-              <MetaPickers raw={raw} merged={null} set={set} />
+              <MetaPickers raw={raw} merged={merged} set={set} />
             </div>
 
             <div className="form-actions" style={{ justifyContent: 'space-between' }}>

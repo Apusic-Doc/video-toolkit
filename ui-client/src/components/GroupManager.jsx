@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, openTaskSocket } from '../api.js';
 import { useLang } from '../i18n.jsx';
+import NewGroupModal from './NewGroupModal.jsx';
 
 // 分组只是"元数据 + 合并任务"，不碰任何 feature-*/ 目录下的文件——
 // 增删分组、调整顺序都是安全的，原始成片永远不受影响，参照 lib/groups.sh 顶部注释。
-export default function GroupManager({ project, features, onClose, onToast }) {
+// 独立页面（不是弹层）：点"分组"导航进来就是这个列表，新建走单独的弹窗，
+// 不在列表页常驻一行输入框——跟 Dashboard 的"新建 Feature/Project"是同一个交互习惯。
+export default function GroupManager({ project, features, onToast }) {
   const { t } = useLang();
   const [groups, setGroups] = useState(null);
   const [openId, setOpenId] = useState(null);
-  const [newId, setNewId] = useState('');
-  const [newTitle, setNewTitle] = useState('');
+  const [showNewGroup, setShowNewGroup] = useState(false);
 
   useEffect(() => {
     api.groups(project).then(setGroups).catch(() => setGroups([]));
@@ -19,16 +21,10 @@ export default function GroupManager({ project, features, onClose, onToast }) {
     return api.groups(project).then(setGroups);
   }
 
-  async function createGroup() {
-    if (!newId.trim()) return;
-    try {
-      await api.createGroup(project, newId.trim(), newTitle.trim());
-      setNewId(''); setNewTitle('');
-      await refresh();
-      setOpenId(newId.trim());
-    } catch (e) {
-      onToast(`创建失败: ${e.message}`, 'err');
-    }
+  async function createGroup({ id, title }) {
+    await api.createGroup(project, id, title);
+    await refresh();
+    setOpenId(id);
   }
 
   async function removeGroup(id) {
@@ -43,39 +39,34 @@ export default function GroupManager({ project, features, onClose, onToast }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" style={{ width: 720, maxHeight: '85vh', overflowY: 'auto', textAlign: 'left' }} onClick={(e) => e.stopPropagation()}>
-        <h1 style={{ fontSize: '1.1rem', margin: '0 0 4px' }}>{t('groups_title')} · {project}</h1>
-        <p style={{ color: 'var(--text2)', fontSize: '0.82rem', margin: '0 0 20px' }}>
-          {t('groups_desc')}
-        </p>
-
-        {groups === null ? <div className="empty-state">{t('loading')}</div> : (
-          <>
-            {groups.map((g) => (
-              <GroupRow
-                key={g.id} project={project} group={g} features={features}
-                open={openId === g.id}
-                onToggleOpen={() => setOpenId(openId === g.id ? null : g.id)}
-                onChanged={refresh}
-                onDelete={() => removeGroup(g.id)}
-                onToast={onToast}
-              />
-            ))}
-            {groups.length === 0 && <div className="empty-state" style={{ marginBottom: 16 }}>还没有分组</div>}
-
-            <div className="form-actions" style={{ marginTop: 16 }}>
-              <input type="text" placeholder="分组 id（英文小写-短横线）" value={newId} onChange={(e) => setNewId(e.target.value)} style={{ width: 220 }} />
-              <input type="text" placeholder="标题（可选）" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} style={{ width: 220 }} />
-              <button className="btn btn-pri" onClick={createGroup}>+ 新建分组</button>
-            </div>
-          </>
-        )}
-
-        <div className="form-actions" style={{ justifyContent: 'flex-end', marginTop: 20 }}>
-          <button className="btn" onClick={onClose}>{t('btn_close')}</button>
+    <div>
+      <div className="dash-section-head">
+        <div>
+          <h3 style={{ marginBottom: 4 }}>{t('groups_title')} · {project}</h3>
+          <p style={{ color: 'var(--text2)', fontSize: '0.82rem', margin: 0, maxWidth: 640 }}>{t('groups_desc')}</p>
         </div>
+        <button className="btn btn-pri" onClick={() => setShowNewGroup(true)}>+ {t('new_group_title')}</button>
       </div>
+
+      {groups === null ? <div className="empty-state">{t('loading')}</div> : (
+        <>
+          {groups.map((g) => (
+            <GroupRow
+              key={g.id} project={project} group={g} features={features}
+              open={openId === g.id}
+              onToggleOpen={() => setOpenId(openId === g.id ? null : g.id)}
+              onChanged={refresh}
+              onDelete={() => removeGroup(g.id)}
+              onToast={onToast}
+            />
+          ))}
+          {groups.length === 0 && <div className="empty-state">{t('groups_empty')}</div>}
+        </>
+      )}
+
+      {showNewGroup && (
+        <NewGroupModal onSubmit={createGroup} onClose={() => setShowNewGroup(false)} />
+      )}
     </div>
   );
 }

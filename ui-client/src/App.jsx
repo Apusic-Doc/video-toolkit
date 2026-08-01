@@ -45,7 +45,6 @@ function AppInner() {
   const [runSignal, setRunSignal] = useState(null);
   const [page, setPage] = useState('dashboard');
   const [showProjectSettings, setShowProjectSettings] = useState(false);
-  const [showGroups, setShowGroups] = useState(false);
   const [showNewProject, setShowNewProject] = useState(false);
   const [showNewFeature, setShowNewFeature] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem(THEME_KEY) || 'light');
@@ -141,12 +140,13 @@ function AppInner() {
   }
 
   const selectedFeature = features.find((f) => f.name === selected);
-  const activePage = showGroups ? 'groups' : showProjectSettings ? 'settings' : page;
+  // 设置是单个实体的编辑表单，走弹层（跟新建 feature/project 一样的交互）；
+  // 分组是一个列表，跟 Dashboard/Features 一样走真正的页面，不是弹层
+  const activePage = showProjectSettings ? 'settings' : page;
 
   function onPage(id) {
-    setShowGroups(id === 'groups');
     setShowProjectSettings(id === 'settings');
-    if (id === 'dashboard' || id === 'features') setPage(id);
+    if (id !== 'settings') setPage(id);
   }
 
   function openFeatureFromDashboard(name) {
@@ -169,6 +169,10 @@ function AppInner() {
             features={features} onOpenFeature={openFeatureFromDashboard}
             onNewProject={() => setShowNewProject(true)} onNewFeature={() => setShowNewFeature(true)}
           />
+        </div>
+      ) : page === 'groups' ? (
+        <div className="page-content">
+          <GroupManager project={project} features={features} onToast={showToast} />
         </div>
       ) : (
         <div className="app-body">
@@ -227,9 +231,6 @@ function AppInner() {
 
       {showProjectSettings && (
         <ProjectSettings project={project} onClose={() => setShowProjectSettings(false)} onToast={showToast} />
-      )}
-      {showGroups && (
-        <GroupManager project={project} features={features} onClose={() => setShowGroups(false)} onToast={showToast} />
       )}
       {showNewProject && (
         <NewProjectModal onSubmit={handleNewProject} onClose={() => setShowNewProject(false)} />

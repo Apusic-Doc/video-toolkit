@@ -42,3 +42,15 @@ export async function readMergedMeta(featureDir) {
     return {};
   }
 }
+
+// 项目设置页面用："项目不设置这个字段的话，实际会生效的值"——内置默认 + 本机
+// vt config 全局设置，不含任何 project/feature meta.json（那正是这个页面要编辑的东西）
+export async function readProjectDefaults() {
+  const script = `source "${TOOLKIT_DIR}/lib/meta.sh"; project_defaults`;
+  try {
+    const { stdout } = await execFileAsync('bash', ['-c', script], { timeout: 10000 });
+    return JSON.parse(stdout.trim());
+  } catch (e) {
+    return {};
+  }
+}

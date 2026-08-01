@@ -11,15 +11,15 @@
   --accent-tint: rgba(108,92,231,0.15);
   --green: #00d2a0; --orange: #f6a623; --red: #ff5e5b;
 }
+/* Google Material Design 3（baseline 色板），纯 CSS 变量硬编码色值，
+   不依赖任何 CDN 字体/图标/组件库，离线可用 */
 [data-theme="light"] {
-  --bg: #f6f4f0; --bg2: #fffefc; --bg3: #efebe3;
-  --border: #e2dcd0; --border-hover: #c9c0af;
-  --text: #2b2621; --text2: #6b6358; --text3: #a39c8f;
-  /* 暖色调背景配冷紫色 accent 会显得突兀（尤其是选中态大面积铺色的地方），
-     换成暖调赤陶色，跟 idrp-guide 那套 Claude 风格站点的品牌色系保持一致 */
-  --accent: #c96442; --accent2: #b0532f;
-  --accent-tint: rgba(201,100,66,0.15);
-  --green: #0f9d72; --orange: #c47a10; --red: #d94040;
+  --bg: #fef7ff; --bg2: #ffffff; --bg3: #f3edf7;
+  --border: #cac4d0; --border-hover: #79747e;
+  --text: #1d1b20; --text2: #49454f; --text3: #79747e;
+  --accent: #6750a4; --accent2: #4f378b;
+  --accent-tint: rgba(103,80,164,0.12);
+  --green: #146c2e; --orange: #8c5000; --red: #ba1a1a;
 }
 
 * { box-sizing: border-box; }

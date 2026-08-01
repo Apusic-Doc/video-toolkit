@@ -60,6 +60,29 @@ read_json() {
   [ -f "$1" ] && python3 -c "import json; print(json.dumps(json.load(open('$1'))))" 2>/dev/null || echo "{}"
 }
 
+# ── 把 ~/.config/video-toolkit/config（vt config 写的全局默认）覆盖到一份 meta JSON 上 ──
+# vt config 的值优先级高于 meta.json，两处用得到：load_meta 的最后一步，
+# 以及 project_defaults 给 UI 当"项目没设置的话实际会生效的值"的占位符用
+_apply_global_config() {
+  local json="$1"
+  python3 -c "
+import json, os
+m = json.loads('''$json''')
+cfg_file = os.path.expanduser('~/.config/video-toolkit/config')
+if os.path.exists(cfg_file):
+    with open(cfg_file) as f:
+        for line in f:
+            line = line.strip()
+            if '=' in line and not line.startswith('#'):
+                k, v = line.split('=', 1)
+                if k == 'VIDEO_VOICE': m['voice'] = v
+                elif k == 'VIDEO_VOICE_EN': m['voice_en'] = v
+                elif k == 'VIDEO_ASR': m['asr'] = v
+                elif k == 'VIDEO_BURN_SUB': m['subtitle']['burn'] = (v == '1')
+print(json.dumps(m))
+" 2>/dev/null || echo "$json"
+}
+
 # ── 三级合并：project/meta.json → feature/meta.json → 内置默认 ──
 # 用法: meta=$(load_meta "/path/to/feature-dir")
 load_meta() {
@@ -73,25 +96,16 @@ load_meta() {
   # defaults → project → feature
   local merged=$(merge_json "$defaults" "$proj_json")
   merged=$(merge_json "$merged" "$feat_json")
-  
+
   # config 文件覆盖（vt config 的值优先级高于 meta.json）
-  merged=$(python3 -c "
-import json, os
-m = json.loads('''$merged''')
-cfg_file = os.path.expanduser('~/.config/video-toolkit/config')
-if os.path.exists(cfg_file):
-    with open(cfg_file) as f:
-        for line in f:
-            line = line.strip()
-            if '=' in line and not line.startswith('#'):
-                k, v = line.split('=', 1)
-                if k == 'VIDEO_VOICE': m['voice'] = v
-                elif k == 'VIDEO_VOICE_EN': m['voice_en'] = v
-                elif k == 'VIDEO_ASR': m['asr'] = v
-                elif k == 'VIDEO_BURN_SUB': m['subtitle']['burn'] = (v == '1')
-print(json.dumps(m))
-" 2>/dev/null || echo "$merged")
-  echo "$merged"
+  _apply_global_config "$merged"
+}
+
+# ── 项目级"有效默认值"：内置默认 + 全局 vt config 覆盖，不含任何 project/feature
+# meta.json——给 vt-ui 的"项目设置"页面当占位符用，告诉用户"这个字段不填的话
+# 实际会生效的值是什么"（包括本机通过 vt config 设置过的全局默认）
+project_defaults() {
+  _apply_global_config "$(meta_defaults)"
 }
 
 # ── 获取单个配置值 ──

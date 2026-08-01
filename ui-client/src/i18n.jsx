@@ -39,6 +39,8 @@ export const STRINGS = {
     btn_delete_feature: '删除此 Feature',
     btn_confirm_delete: '确认删除，不再犹豫',
     new_project_next_hint: '项目已创建，接下来设置字体/语音/封面等统一样式',
+    new_group_title: '新建分组', field_slug_group: '分组 id（自动根据标题生成，可手动修改）',
+    groups_empty: '还没有分组',
   },
   en: {
     nav_dashboard: 'Dashboard', nav_dashboard_projects: 'Projects', nav_features: 'Features', nav_groups: 'Groups', nav_settings: 'Settings',
@@ -74,6 +76,8 @@ export const STRINGS = {
     btn_delete_feature: 'Delete this feature',
     btn_confirm_delete: 'Yes, delete it',
     new_project_next_hint: 'Project created — now set up shared font/voice/cover style',
+    new_group_title: 'New Group', field_slug_group: 'Group id (auto from title, editable)',
+    groups_empty: 'No groups yet',
   },
 };
 

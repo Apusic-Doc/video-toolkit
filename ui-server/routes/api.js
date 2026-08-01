@@ -5,7 +5,7 @@ import {
   listProjects, listFeatures, resolveProjectDir, resolveFeatureDir, featureStatus,
   createProject, createFeature, softDeleteFeature,
 } from '../lib/paths.js';
-import { readFeatureMeta, writeFeatureMeta, readMergedMeta, readProjectMeta, writeProjectMeta } from '../lib/meta.js';
+import { readFeatureMeta, writeFeatureMeta, readMergedMeta, readProjectMeta, writeProjectMeta, readProjectDefaults } from '../lib/meta.js';
 import { parseSrt, serializeSrt } from '../lib/srt.js';
 import { runTask, getHistory, ALLOWED_COMMANDS } from '../lib/taskRunner.js';
 import { guardScreenCommand } from '../lib/localGuard.js';
@@ -26,10 +26,11 @@ router.get('/projects', (req, res) => {
 
 // ── 项目级 meta.json（字体/字号/语音/封面配色这些"整个项目该统一"的设置放这里，
 // 单个 feature 的 meta.json 留空就会继承这里的值，覆盖了才是这个 feature 自己特殊）──
-router.get('/projects/:project/meta', (req, res) => {
+router.get('/projects/:project/meta', async (req, res) => {
   const projectDir = resolveProjectDir(req.params.project);
   if (!projectDir) return res.status(404).json({ error: 'project not found' });
-  res.json({ raw: readProjectMeta(projectDir) });
+  const merged = await readProjectDefaults();
+  res.json({ raw: readProjectMeta(projectDir), merged });
 });
 
 router.put('/projects/:project/meta', (req, res) => {
