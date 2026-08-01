@@ -8,13 +8,17 @@
   --border: #252530; --border-hover: #3a3a48;
   --text: #e4e4ec; --text2: #9d9dab; --text3: #5f5f6e;
   --accent: #6c5ce7; --accent2: #a29bfe;
+  --accent-tint: rgba(108,92,231,0.15);
   --green: #00d2a0; --orange: #f6a623; --red: #ff5e5b;
 }
 [data-theme="light"] {
   --bg: #f6f4f0; --bg2: #fffefc; --bg3: #efebe3;
   --border: #e2dcd0; --border-hover: #c9c0af;
   --text: #2b2621; --text2: #6b6358; --text3: #a39c8f;
-  --accent: #6c5ce7; --accent2: #5b4bd5;
+  /* 暖色调背景配冷紫色 accent 会显得突兀（尤其是选中态大面积铺色的地方），
+     换成暖调赤陶色，跟 idrp-guide 那套 Claude 风格站点的品牌色系保持一致 */
+  --accent: #c96442; --accent2: #b0532f;
+  --accent-tint: rgba(201,100,66,0.15);
   --green: #0f9d72; --orange: #c47a10; --red: #d94040;
 }
 
@@ -137,7 +141,7 @@ button, input, select, textarea { font-family: inherit; }
   border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px; cursor: pointer;
   background: var(--bg3);
 }
-.picker-card.selected { border-color: var(--accent); background: rgba(108,92,231,0.15); }
+.picker-card.selected { border-color: var(--accent); background: var(--accent-tint); }
 .picker-card img { width: 100%; border-radius: 4px; background: #fff; display: block; }
 .picker-card .label { font-size: 0.75rem; margin-top: 6px; color: var(--text2); }
 .picker-card .play-btn { margin-top: 6px; width: 100%; }
