@@ -16,6 +16,7 @@ const ADVANCED_COMMANDS = [
   { cmd: 'mix', label: '仅合成视频（不烧字幕）' },
   { cmd: 'burn', label: '仅烧录字幕' },
   { cmd: 'srt', label: '仅提取字幕' },
+  { cmd: 'recut', label: '重新应用剪辑区间', desc: '按"剪辑"tab 里保存的 cuts.json 重新处理一遍最新成片（比如重新 mix/burn 之后要再剪一次）' },
 ];
 
 const ADVANCED_EN_COMMANDS = [

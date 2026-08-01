@@ -37,6 +37,9 @@ export const api = {
   subtitles: (project, feature) => req('GET', `/api/projects/${encodeURIComponent(project)}/features/${encodeURIComponent(feature)}/subtitles`),
   saveSubtitles: (project, feature, cues) => req('PUT', `/api/projects/${encodeURIComponent(project)}/features/${encodeURIComponent(feature)}/subtitles`, { cues }),
 
+  cuts: (project, feature) => req('GET', `/api/projects/${encodeURIComponent(project)}/features/${encodeURIComponent(feature)}/cuts`),
+  saveCuts: (project, feature, cuts) => req('PUT', `/api/projects/${encodeURIComponent(project)}/features/${encodeURIComponent(feature)}/cuts`, { cuts }),
+
   fonts: () => req('GET', '/api/fonts'),
   voices: () => req('GET', '/api/voices'),
 

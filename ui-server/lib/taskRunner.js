@@ -8,7 +8,7 @@ import { VT_BIN } from './paths.js';
 // codegen 会真的弹出一个浏览器窗口等人工点击操作路径，跟 record 一样要走 guardScreenCommand。
 export const ALLOWED_COMMANDS = new Set([
   'record', 'codegen', 'redub', 'dub', 'dub-en', 'mix', 'mix-en',
-  'burn', 'srt', 'trans', 'en', 'all', 'status', 'cover',
+  'burn', 'srt', 'trans', 'en', 'all', 'status', 'cover', 'recut',
 ]);
 
 export const bus = new EventEmitter();

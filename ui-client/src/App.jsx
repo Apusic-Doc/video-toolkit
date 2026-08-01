@@ -4,6 +4,7 @@ import Login from './components/Login.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import MetaForm from './components/MetaForm.jsx';
 import SubtitleEditor from './components/SubtitleEditor.jsx';
+import CutsEditor from './components/CutsEditor.jsx';
 import TaskPanel from './components/TaskPanel.jsx';
 import ReadmeView from './components/ReadmeView.jsx';
 import ProjectSettings from './components/ProjectSettings.jsx';
@@ -11,6 +12,7 @@ import ProjectSettings from './components/ProjectSettings.jsx';
 const TABS = [
   { id: 'meta', label: '封面 / 配置' },
   { id: 'subtitles', label: '字幕' },
+  { id: 'cuts', label: '剪辑' },
   { id: 'tasks', label: '任务 / 预览' },
   { id: 'readme', label: '说明' },
 ];
@@ -106,6 +108,12 @@ export default function App() {
               {tab === 'subtitles' && (
                 <SubtitleEditor
                   project={project} feature={selected} onToast={showToast}
+                  onRunTask={(cmd) => { setTab('tasks'); setRunSignal({ cmd, ts: Date.now() }); }}
+                />
+              )}
+              {tab === 'cuts' && (
+                <CutsEditor
+                  project={project} feature={selected} status={selectedFeature} onToast={showToast}
                   onRunTask={(cmd) => { setTab('tasks'); setRunSignal({ cmd, ts: Date.now() }); }}
                 />
               )}

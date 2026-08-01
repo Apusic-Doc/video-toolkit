@@ -160,6 +160,30 @@ router.put('/projects/:project/features/:feature/subtitles', requireFeature, (re
   res.json({ ok: true });
 });
 
+// ── cuts.json（成片剪辑：要从最终视频里去掉的时间区间，vt recut 读这个文件）──
+router.get('/projects/:project/features/:feature/cuts', requireFeature, (req, res) => {
+  const p = path.join(req.featureDir, 'cuts.json');
+  if (!fs.existsSync(p)) return res.json({ cuts: [] });
+  try {
+    res.json({ cuts: JSON.parse(fs.readFileSync(p, 'utf8')) });
+  } catch {
+    res.status(500).json({ error: 'cuts.json 解析失败' });
+  }
+});
+
+router.put('/projects/:project/features/:feature/cuts', requireFeature, (req, res) => {
+  const { cuts } = req.body || {};
+  if (!Array.isArray(cuts)) return res.status(400).json({ error: 'cuts 必须是数组' });
+  for (const c of cuts) {
+    if (!c || typeof c.start !== 'string' || typeof c.end !== 'string') {
+      return res.status(400).json({ error: '每条区间必须是 { start, end } 字符串' });
+    }
+  }
+  const p = path.join(req.featureDir, 'cuts.json');
+  fs.writeFileSync(p, JSON.stringify(cuts, null, 2), 'utf8');
+  res.json({ ok: true });
+});
+
 // ── 说明文档（README.md，纯展示，不可编辑——改文档去改 README.md 本身）──
 router.get('/projects/:project/features/:feature/readme', requireFeature, (req, res) => {
   const p = path.join(req.featureDir, 'README.md');
