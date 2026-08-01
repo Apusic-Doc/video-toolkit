@@ -26,6 +26,9 @@ function useQueryParam(name) {
 
 const THEME_KEY = 'vt-ui-theme';
 const PALETTE_KEY = 'vt-ui-palette';
+const PROJECT_KEY = 'vt-ui-project';
+const FEATURE_KEY = 'vt-ui-feature';
+const PAGE_KEY = 'vt-ui-page';
 
 export default function App() {
   return (
@@ -39,13 +42,13 @@ function AppInner() {
   const { t } = useLang();
   const [authState, setAuthState] = useState('checking'); // checking | need-login | denied | ok
   const [projects, setProjects] = useState([]);
-  const [project, setProject] = useState('');
+  const [project, setProject] = useState(() => localStorage.getItem(PROJECT_KEY) || '');
   const [features, setFeatures] = useState([]);
-  const [selected, setSelected] = useState(useQueryParam('feature') || '');
+  const [selected, setSelected] = useState(useQueryParam('feature') || localStorage.getItem(FEATURE_KEY) || '');
   const [tab, setTab] = useState('meta');
   const [toast, setToast] = useState(null);
   const [runSignal, setRunSignal] = useState(null);
-  const [page, setPage] = useState('dashboard');
+  const [page, setPage] = useState(() => localStorage.getItem(PAGE_KEY) || 'dashboard');
   const [showProjectSettings, setShowProjectSettings] = useState(false);
   const [showNewProject, setShowNewProject] = useState(false);
   const [showNewFeature, setShowNewFeature] = useState(false);
@@ -88,7 +91,7 @@ function AppInner() {
   function refreshProjects(preferName) {
     return api.projects().then((ps) => {
       setProjects(ps);
-      const initial = preferName || useQueryParam('project');
+      const initial = preferName || useQueryParam('project') || localStorage.getItem(PROJECT_KEY);
       setProject((prev) => (initial && ps.some((p) => p.name === initial)) ? initial : (ps.some((p) => p.name === prev) ? prev : ps[0]?.name || ''));
     });
   }
@@ -164,6 +167,11 @@ function AppInner() {
     setSelected(name);
     setPage('features');
   }
+
+  // 记住当前选择的项目/feature/页面，刷新后恢复
+  useEffect(() => { if (project) localStorage.setItem(PROJECT_KEY, project); }, [project]);
+  useEffect(() => { if (selected) localStorage.setItem(FEATURE_KEY, selected); }, [selected]);
+  useEffect(() => { localStorage.setItem(PAGE_KEY, page); }, [page]);
 
   // 列表/标题这些"给人看"的地方统一显示项目显示名称，没设置才退回目录名——
   // project 变量本身（slug）继续原样传给各组件当 API 参数，两者不要混用
