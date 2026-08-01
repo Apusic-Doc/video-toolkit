@@ -44,6 +44,8 @@ export const STRINGS = {
     new_menu_title: '新建…',
     view_mode_list: '列表模式', view_mode_player: '视频播放模式',
     video_no_source: '这个功能点还没有可播放的视频',
+    video_meta_file: '文件', video_meta_size: '大小', video_meta_resolution: '分辨率',
+    video_meta_duration: '时长', video_meta_mtime: '最后修改',
   },
   en: {
     nav_dashboard: 'Dashboard', nav_dashboard_projects: 'Projects', nav_features: 'Features', nav_groups: 'Groups', nav_settings: 'Settings',
@@ -84,6 +86,8 @@ export const STRINGS = {
     new_menu_title: 'New…',
     view_mode_list: 'List view', view_mode_player: 'Video player view',
     video_no_source: 'No playable video for this feature yet',
+    video_meta_file: 'File', video_meta_size: 'Size', video_meta_resolution: 'Resolution',
+    video_meta_duration: 'Duration', video_meta_mtime: 'Last modified',
   },
 };
 

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { useLang } from '../i18n.jsx';
 
@@ -15,6 +16,20 @@ function statusLabel(f, t) {
   return t('status_none');
 }
 
+function formatSize(bytes) {
+  if (bytes == null) return '—';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let v = bytes, i = 0;
+  while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+  return `${v.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+}
+function formatDuration(sec) {
+  if (!sec || !isFinite(sec)) return '—';
+  const m = Math.floor(sec / 60);
+  const s = Math.round(sec % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
 // 视频播放模式：专门用于最后验收——大播放器 + 右侧播放列表（类似 YouTube）。
 // 播放列表是"一个项目一个 PlayList"，列出项目下全部 feature（不管有没有视频），
 // 还没产出视频的点开显示提示，不从列表里拿掉——不然列表数量对不上项目实际的 feature 数
@@ -23,6 +38,34 @@ export default function VideoPlayerView({ project, features, selected, onSelect 
   const current = features.find((f) => f.name === selected) || features[0] || null;
   const file = current ? pickVideoFile(current) : null;
   const src = current && file ? api.fileUrl(project, current.name, file) : null;
+
+  // 文件大小/最后修改时间——直接 HEAD 一下正在播放的这个文件，跟浏览器实际拿到的
+  // Content-Length / Last-Modified 对齐，不用后端另开接口重复算一遍
+  const [fileMeta, setFileMeta] = useState(null);
+  // 分辨率/时长——video 标签自己解出来的，跟文件大小一样是"这个具体文件"的属性
+  const [videoMeta, setVideoMeta] = useState(null);
+
+  useEffect(() => {
+    setFileMeta(null);
+    setVideoMeta(null);
+    if (!src) return;
+    let cancelled = false;
+    fetch(src, { method: 'HEAD' }).then((res) => {
+      if (cancelled || !res.ok) return;
+      const size = res.headers.get('content-length');
+      const mtime = res.headers.get('last-modified');
+      setFileMeta({
+        size: size ? Number(size) : null,
+        mtime: mtime ? new Date(mtime) : null,
+      });
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [src]);
+
+  function onLoadedMetadata(e) {
+    const v = e.target;
+    setVideoMeta({ width: v.videoWidth, height: v.videoHeight, duration: v.duration });
+  }
 
   function playNext() {
     if (!current) return;
@@ -38,11 +81,20 @@ export default function VideoPlayerView({ project, features, selected, onSelect 
       <div className="video-player-main">
         <div className="video-player-stage">
           {src ? (
-            <video key={src} controls autoPlay src={src} onEnded={playNext} />
+            <video key={src} controls autoPlay src={src} onEnded={playNext} onLoadedMetadata={onLoadedMetadata} />
           ) : (
             <div className="empty-state">{current ? t('video_no_source') : t('sidebar_empty')}</div>
           )}
         </div>
+        {src && (
+          <div className="video-meta-bar">
+            <span><b>{t('video_meta_file')}</b> {file}</span>
+            <span><b>{t('video_meta_size')}</b> {formatSize(fileMeta?.size)}</span>
+            <span><b>{t('video_meta_resolution')}</b> {videoMeta ? `${videoMeta.width}×${videoMeta.height}` : '—'}</span>
+            <span><b>{t('video_meta_duration')}</b> {videoMeta ? formatDuration(videoMeta.duration) : '—'}</span>
+            <span><b>{t('video_meta_mtime')}</b> {fileMeta?.mtime ? fileMeta.mtime.toLocaleString() : '—'}</span>
+          </div>
+        )}
       </div>
       <div className="video-playlist">
         <div className="video-playlist-head">{t('nav_features')} · {features.length}</div>
