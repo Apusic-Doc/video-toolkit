@@ -59,6 +59,47 @@ button, input, select, textarea { font-family: inherit; }
 .topnav .icon-btn:hover { border-color: var(--border-hover); color: var(--text); }
 .page-content { flex: 1; overflow-y: auto; padding: 24px; }
 
+/* ── 顶栏 "+" 下拉（新建项目/功能/分组） ── */
+.new-menu { position: relative; }
+.new-menu-dropdown {
+  position: absolute; right: 0; top: calc(100% + 6px); background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); box-shadow: 0 8px 24px rgba(0,0,0,0.25); min-width: 160px; z-index: 100; overflow: hidden;
+}
+.new-menu-item { padding: 9px 14px; font-size: 0.85rem; cursor: pointer; color: var(--text); }
+.new-menu-item:hover { background: var(--bg3); }
+
+/* ── features 页面：视图模式切换 ──
+   标题（仅播放模式下有内容）跟视图切换按钮同一行，不占用视频/列表下面的区域 */
+.features-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.features-toolbar { flex-shrink: 0; padding: 8px 16px; border-bottom: 1px solid var(--border); background: var(--bg2); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.features-toolbar-title { min-width: 0; }
+.features-toolbar-title h2 { margin: 0; font-size: 0.95rem; line-height: 1.3; }
+.features-toolbar-title .sub { color: var(--text2); font-size: 0.75rem; }
+.sidebar-grid { padding: 10px; overflow-y: auto; }
+.sidebar-grid .datagrid-wrap { border: none; }
+
+/* ── 视频播放模式（YouTube 风格：大播放器 + 右侧播放列表） ──
+   播放区沿用全站 video 标签的默认样式（max-width 800px + 圆角边框），
+   不整列拉伸铺满，居中显示 */
+.video-player-view { flex: 1; display: flex; overflow: hidden; }
+.video-player-main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+.video-player-stage { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.video-player-stage .empty-state { color: var(--text3); }
+.video-playlist { width: 320px; flex-shrink: 0; background: var(--bg2); border-left: 1px solid var(--border); overflow-y: auto; }
+.video-playlist-head { padding: 12px 14px; font-size: 0.72rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); }
+.video-playlist-item { display: flex; gap: 10px; padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--border); align-items: center; }
+.video-playlist-item:hover { background: var(--bg3); }
+.video-playlist-item.active { background: var(--accent-tint); }
+.video-playlist-item.disabled { opacity: 0.5; }
+.video-playlist-item .thumb {
+  width: 40px; height: 40px; flex-shrink: 0; border-radius: var(--radius-sm); background: var(--bg3);
+  display: flex; align-items: center; justify-content: center; color: var(--text3); font-size: 0.8rem;
+}
+.video-playlist-item.active .thumb { color: var(--accent); }
+.video-playlist-item .info { min-width: 0; }
+.video-playlist-item .title { font-weight: 600; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.video-playlist-item .meta { font-size: 0.72rem; color: var(--text2); }
+
 /* ── sidebar ── */
 .sidebar {
   width: 280px; flex-shrink: 0; background: var(--bg2); border-right: 1px solid var(--border);
@@ -176,6 +217,7 @@ table.datagrid th .arrow { margin-left: 4px; color: var(--accent); }
 table.datagrid td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
 table.datagrid tbody tr { cursor: pointer; transition: background .1s; }
 table.datagrid tbody tr:hover { background: var(--bg3); }
+table.datagrid tbody tr.active { background: var(--accent); color: #fff; }
 table.datagrid tbody tr:last-child td { border-bottom: none; }
 .datagrid-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .datagrid-toolbar input[type=text] { flex: 1; max-width: 280px; }

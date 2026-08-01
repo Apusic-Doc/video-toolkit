@@ -7,7 +7,7 @@ import GroupDetailModal from './GroupDetailModal.jsx';
 // 分组只是"元数据 + 合并任务"，不碰任何 feature-*/ 目录下的文件——
 // 增删分组、调整组内顺序都是安全的，原始成片永远不受影响，参照 lib/groups.sh 顶部注释。
 // 独立页面（不是弹层），卡片网格展示，点卡片打开详情弹窗调整成员/生成合并视频。
-export default function GroupManager({ project, projectLabel, features, onToast }) {
+export default function GroupManager({ project, projectLabel, features, onToast, openNewGroupSignal }) {
   const { t } = useLang();
   const [groups, setGroups] = useState(null);
   const [openId, setOpenId] = useState(null);
@@ -16,6 +16,12 @@ export default function GroupManager({ project, projectLabel, features, onToast 
   useEffect(() => {
     api.groups(project).then(setGroups).catch(() => setGroups([]));
   }, [project]);
+
+  // 顶栏全局 "+" 下拉里的"新建分组"入口——不管当前在哪个页面点的，切到本页面后
+  // 靠这个信号把弹层顶开，本组件自己的新建/刷新逻辑完全不用动
+  useEffect(() => {
+    if (openNewGroupSignal) setShowNewGroup(true);
+  }, [openNewGroupSignal]);
 
   function refresh() {
     return api.groups(project).then(setGroups);

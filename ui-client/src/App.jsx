@@ -14,6 +14,8 @@ import ReadmeView from './components/ReadmeView.jsx';
 import ProjectSettings from './components/ProjectSettings.jsx';
 import GroupManager from './components/GroupManager.jsx';
 import Dashboard from './components/Dashboard.jsx';
+import FeatureGridSidebar from './components/FeatureGridSidebar.jsx';
+import VideoPlayerView from './components/VideoPlayerView.jsx';
 import { applyPalette, clearPaletteOverrides, DEFAULT_PALETTE } from './palettes.js';
 
 const TAB_KEYS = ['tab_meta', 'tab_subtitles', 'tab_cuts', 'tab_tasks', 'tab_readme'];
@@ -29,6 +31,7 @@ const PALETTE_KEY = 'vt-ui-palette';
 const PROJECT_KEY = 'vt-ui-project';
 const FEATURE_KEY = 'vt-ui-feature';
 const PAGE_KEY = 'vt-ui-page';
+const FEATURE_PAGE_VIEW_KEY = 'vt-ui-features-page-view';
 
 export default function App() {
   return (
@@ -54,6 +57,20 @@ function AppInner() {
   const [showNewFeature, setShowNewFeature] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem(THEME_KEY) || 'light');
   const [palette, setPalette] = useState(() => localStorage.getItem(PALETTE_KEY) || DEFAULT_PALETTE);
+  const [featurePageView, setFeaturePageView] = useState(() => localStorage.getItem(FEATURE_PAGE_VIEW_KEY) || 'list');
+  const [openNewGroupSignal, setOpenNewGroupSignal] = useState(0);
+
+  function setFeatureView(v) {
+    setFeaturePageView(v);
+    localStorage.setItem(FEATURE_PAGE_VIEW_KEY, v);
+  }
+
+  // 顶栏全局 "+" 下拉里的"新建分组"——分组管理是独立页面（不是弹层），先切过去
+  // 再发信号让 GroupManager 自己弹出它本来就有的新建弹层，逻辑不用重复一份
+  function openNewGroupFromMenu() {
+    setPage('groups');
+    setOpenNewGroupSignal(Date.now());
+  }
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -194,6 +211,8 @@ function AppInner() {
       <NavBar
         projects={projects} project={project} onProject={setProject}
         onNewProject={() => setShowNewProject(true)}
+        onNewFeature={() => setShowNewFeature(true)}
+        onNewGroup={openNewGroupFromMenu}
         page={activePage} onPage={onPage}
         theme={theme} onToggleTheme={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
         palette={palette} onPalette={setPalette}
@@ -208,58 +227,83 @@ function AppInner() {
         </div>
       ) : page === 'groups' ? (
         <div className="page-content">
-          <GroupManager project={project} projectLabel={projectLabel} features={features} onToast={showToast} />
+          <GroupManager
+            project={project} projectLabel={projectLabel} features={features} onToast={showToast}
+            openNewGroupSignal={openNewGroupSignal}
+          />
         </div>
       ) : (
-        <div className="app-body">
-          <Sidebar
-            features={features} selected={selected} onSelect={setSelected}
-            onNewFeature={() => setShowNewFeature(true)}
-          />
-          <div className="main">
-            {selectedFeature ? (
-              <>
-                <div className="main-header">
-                  <div>
-                    <h2>{selectedFeature.title || selectedFeature.name}</h2>
-                    <div className="sub">{projectLabel} / {selectedFeature.name}</div>
-                  </div>
-                </div>
-                <div className="tabs">
-                  {TAB_IDS.map((id, i) => (
-                    <div key={id} className={`tab${tab === id ? ' active' : ''}`} onClick={() => setTab(id)}>
-                      {t(TAB_KEYS[i])}
-                    </div>
-                  ))}
-                </div>
-                <div className="tab-content">
-                  {tab === 'meta' && <MetaForm project={project} feature={selected} onToast={showToast} />}
-                  {tab === 'subtitles' && (
-                    <SubtitleEditor
-                      project={project} feature={selected} onToast={showToast}
-                      onRunTask={(cmd) => { setTab('tasks'); setRunSignal({ cmd, ts: Date.now() }); }}
-                    />
-                  )}
-                  {tab === 'cuts' && (
-                    <CutsEditor
-                      project={project} feature={selected} status={selectedFeature} onToast={showToast}
-                      onRunTask={(cmd) => { setTab('tasks'); setRunSignal({ cmd, ts: Date.now() }); }}
-                    />
-                  )}
-                  {tab === 'tasks' && (
-                    <TaskPanel
-                      project={project} feature={selected} status={selectedFeature}
-                      onToast={showToast} runSignal={runSignal}
-                      onDeleteFeature={() => handleDeleteFeature(selected)}
-                    />
-                  )}
-                  {tab === 'readme' && <ReadmeView project={project} feature={selected} />}
-                </div>
-              </>
-            ) : (
-              <div className="empty-state">{t('empty_pick_feature')}</div>
-            )}
+        <div className="features-page">
+          <div className="features-toolbar">
+            <div className="features-toolbar-title">
+              {featurePageView === 'player' && selectedFeature && (
+                <>
+                  <h2>{selectedFeature.title || selectedFeature.name}</h2>
+                  <div className="sub">{projectLabel} / {selectedFeature.name}</div>
+                </>
+              )}
+            </div>
+            <div className="view-toggle">
+              <button className={featurePageView === 'list' ? 'active' : ''} title={t('view_mode_list')} onClick={() => setFeatureView('list')}>☰</button>
+              <button className={featurePageView === 'grid' ? 'active' : ''} title={t('view_mode_grid')} onClick={() => setFeatureView('grid')}>▦</button>
+              <button className={featurePageView === 'player' ? 'active' : ''} title={t('view_mode_player')} onClick={() => setFeatureView('player')}>▶</button>
+            </div>
           </div>
+          {featurePageView === 'player' ? (
+            <VideoPlayerView project={project} features={features} selected={selected} onSelect={setSelected} />
+          ) : (
+            <div className="app-body">
+              {featurePageView === 'grid' ? (
+                <FeatureGridSidebar features={features} selected={selected} onSelect={setSelected} />
+              ) : (
+                <Sidebar features={features} selected={selected} onSelect={setSelected} />
+              )}
+              <div className="main">
+                {selectedFeature ? (
+                  <>
+                    <div className="main-header">
+                      <div>
+                        <h2>{selectedFeature.title || selectedFeature.name}</h2>
+                        <div className="sub">{projectLabel} / {selectedFeature.name}</div>
+                      </div>
+                    </div>
+                    <div className="tabs">
+                      {TAB_IDS.map((id, i) => (
+                        <div key={id} className={`tab${tab === id ? ' active' : ''}`} onClick={() => setTab(id)}>
+                          {t(TAB_KEYS[i])}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="tab-content">
+                      {tab === 'meta' && <MetaForm project={project} feature={selected} onToast={showToast} />}
+                      {tab === 'subtitles' && (
+                        <SubtitleEditor
+                          project={project} feature={selected} onToast={showToast}
+                          onRunTask={(cmd) => { setTab('tasks'); setRunSignal({ cmd, ts: Date.now() }); }}
+                        />
+                      )}
+                      {tab === 'cuts' && (
+                        <CutsEditor
+                          project={project} feature={selected} status={selectedFeature} onToast={showToast}
+                          onRunTask={(cmd) => { setTab('tasks'); setRunSignal({ cmd, ts: Date.now() }); }}
+                        />
+                      )}
+                      {tab === 'tasks' && (
+                        <TaskPanel
+                          project={project} feature={selected} status={selectedFeature}
+                          onToast={showToast} runSignal={runSignal}
+                          onDeleteFeature={() => handleDeleteFeature(selected)}
+                        />
+                      )}
+                      {tab === 'readme' && <ReadmeView project={project} feature={selected} />}
+                    </div>
+                  </>
+                ) : (
+                  <div className="empty-state">{t('empty_pick_feature')}</div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

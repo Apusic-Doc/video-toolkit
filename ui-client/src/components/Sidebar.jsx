@@ -8,7 +8,7 @@ function statusGroup(f) {
 }
 const GROUP_ORDER = ['status_done', 'status_mixed', 'status_recorded', 'status_none'];
 
-export default function Sidebar({ features, selected, onSelect, onNewFeature }) {
+export default function Sidebar({ features, selected, onSelect }) {
   const { t } = useLang();
   const groups = {};
   for (const f of features) {
@@ -18,11 +18,6 @@ export default function Sidebar({ features, selected, onSelect, onNewFeature }) 
 
   return (
     <div className="sidebar">
-      <div className="sidebar-header">
-        <button className="btn btn-sm btn-pri" style={{ width: '100%', justifyContent: 'center' }} onClick={onNewFeature}>
-          {t('sidebar_new_feature')}
-        </button>
-      </div>
       <div className="feature-list">
         {GROUP_ORDER.filter((g) => groups[g]?.length).map((g) => (
           <div key={g}>
