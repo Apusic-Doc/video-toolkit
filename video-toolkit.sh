@@ -27,6 +27,8 @@ fi
 #
 # 用法:
 #   curl -sSf https://video-toolkit.bitey.ai/install.sh | bash   安装
+#   vt init   <项目目录名>  新建项目
+#   vt feature <slug>      新建 feature
 #   vt all    <feature>    全流程
 #   vt srt    <feature>    仅提取字幕
 #   vt dub    <feature>    仅生成AI配音
@@ -954,6 +956,63 @@ cmd_srt() {
     extract_srt "$dir"
 }
 
+# ── 新建一个空项目目录：标记文件 + 最小 meta.json，跟 vt-ui "新建项目" 按钮
+#    （lib/paths.js createProject）建出来的东西完全一致，好让 vt ui 立刻认出它 ──
+# 用法: vt init <项目目录名>（在 Videos/ 根目录下运行，比如 vt init demo-project）
+cmd_init() {
+    local slug="$1"
+    [ -z "$slug" ] && { err "用法: vt init <项目目录名>，比如 vt init demo-project（在 Videos 根目录下运行）"; return 1; }
+    if ! [[ "$slug" =~ ^[a-z0-9][a-z0-9-]{0,63}$ ]]; then
+        err "项目目录名只能是小写字母/数字/短横线，且以字母数字开头"
+        return 1
+    fi
+    local dir="$BASE/$slug"
+    [ -e "$dir" ] && { err "目录已存在: $dir"; return 1; }
+    mkdir -p "$dir"
+    touch "$dir/.video-toolkit-project"
+    echo '{}' > "$dir/meta.json"
+    ok "已创建项目: $slug"
+    (cd "$dir" && cmd_ui "")
+}
+
+# ── 新建一个空 feature 目录：feature-<编号>-<slug>，编号规则（位数继承/meta 里
+#    的 feature_seq_digits）跟 lib/paths.js createFeature 保持一致 ──
+# 用法: vt feature <feature slug>（要在项目目录下运行，比如 vt feature export-report）
+cmd_feature() {
+    local slug="$1"
+    [ -z "$slug" ] && { err "用法: vt feature <feature slug>，比如 vt feature export-report（要在项目目录下运行）"; return 1; }
+    if ! [[ "$slug" =~ ^[a-z0-9][a-z0-9-]{0,63}$ ]]; then
+        err "feature 名只能是小写字母/数字/短横线，且以字母数字开头"
+        return 1
+    fi
+    [ ! -d "$BASE" ] && { err "找不到项目目录: $BASE"; return 1; }
+
+    local max_n=0 width=0
+    for d in "$BASE"/feature-*/; do
+        [ -d "$d" ] || continue
+        local name; name=$(basename "$d")
+        if [[ "$name" =~ ^feature-([0-9]+)- ]]; then
+            local n=$((10#${BASH_REMATCH[1]}))
+            [ "$n" -gt "$max_n" ] && max_n=$n
+            local w=${#BASH_REMATCH[1]}
+            [ "$w" -gt "$width" ] && width=$w
+        fi
+    done
+    local digits=3
+    [ "$width" -gt 0 ] && digits=$width
+    if [ -f "$BASE/meta.json" ]; then
+        local configured
+        configured=$(python3 -c "import json;print(json.load(open('$BASE/meta.json')).get('feature_seq_digits',''))" 2>/dev/null)
+        [[ "$configured" =~ ^[0-9]+$ ]] && [ "$configured" -gt 0 ] && digits="$configured"
+    fi
+    local seq; seq=$(printf "%0${digits}d" $((max_n + 1)))
+    local feature_name="feature-${seq}-${slug}"
+    local dir="$BASE/$feature_name"
+    [ -e "$dir" ] && { err "目录已存在: $feature_name"; return 1; }
+    mkdir -p "$dir"
+    ok "已创建 feature: $feature_name"
+}
+
 cmd_dub() {
     local dir="$1"
     # 只需要 say + ffmpeg，不需要 whisper
@@ -1274,10 +1333,12 @@ cmd_ui() {
         else
             warn "找不到 feature: $arg，先打开首页"
         fi
-    elif ls "$BASE"/feature-* >/dev/null 2>&1; then
+    elif [ -f "$BASE/.video-toolkit-project" ] || ls "$BASE"/feature-* >/dev/null 2>&1; then
         # 没传 feature 参数时，默认用当前目录所在的项目（约定：在项目目录下跑 vt ui）——
         # 不然浏览器端只能靠 localStorage 记的上次选择，或者项目列表里排第一个的，
-        # 跟你实际 cd 进来的项目对不上（比如切了个新项目结果打开的还是上次那个/字母序第一个）
+        # 跟你实际 cd 进来的项目对不上（比如切了个新项目结果打开的还是上次那个/字母序第一个）。
+        # 判定标准跟 ui-server 的 listProjects() 一致：有 feature-* 子目录，或者带着
+        # .video-toolkit-project 标记（刚 vt init 出来、还没建 feature 的空项目）
         url="http://localhost:$port/?project=$(basename "$BASE")"
     fi
     ok "$url"
@@ -1286,6 +1347,8 @@ cmd_ui() {
 
 # ==================== 入口 ====================
 case "${1:-}" in
+    init)    cmd_init "${2:-}" ;;
+    feature) cmd_feature "${2:-}" ;;
     all)    dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_all "$dir" ;;
     srt)    dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_srt "$dir" ;;
     dub)    dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_dub "$dir" ;;
@@ -1336,6 +1399,8 @@ case "${1:-}" in
         echo "Video Toolkit — 录屏处理工具 v2"
         echo ""
         echo "用法:"
+        echo "  vt init    <项目目录名>  新建项目（在 Videos 根目录下运行），建完自动打开 vt ui"
+        echo "  vt feature <slug>       新建 feature（在项目目录下运行），编号自动递增"
         echo "  vt all     <feature>    全流程: 字幕→AI配音→合成 (自动检测 slide/video)"
         echo "  vt srt     <feature>    仅提取字幕"
         echo "  vt dub     <feature>    仅生成 AI 配音"
