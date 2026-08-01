@@ -11,6 +11,9 @@ export const ALLOWED_COMMANDS = new Set([
   'burn', 'srt', 'trans', 'en', 'all', 'status', 'cover', 'recut',
 ]);
 
+// group-merge 走单独的 /groups/:id/merge 接口触发（不是"对某个 feature 操作"，
+// 参数形状不一样：第二个参数是 group id 不是 feature 名），不放进上面这个集合。
+
 export const bus = new EventEmitter();
 bus.setMaxListeners(200);
 

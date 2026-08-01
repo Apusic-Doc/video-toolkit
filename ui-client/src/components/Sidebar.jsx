@@ -6,7 +6,7 @@ function statusGroup(f) {
 }
 const GROUP_ORDER = ['已完成', '已合成', '已录制', '未开始'];
 
-export default function Sidebar({ projects, project, onProject, features, selected, onSelect, onOpenProjectSettings }) {
+export default function Sidebar({ projects, project, onProject, features, selected, onSelect, onOpenProjectSettings, onOpenGroups }) {
   const groups = {};
   for (const f of features) {
     const g = statusGroup(f);
@@ -22,6 +22,9 @@ export default function Sidebar({ projects, project, onProject, features, select
         </select>
         <button className="btn btn-sm" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} onClick={onOpenProjectSettings}>
           ⚙ 项目设置（字体/语音/封面统一样式）
+        </button>
+        <button className="btn btn-sm" style={{ width: '100%', justifyContent: 'center', marginTop: 6 }} onClick={onOpenGroups}>
+          📦 分组管理（合并多个 feature 为一个视频）
         </button>
       </div>
       <div className="feature-list">

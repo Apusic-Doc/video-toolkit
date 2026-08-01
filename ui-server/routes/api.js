@@ -171,6 +171,85 @@ router.get('/projects/:project/features/:feature/cuts', requireFeature, (req, re
   }
 });
 
+// ── groups（多个 feature 的成片按顺序合并成一个对外发布的大视频，定义存在项目级
+// meta.json 的 groups 数组里；只读取各 feature 现有成片来拼接，从不改动/删除
+// 任何 feature-*/ 目录下的文件，合并结果落在项目根目录的 groups/<id>.mp4）──
+function readGroups(projectDir) {
+  return readProjectMeta(projectDir).groups || [];
+}
+function writeGroups(projectDir, groups) {
+  writeProjectMeta(projectDir, { ...readProjectMeta(projectDir), groups });
+}
+
+router.get('/projects/:project/groups', (req, res) => {
+  const projectDir = resolveProjectDir(req.params.project);
+  if (!projectDir) return res.status(404).json({ error: 'project not found' });
+  res.json(readGroups(projectDir));
+});
+
+router.post('/projects/:project/groups', (req, res) => {
+  const projectDir = resolveProjectDir(req.params.project);
+  if (!projectDir) return res.status(404).json({ error: 'project not found' });
+  const { id, title } = req.body || {};
+  if (!id || !/^[a-z0-9-]+$/.test(id)) return res.status(400).json({ error: 'id 只能是小写字母/数字/短横线' });
+  const groups = readGroups(projectDir);
+  if (groups.some((g) => g.id === id)) return res.status(400).json({ error: '分组 id 已存在' });
+  groups.push({ id, title: title || id, features: [] });
+  writeGroups(projectDir, groups);
+  res.json({ ok: true });
+});
+
+router.put('/projects/:project/groups/:id', (req, res) => {
+  const projectDir = resolveProjectDir(req.params.project);
+  if (!projectDir) return res.status(404).json({ error: 'project not found' });
+  const { title, features } = req.body || {};
+  if (!Array.isArray(features)) return res.status(400).json({ error: 'features 必须是数组' });
+  const valid = new Set(listFeatures(req.params.project));
+  for (const f of features) {
+    if (!valid.has(f)) return res.status(400).json({ error: `feature 不存在: ${f}` });
+  }
+  const groups = readGroups(projectDir);
+  const g = groups.find((g) => g.id === req.params.id);
+  if (!g) return res.status(404).json({ error: 'group not found' });
+  if (title !== undefined) g.title = title;
+  g.features = features;
+  writeGroups(projectDir, groups);
+  res.json({ ok: true });
+});
+
+// 只删分组这条定义，不碰任何视频文件——分组本来就是"元数据"，原 feature 视频完全不受影响
+router.delete('/projects/:project/groups/:id', (req, res) => {
+  const projectDir = resolveProjectDir(req.params.project);
+  if (!projectDir) return res.status(404).json({ error: 'project not found' });
+  writeGroups(projectDir, readGroups(projectDir).filter((g) => g.id !== req.params.id));
+  res.json({ ok: true });
+});
+
+router.post('/projects/:project/groups/:id/merge', (req, res) => {
+  const projectDir = resolveProjectDir(req.params.project);
+  if (!projectDir) return res.status(404).json({ error: 'project not found' });
+  if (!readGroups(projectDir).some((g) => g.id === req.params.id)) {
+    return res.status(404).json({ error: 'group not found' });
+  }
+  const id = runTask(req.params.project, `group:${req.params.id}`, projectDir, req.params.id, 'group-merge');
+  res.json({ id });
+});
+
+router.get('/projects/:project/groups/:id/tasks', (req, res) => {
+  res.json(getHistory(req.params.project, `group:${req.params.id}`));
+});
+
+// 合并结果 groups/<id>.mp4 的播放地址——id 本身已经在创建时校验过是 [a-z0-9-]+，
+// 这里再核实一遍避免路径穿越
+router.get('/projects/:project/groups/:id/file', (req, res) => {
+  const projectDir = resolveProjectDir(req.params.project);
+  if (!projectDir || !/^[a-z0-9-]+$/.test(req.params.id)) return res.status(404).end();
+  const fp = path.join(projectDir, 'groups', `${req.params.id}.mp4`);
+  if (!fs.existsSync(fp)) return res.status(404).end();
+  res.setHeader('Cache-Control', 'no-cache');
+  res.sendFile(fp);
+});
+
 router.put('/projects/:project/features/:feature/cuts', requireFeature, (req, res) => {
   const { cuts } = req.body || {};
   if (!Array.isArray(cuts)) return res.status(400).json({ error: 'cuts 必须是数组' });

@@ -40,6 +40,14 @@ export const api = {
   cuts: (project, feature) => req('GET', `/api/projects/${encodeURIComponent(project)}/features/${encodeURIComponent(feature)}/cuts`),
   saveCuts: (project, feature, cuts) => req('PUT', `/api/projects/${encodeURIComponent(project)}/features/${encodeURIComponent(feature)}/cuts`, { cuts }),
 
+  groups: (project) => req('GET', `/api/projects/${encodeURIComponent(project)}/groups`),
+  createGroup: (project, id, title) => req('POST', `/api/projects/${encodeURIComponent(project)}/groups`, { id, title }),
+  saveGroup: (project, id, data) => req('PUT', `/api/projects/${encodeURIComponent(project)}/groups/${encodeURIComponent(id)}`, data),
+  deleteGroup: (project, id) => req('DELETE', `/api/projects/${encodeURIComponent(project)}/groups/${encodeURIComponent(id)}`),
+  mergeGroup: (project, id) => req('POST', `/api/projects/${encodeURIComponent(project)}/groups/${encodeURIComponent(id)}/merge`),
+  groupTasks: (project, id) => req('GET', `/api/projects/${encodeURIComponent(project)}/groups/${encodeURIComponent(id)}/tasks`),
+  groupFileUrl: (project, id) => `/api/projects/${encodeURIComponent(project)}/groups/${encodeURIComponent(id)}/file`,
+
   fonts: () => req('GET', '/api/fonts'),
   voices: () => req('GET', '/api/voices'),
 

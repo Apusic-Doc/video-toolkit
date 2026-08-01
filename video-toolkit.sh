@@ -60,6 +60,7 @@ TOOLKIT_DIR="$(cd "$(dirname "$0")" && pwd)"
 [ -f "$TOOLKIT_DIR/lib/compose.sh" ] && source "$TOOLKIT_DIR/lib/compose.sh"
 [ -f "$TOOLKIT_DIR/lib/slides.sh" ] && source "$TOOLKIT_DIR/lib/slides.sh"
 [ -f "$TOOLKIT_DIR/lib/edit.sh" ] && source "$TOOLKIT_DIR/lib/edit.sh"
+[ -f "$TOOLKIT_DIR/lib/groups.sh" ] && source "$TOOLKIT_DIR/lib/groups.sh"
 
 # ==================== 颜色 ====================
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
@@ -1263,6 +1264,7 @@ case "${1:-}" in
     burn)   dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_burn "$dir" ;;
     mix)    dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_mix "$dir" ;;
     recut)  dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_recut "$dir" ;;
+    group-merge) cmd_group_merge "${2:-}" ;;
     cover)  dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_cover "$dir" ;;
     record) dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_record "$dir" ;;
     codegen) dir=$(resolve_dir "${2:-}"); [ -z "$dir" ] && { err "找不到 feature: $2"; exit 1; }; cmd_codegen "$dir" ;;
@@ -1302,6 +1304,8 @@ case "${1:-}" in
         echo "  vt dub     <feature>    仅生成 AI 配音"
         echo "  vt mix     <feature>    合成视频 + 可选 cover/outro/bgm"
         echo "  vt recut   <feature>    按 cuts.json 剪掉成片里的时间区间（先备份再覆盖）"
+        echo ""
+        echo "  vt group-merge <group-id>   按项目 meta.json 里 groups 定义的顺序合并成片，输出到 groups/<id>.mp4"
         echo ""
         echo "  vt slide   <feature>    幻灯片模式 (截图+解说→视频)"
         echo ""

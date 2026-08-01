@@ -8,6 +8,7 @@ import CutsEditor from './components/CutsEditor.jsx';
 import TaskPanel from './components/TaskPanel.jsx';
 import ReadmeView from './components/ReadmeView.jsx';
 import ProjectSettings from './components/ProjectSettings.jsx';
+import GroupManager from './components/GroupManager.jsx';
 
 const TABS = [
   { id: 'meta', label: '封面 / 配置' },
@@ -32,6 +33,7 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [runSignal, setRunSignal] = useState(null);
   const [showProjectSettings, setShowProjectSettings] = useState(false);
+  const [showGroups, setShowGroups] = useState(false);
 
   useEffect(() => {
     api.session().then((s) => {
@@ -86,6 +88,7 @@ export default function App() {
         projects={projects} project={project} onProject={setProject}
         features={features} selected={selected} onSelect={setSelected}
         onOpenProjectSettings={() => setShowProjectSettings(true)}
+        onOpenGroups={() => setShowGroups(true)}
       />
       <div className="main">
         {selectedFeature ? (
@@ -133,6 +136,9 @@ export default function App() {
       {toast && <div className={`toast ${toast.kind}`}>{toast.text}</div>}
       {showProjectSettings && (
         <ProjectSettings project={project} onClose={() => setShowProjectSettings(false)} onToast={showToast} />
+      )}
+      {showGroups && (
+        <GroupManager project={project} features={features} onClose={() => setShowGroups(false)} onToast={showToast} />
       )}
     </div>
   );
