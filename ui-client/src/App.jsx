@@ -88,6 +88,23 @@ function AppInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project]);
 
+  // 记住当前选择的项目/feature/页面，刷新后恢复（必须在提前 return 之前，避免 hooks 数量变化）
+  useEffect(() => { if (project) localStorage.setItem(PROJECT_KEY, project); }, [project]);
+  useEffect(() => { if (selected) localStorage.setItem(FEATURE_KEY, selected); }, [selected]);
+  useEffect(() => { localStorage.setItem(PAGE_KEY, page); }, [page]);
+
+  // 同步状态到 URL（replaceState 不刷新页面），每个项目/feature/页面/标签都有独立 URL
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (project) params.set('project', project);
+    if (selected) params.set('feature', selected);
+    if (page !== 'dashboard') params.set('page', page);
+    if (tab !== 'meta') params.set('tab', tab);
+    const qs = params.toString();
+    const url = qs ? `${location.pathname}?${qs}` : location.pathname;
+    history.replaceState(null, '', url);
+  }, [project, selected, page, tab]);
+
   function refreshProjects(preferName) {
     return api.projects().then((ps) => {
       setProjects(ps);
@@ -167,23 +184,6 @@ function AppInner() {
     setSelected(name);
     setPage('features');
   }
-
-  // 记住当前选择的项目/feature/页面，刷新后恢复
-  useEffect(() => { if (project) localStorage.setItem(PROJECT_KEY, project); }, [project]);
-  useEffect(() => { if (selected) localStorage.setItem(FEATURE_KEY, selected); }, [selected]);
-  useEffect(() => { localStorage.setItem(PAGE_KEY, page); }, [page]);
-
-  // 同步状态到 URL（replaceState 不刷新页面），每个项目/feature/页面/标签都有独立 URL
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (project) params.set('project', project);
-    if (selected) params.set('feature', selected);
-    if (page !== 'dashboard') params.set('page', page);
-    if (tab !== 'meta') params.set('tab', tab);
-    const qs = params.toString();
-    const url = qs ? `${location.pathname}?${qs}` : location.pathname;
-    history.replaceState(null, '', url);
-  }, [project, selected, page, tab]);
 
   // 列表/标题这些"给人看"的地方统一显示项目显示名称，没设置才退回目录名——
   // project 变量本身（slug）继续原样传给各组件当 API 参数，两者不要混用
