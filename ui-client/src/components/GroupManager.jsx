@@ -65,8 +65,8 @@ export default function GroupManager({ project, features, onClose, onToast }) {
             {groups.length === 0 && <div className="empty-state" style={{ marginBottom: 16 }}>还没有分组</div>}
 
             <div className="form-actions" style={{ marginTop: 16 }}>
-              <input placeholder="分组 id（英文小写-短横线）" value={newId} onChange={(e) => setNewId(e.target.value)} style={{ width: 220 }} />
-              <input placeholder="标题（可选）" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} style={{ width: 220 }} />
+              <input type="text" placeholder="分组 id（英文小写-短横线）" value={newId} onChange={(e) => setNewId(e.target.value)} style={{ width: 220 }} />
+              <input type="text" placeholder="标题（可选）" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} style={{ width: 220 }} />
               <button className="btn btn-pri" onClick={createGroup}>+ 新建分组</button>
             </div>
           </>

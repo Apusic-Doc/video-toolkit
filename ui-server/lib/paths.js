@@ -42,13 +42,14 @@ const PROJECT_NAME_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const FEATURE_SLUG_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
 // 新建一个空项目目录：标记文件 + 最小 meta.json，供 listProjects() 立刻识别
-export function createProject(name) {
-  if (!PROJECT_NAME_RE.test(name)) throw new Error('项目名只能是小写字母/数字/短横线，且以字母数字开头');
-  const dir = path.join(VIDEOS_ROOT, name);
+export function createProject(slug, displayName) {
+  if (!PROJECT_NAME_RE.test(slug)) throw new Error('项目目录名只能是小写字母/数字/短横线，且以字母数字开头');
+  const dir = path.join(VIDEOS_ROOT, slug);
   if (fs.existsSync(dir)) throw new Error('目录已存在');
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, '.video-toolkit-project'), '');
-  fs.writeFileSync(path.join(dir, 'meta.json'), '{}\n');
+  const meta = displayName ? { name: displayName } : {};
+  fs.writeFileSync(path.join(dir, 'meta.json'), JSON.stringify(meta, null, 2) + '\n');
   return dir;
 }
 

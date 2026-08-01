@@ -4,7 +4,8 @@ import { LangProvider, useLang } from './i18n.jsx';
 import Login from './components/Login.jsx';
 import NavBar from './components/NavBar.jsx';
 import Sidebar from './components/Sidebar.jsx';
-import CreateModal from './components/CreateModal.jsx';
+import NewFeatureModal from './components/NewFeatureModal.jsx';
+import NewProjectModal from './components/NewProjectModal.jsx';
 import MetaForm from './components/MetaForm.jsx';
 import SubtitleEditor from './components/SubtitleEditor.jsx';
 import CutsEditor from './components/CutsEditor.jsx';
@@ -12,6 +13,7 @@ import TaskPanel from './components/TaskPanel.jsx';
 import ReadmeView from './components/ReadmeView.jsx';
 import ProjectSettings from './components/ProjectSettings.jsx';
 import GroupManager from './components/GroupManager.jsx';
+import Dashboard from './components/Dashboard.jsx';
 
 const TAB_KEYS = ['tab_meta', 'tab_subtitles', 'tab_cuts', 'tab_tasks', 'tab_readme'];
 const TAB_IDS = ['meta', 'subtitles', 'cuts', 'tasks', 'readme'];
@@ -41,6 +43,7 @@ function AppInner() {
   const [tab, setTab] = useState('meta');
   const [toast, setToast] = useState(null);
   const [runSignal, setRunSignal] = useState(null);
+  const [page, setPage] = useState('dashboard');
   const [showProjectSettings, setShowProjectSettings] = useState(false);
   const [showGroups, setShowGroups] = useState(false);
   const [showNewProject, setShowNewProject] = useState(false);
@@ -95,27 +98,31 @@ function AppInner() {
     setTimeout(() => setToast(null), 3000);
   }
 
-  async function handleNewProject(name) {
-    await api.createProject(name);
+  async function handleNewProject({ slug, displayName }) {
+    await api.createProject(slug, displayName);
     showToast(t('toast_created'), 'ok');
-    await refreshProjects(name);
+    await refreshProjects(slug);
+    // 名字/slug 之外的属性（字体/语音/封面统一样式）复用现成的项目设置表单，
+    // 建完项目直接接上去，不用另外重复造一份表单
+    setShowProjectSettings(true);
+    showToast(t('new_project_next_hint'), 'ok');
   }
 
-  async function handleNewFeature(slug) {
+  async function handleNewFeature({ slug, title, subtitle }) {
     const { feature } = await api.createFeature(project, slug);
+    if (title || subtitle) {
+      await api.saveMeta(project, feature, { ...(title ? { title } : {}), ...(subtitle ? { subtitle } : {}) });
+    }
     showToast(t('toast_created'), 'ok');
     await refreshFeatures(feature);
   }
 
+  // 二次确认是 TaskPanel 里"危险操作"区域自己的两步点击 UI 负责的，这里拿到调用
+  // 就是已经确认过了，直接执行
   async function handleDeleteFeature(name) {
-    if (!confirm(t('confirm_delete_feature', name))) return;
-    try {
-      await api.deleteFeature(project, name);
-      showToast(t('toast_deleted'), 'ok');
-      await refreshFeatures();
-    } catch (e) {
-      showToast(`${e.message}`, 'err');
-    }
+    await api.deleteFeature(project, name);
+    showToast(t('toast_deleted'), 'ok');
+    await refreshFeatures();
   }
 
   if (authState === 'checking') return null;
@@ -134,11 +141,17 @@ function AppInner() {
   }
 
   const selectedFeature = features.find((f) => f.name === selected);
-  const activePage = showGroups ? 'groups' : showProjectSettings ? 'settings' : 'features';
+  const activePage = showGroups ? 'groups' : showProjectSettings ? 'settings' : page;
 
   function onPage(id) {
     setShowGroups(id === 'groups');
     setShowProjectSettings(id === 'settings');
+    if (id === 'dashboard' || id === 'features') setPage(id);
+  }
+
+  function openFeatureFromDashboard(name) {
+    setSelected(name);
+    setPage('features');
   }
 
   return (
@@ -149,56 +162,66 @@ function AppInner() {
         page={activePage} onPage={onPage}
         theme={theme} onToggleTheme={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
       />
-      <div className="app-body">
-        <Sidebar
-          features={features} selected={selected} onSelect={setSelected}
-          onNewFeature={() => setShowNewFeature(true)}
-          onDeleteFeature={handleDeleteFeature}
-        />
-        <div className="main">
-          {selectedFeature ? (
-            <>
-              <div className="main-header">
-                <div>
-                  <h2>{selectedFeature.title || selectedFeature.name}</h2>
-                  <div className="sub">{project} / {selectedFeature.name}</div>
-                </div>
-              </div>
-              <div className="tabs">
-                {TAB_IDS.map((id, i) => (
-                  <div key={id} className={`tab${tab === id ? ' active' : ''}`} onClick={() => setTab(id)}>
-                    {t(TAB_KEYS[i])}
-                  </div>
-                ))}
-              </div>
-              <div className="tab-content">
-                {tab === 'meta' && <MetaForm project={project} feature={selected} onToast={showToast} />}
-                {tab === 'subtitles' && (
-                  <SubtitleEditor
-                    project={project} feature={selected} onToast={showToast}
-                    onRunTask={(cmd) => { setTab('tasks'); setRunSignal({ cmd, ts: Date.now() }); }}
-                  />
-                )}
-                {tab === 'cuts' && (
-                  <CutsEditor
-                    project={project} feature={selected} status={selectedFeature} onToast={showToast}
-                    onRunTask={(cmd) => { setTab('tasks'); setRunSignal({ cmd, ts: Date.now() }); }}
-                  />
-                )}
-                {tab === 'tasks' && (
-                  <TaskPanel
-                    project={project} feature={selected} status={selectedFeature}
-                    onToast={showToast} runSignal={runSignal}
-                  />
-                )}
-                {tab === 'readme' && <ReadmeView project={project} feature={selected} />}
-              </div>
-            </>
-          ) : (
-            <div className="empty-state">{t('empty_pick_feature')}</div>
-          )}
+      {page === 'dashboard' ? (
+        <div className="page-content">
+          <Dashboard
+            projects={projects} project={project} onSelectProject={setProject}
+            features={features} onOpenFeature={openFeatureFromDashboard}
+            onNewProject={() => setShowNewProject(true)} onNewFeature={() => setShowNewFeature(true)}
+          />
         </div>
-      </div>
+      ) : (
+        <div className="app-body">
+          <Sidebar
+            features={features} selected={selected} onSelect={setSelected}
+            onNewFeature={() => setShowNewFeature(true)}
+          />
+          <div className="main">
+            {selectedFeature ? (
+              <>
+                <div className="main-header">
+                  <div>
+                    <h2>{selectedFeature.title || selectedFeature.name}</h2>
+                    <div className="sub">{project} / {selectedFeature.name}</div>
+                  </div>
+                </div>
+                <div className="tabs">
+                  {TAB_IDS.map((id, i) => (
+                    <div key={id} className={`tab${tab === id ? ' active' : ''}`} onClick={() => setTab(id)}>
+                      {t(TAB_KEYS[i])}
+                    </div>
+                  ))}
+                </div>
+                <div className="tab-content">
+                  {tab === 'meta' && <MetaForm project={project} feature={selected} onToast={showToast} />}
+                  {tab === 'subtitles' && (
+                    <SubtitleEditor
+                      project={project} feature={selected} onToast={showToast}
+                      onRunTask={(cmd) => { setTab('tasks'); setRunSignal({ cmd, ts: Date.now() }); }}
+                    />
+                  )}
+                  {tab === 'cuts' && (
+                    <CutsEditor
+                      project={project} feature={selected} status={selectedFeature} onToast={showToast}
+                      onRunTask={(cmd) => { setTab('tasks'); setRunSignal({ cmd, ts: Date.now() }); }}
+                    />
+                  )}
+                  {tab === 'tasks' && (
+                    <TaskPanel
+                      project={project} feature={selected} status={selectedFeature}
+                      onToast={showToast} runSignal={runSignal}
+                      onDeleteFeature={() => handleDeleteFeature(selected)}
+                    />
+                  )}
+                  {tab === 'readme' && <ReadmeView project={project} feature={selected} />}
+                </div>
+              </>
+            ) : (
+              <div className="empty-state">{t('empty_pick_feature')}</div>
+            )}
+          </div>
+        </div>
+      )}
 
       {toast && <div className={`toast ${toast.kind}`}>{toast.text}</div>}
 
@@ -209,16 +232,10 @@ function AppInner() {
         <GroupManager project={project} features={features} onClose={() => setShowGroups(false)} onToast={showToast} />
       )}
       {showNewProject && (
-        <CreateModal
-          title={t('new_project_title')} placeholder={t('new_project_placeholder')}
-          onSubmit={handleNewProject} onClose={() => setShowNewProject(false)}
-        />
+        <NewProjectModal onSubmit={handleNewProject} onClose={() => setShowNewProject(false)} />
       )}
       {showNewFeature && (
-        <CreateModal
-          title={t('new_feature_title')} placeholder={t('new_feature_placeholder')} hint={t('new_feature_hint')}
-          onSubmit={handleNewFeature} onClose={() => setShowNewFeature(false)}
-        />
+        <NewFeatureModal onSubmit={handleNewFeature} onClose={() => setShowNewFeature(false)} />
       )}
     </div>
   );

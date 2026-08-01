@@ -1190,11 +1190,35 @@ cmd_status() {
 
 # ── vt ui：可视化管理台（meta.json 表单编辑、字幕逐条编辑、字体/语音试听、任务面板）──
 # 用法: vt ui [feature]          不带参数只打开首页，带参数直接定位到这个 feature
+#      vt ui stop               停止正在跑的 vt-ui 服务
+#      vt ui status             查看 vt-ui 有没有在跑
 cmd_ui() {
     local arg="${1:-}"
+    local port="${VT_UI_PORT:-5175}"
+
+    # stop/status 是保留字，不当 feature 名处理——跟 record 改路径不一样，这两个
+    # 不需要任何依赖检测/构建，直接查端口就行，放在最前面尽早 return
+    if [ "$arg" = "stop" ]; then
+        local pid=$(lsof -ti ":$port" -sTCP:LISTEN 2>/dev/null)
+        if [ -z "$pid" ]; then
+            info "vt-ui 没有在跑（端口 $port 空闲）"
+        else
+            kill "$pid" 2>/dev/null && ok "已停止 vt-ui（pid $pid，端口 $port）" || err "停止失败，试试手动: kill $pid"
+        fi
+        return 0
+    fi
+    if [ "$arg" = "status" ]; then
+        local pid=$(lsof -ti ":$port" -sTCP:LISTEN 2>/dev/null)
+        if [ -z "$pid" ]; then
+            info "vt-ui 没有在跑（端口 $port 空闲），运行 vt ui 启动"
+        else
+            ok "vt-ui 正在运行 → http://localhost:$port （pid $pid）"
+        fi
+        return 0
+    fi
+
     local server_dir="$TOOLKIT_DIR/ui-server"
     local client_dir="$TOOLKIT_DIR/ui-client"
-    local port="${VT_UI_PORT:-5175}"
 
     if [ ! -d "$server_dir" ] || [ ! -d "$client_dir" ]; then
         err "vt-ui 还没装（缺 ui-server/ui-client 目录）"
@@ -1315,6 +1339,9 @@ case "${1:-}" in
         echo "  vt mix-en  <feature>    仅合成英文视频"
         echo ""
         echo "  vt play    <feature> <dub|dub-en|final|final-en>"
+        echo "  vt ui      [feature]    打开可视化管理台"
+        echo "  vt ui      stop         停止 vt-ui 服务"
+        echo "  vt ui      status       查看 vt-ui 有没有在跑"
         echo "  vt status  <feature>    查看状态"
         echo "  vt status  --all        查看全部"
         echo "  vt config              查看配置"

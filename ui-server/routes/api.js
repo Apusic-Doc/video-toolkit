@@ -14,11 +14,14 @@ import { FONTS, VOICES, ensureFontPreview, ensureVoiceSample, findFont, findVoic
 const router = express.Router();
 
 // ── projects / features ──
+// name 是目录名（slug，稳定不变，API 路径靠它定位），displayName 是给人看的
+// 项目名称（project meta.json 里的 name 字段，纯 UI 展示用，不参与 3 级配置合并、
+// 不会被任何 feature 继承——跟 title 字段的用途完全分开，title 是视频内容里的标题）
 router.get('/projects', (req, res) => {
-  res.json(listProjects().map(name => ({
-    name,
-    company: readProjectMeta(resolveProjectDir(name)).company || null,
-  })));
+  res.json(listProjects().map(name => {
+    const meta = readProjectMeta(resolveProjectDir(name));
+    return { name, displayName: meta.name || null, company: meta.company || null, featureCount: listFeatures(name).length };
+  }));
 });
 
 // ── 项目级 meta.json（字体/字号/语音/封面配色这些"整个项目该统一"的设置放这里，
@@ -74,11 +77,11 @@ router.post('/projects/:project/preview-cover', async (req, res) => {
 });
 
 router.post('/projects', (req, res) => {
-  const { name } = req.body || {};
-  if (!name) return res.status(400).json({ error: '缺少 name' });
+  const { slug, displayName } = req.body || {};
+  if (!slug) return res.status(400).json({ error: '缺少 slug' });
   try {
-    createProject(name);
-    res.json({ ok: true });
+    createProject(slug, displayName);
+    res.json({ ok: true, project: slug });
   } catch (e) {
     res.status(400).json({ error: e.message });
   }

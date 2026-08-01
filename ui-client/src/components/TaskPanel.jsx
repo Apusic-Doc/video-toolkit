@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, openTaskSocket } from '../api.js';
+import { useLang } from '../i18n.jsx';
 
 // 常用：录制两步 + "一键生效"（重新配音+合成+烧字幕，串起来跑，改完字幕/meta 后最常用的就是它）+ 状态检查。
 // 其余 srt/dub/mix/burn 单独跑、全流程、英文版流水线都是排查问题或者特殊场景才需要，
@@ -25,12 +26,15 @@ const ADVANCED_EN_COMMANDS = [
   { cmd: 'mix-en', label: '合成英文视频' },
 ];
 
-export default function TaskPanel({ project, feature, status, onToast, runSignal }) {
+export default function TaskPanel({ project, feature, status, onToast, runSignal, onDeleteFeature }) {
+  const { t } = useLang();
   const [lines, setLines] = useState([]);
   const [running, setRunning] = useState(false);
   const [history, setHistory] = useState([]);
   const [previewNonce, setPreviewNonce] = useState(0);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const wsRef = useRef(null);
   const logRef = useRef(null);
   const pendingIds = useRef(new Set());
@@ -50,8 +54,19 @@ export default function TaskPanel({ project, feature, status, onToast, runSignal
       }
     });
     wsRef.current = ws;
+    setConfirmingDelete(false);
     return () => ws.close();
   }, [project, feature]);
+
+  async function confirmDelete() {
+    setDeleting(true);
+    try {
+      await onDeleteFeature();
+    } catch (e) {
+      onToast(`${e.message}`, 'err');
+      setDeleting(false);
+    }
+  }
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
@@ -112,6 +127,28 @@ export default function TaskPanel({ project, feature, status, onToast, runSignal
           <div className="task-buttons">{renderButtons(ADVANCED_COMMANDS)}</div>
           <label style={{ fontSize: '0.78rem', color: 'var(--text3)', display: 'block', margin: '10px 0 6px' }}>英文版</label>
           <div className="task-buttons">{renderButtons(ADVANCED_EN_COMMANDS)}</div>
+
+          <div style={{ marginTop: 20, padding: 14, border: '1px solid var(--red)', borderRadius: 'var(--radius-sm)' }}>
+            <label style={{ fontSize: '0.78rem', color: 'var(--red)', display: 'block', marginBottom: 6, fontWeight: 700 }}>
+              {t('danger_zone')}
+            </label>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text2)', margin: '0 0 10px' }}>{t('danger_zone_desc')}</p>
+            {!confirmingDelete ? (
+              <button className="btn btn-sm" style={{ borderColor: 'var(--red)', color: 'var(--red)' }} onClick={() => setConfirmingDelete(true)}>
+                {t('btn_delete_feature')}
+              </button>
+            ) : (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-sm" onClick={() => setConfirmingDelete(false)} disabled={deleting}>{t('btn_cancel')}</button>
+                <button
+                  className="btn btn-sm" style={{ background: 'var(--red)', color: '#fff', borderColor: 'var(--red)' }}
+                  onClick={confirmDelete} disabled={deleting}
+                >
+                  {deleting ? t('saving') : t('btn_confirm_delete')}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

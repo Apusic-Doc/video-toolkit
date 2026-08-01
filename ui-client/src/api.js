@@ -22,7 +22,7 @@ export const api = {
   logout: () => req('POST', '/api/logout'),
 
   projects: () => req('GET', '/api/projects'),
-  createProject: (name) => req('POST', '/api/projects', { name }),
+  createProject: (slug, displayName) => req('POST', '/api/projects', { slug, displayName }),
   features: (project) => req('GET', `/api/projects/${encodeURIComponent(project)}/features`),
   feature: (project, feature) => req('GET', `/api/projects/${encodeURIComponent(project)}/features/${encodeURIComponent(feature)}`),
   createFeature: (project, slug) => req('POST', `/api/projects/${encodeURIComponent(project)}/features`, { slug }),

@@ -8,7 +8,7 @@ function statusGroup(f) {
 }
 const GROUP_ORDER = ['status_done', 'status_mixed', 'status_recorded', 'status_none'];
 
-export default function Sidebar({ features, selected, onSelect, onNewFeature, onDeleteFeature }) {
+export default function Sidebar({ features, selected, onSelect, onNewFeature }) {
   const { t } = useLang();
   const groups = {};
   for (const f of features) {
@@ -33,14 +33,7 @@ export default function Sidebar({ features, selected, onSelect, onNewFeature, on
                 className={`feature-item${selected === f.name ? ' active' : ''}`}
                 onClick={() => onSelect(f.name)}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 4 }}>
-                  <div className="title">{f.title || f.name}</div>
-                  <span
-                    title={t('sidebar_delete_feature')}
-                    style={{ opacity: 0.6, cursor: 'pointer', flexShrink: 0 }}
-                    onClick={(e) => { e.stopPropagation(); onDeleteFeature(f.name); }}
-                  >✕</span>
-                </div>
+                <div className="title">{f.title || f.name}</div>
                 <div className="name">{f.name}</div>
                 <div className="status-dots" title="录制 / 字幕 / 配音 / 成片">
                   <span className={`status-dot${f.recording ? ' on' : ''}`} />

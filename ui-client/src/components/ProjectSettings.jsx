@@ -77,6 +77,12 @@ export default function ProjectSettings({ project, onClose, onToast }) {
 
         {!raw ? <div className="empty-state">{t('loading')}</div> : (
           <>
+            <div className="form-grid" style={{ marginBottom: 16 }}>
+              <div className="form-field full">
+                <label>{t('project_display_name')}</label>
+                <input type="text" value={raw.name || ''} onChange={(e) => set('name', e.target.value)} placeholder={project} />
+              </div>
+            </div>
             <MetaFields raw={raw} merged={null} set={set} showContent={false} />
 
             <div style={{ marginTop: 20 }}>
