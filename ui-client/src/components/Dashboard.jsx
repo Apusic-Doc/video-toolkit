@@ -11,6 +11,7 @@ function featureStatusLabel(f, t) {
 export default function Dashboard({ projects, project, onSelectProject, features, onOpenFeature, onNewProject, onNewFeature }) {
   const { t } = useLang();
   const doneCount = features.filter((f) => f.subMp4).length;
+  const projectLabel = projects.find((p) => p.name === project)?.displayName || project;
 
   const projectColumns = [
     { key: 'display', label: t('field_project_name'), sortable: true, sortValue: (p) => p.displayName || p.name, render: (p) => <strong>{p.displayName || p.name}</strong> },
@@ -29,7 +30,7 @@ export default function Dashboard({ projects, project, onSelectProject, features
     <div>
       <div className="stat-cards">
         <div className="stat-card"><div className="num">{projects.length}</div><div className="label">{t('nav_dashboard_projects')}</div></div>
-        <div className="stat-card"><div className="num">{features.length}</div><div className="label">{project} · {t('nav_features')}</div></div>
+        <div className="stat-card"><div className="num">{features.length}</div><div className="label">{projectLabel} · {t('nav_features')}</div></div>
         <div className="stat-card"><div className="num">{doneCount}</div><div className="label">{t('status_done')}</div></div>
       </div>
 
@@ -49,7 +50,7 @@ export default function Dashboard({ projects, project, onSelectProject, features
 
       <div className="dash-section">
         <div className="dash-section-head">
-          <h3>{project} · {t('nav_features')}</h3>
+          <h3>{projectLabel} · {t('nav_features')}</h3>
           <button className="btn btn-sm btn-pri" onClick={onNewFeature}>{t('sidebar_new_feature')}</button>
         </div>
         <DataGrid

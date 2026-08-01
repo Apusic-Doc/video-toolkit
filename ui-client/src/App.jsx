@@ -14,6 +14,7 @@ import ReadmeView from './components/ReadmeView.jsx';
 import ProjectSettings from './components/ProjectSettings.jsx';
 import GroupManager from './components/GroupManager.jsx';
 import Dashboard from './components/Dashboard.jsx';
+import { applyPalette, clearPaletteOverrides, DEFAULT_PALETTE } from './palettes.js';
 
 const TAB_KEYS = ['tab_meta', 'tab_subtitles', 'tab_cuts', 'tab_tasks', 'tab_readme'];
 const TAB_IDS = ['meta', 'subtitles', 'cuts', 'tasks', 'readme'];
@@ -24,6 +25,7 @@ function useQueryParam(name) {
 }
 
 const THEME_KEY = 'vt-ui-theme';
+const PALETTE_KEY = 'vt-ui-palette';
 
 export default function App() {
   return (
@@ -48,11 +50,20 @@ function AppInner() {
   const [showNewProject, setShowNewProject] = useState(false);
   const [showNewFeature, setShowNewFeature] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem(THEME_KEY) || 'light');
+  const [palette, setPalette] = useState(() => localStorage.getItem(PALETTE_KEY) || DEFAULT_PALETTE);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem(THEME_KEY, theme);
   }, [theme]);
+
+  // 配色方案只覆盖 light 主题的变量——dark 主题没人抱怨过，维持 index.css 里
+  // [data-theme="dark"] 原本定义的值，切到 dark 时把 light 方案的内联覆盖清掉
+  useEffect(() => {
+    if (theme === 'light') applyPalette(palette);
+    else clearPaletteOverrides();
+    localStorage.setItem(PALETTE_KEY, palette);
+  }, [theme, palette]);
 
   useEffect(() => {
     api.session().then((s) => {
@@ -154,6 +165,10 @@ function AppInner() {
     setPage('features');
   }
 
+  // 列表/标题这些"给人看"的地方统一显示项目显示名称，没设置才退回目录名——
+  // project 变量本身（slug）继续原样传给各组件当 API 参数，两者不要混用
+  const projectLabel = projects.find((p) => p.name === project)?.displayName || project;
+
   return (
     <div className="app">
       <NavBar
@@ -161,6 +176,7 @@ function AppInner() {
         onNewProject={() => setShowNewProject(true)}
         page={activePage} onPage={onPage}
         theme={theme} onToggleTheme={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+        palette={palette} onPalette={setPalette}
       />
       {page === 'dashboard' ? (
         <div className="page-content">
@@ -172,7 +188,7 @@ function AppInner() {
         </div>
       ) : page === 'groups' ? (
         <div className="page-content">
-          <GroupManager project={project} features={features} onToast={showToast} />
+          <GroupManager project={project} projectLabel={projectLabel} features={features} onToast={showToast} />
         </div>
       ) : (
         <div className="app-body">
@@ -186,7 +202,7 @@ function AppInner() {
                 <div className="main-header">
                   <div>
                     <h2>{selectedFeature.title || selectedFeature.name}</h2>
-                    <div className="sub">{project} / {selectedFeature.name}</div>
+                    <div className="sub">{projectLabel} / {selectedFeature.name}</div>
                   </div>
                 </div>
                 <div className="tabs">

@@ -7,7 +7,7 @@ import NewGroupModal from './NewGroupModal.jsx';
 // 增删分组、调整顺序都是安全的，原始成片永远不受影响，参照 lib/groups.sh 顶部注释。
 // 独立页面（不是弹层）：点"分组"导航进来就是这个列表，新建走单独的弹窗，
 // 不在列表页常驻一行输入框——跟 Dashboard 的"新建 Feature/Project"是同一个交互习惯。
-export default function GroupManager({ project, features, onToast }) {
+export default function GroupManager({ project, projectLabel, features, onToast }) {
   const { t } = useLang();
   const [groups, setGroups] = useState(null);
   const [openId, setOpenId] = useState(null);
@@ -42,7 +42,7 @@ export default function GroupManager({ project, features, onToast }) {
     <div>
       <div className="dash-section-head">
         <div>
-          <h3 style={{ marginBottom: 4 }}>{t('groups_title')} · {project}</h3>
+          <h3 style={{ marginBottom: 4 }}>{t('groups_title')} · {projectLabel}</h3>
           <p style={{ color: 'var(--text2)', fontSize: '0.82rem', margin: 0, maxWidth: 640 }}>{t('groups_desc')}</p>
         </div>
         <button className="btn btn-pri" onClick={() => setShowNewGroup(true)}>+ {t('new_group_title')}</button>

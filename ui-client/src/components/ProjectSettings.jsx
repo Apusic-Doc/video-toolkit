@@ -75,7 +75,7 @@ export default function ProjectSettings({ project, onClose, onToast }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" style={{ width: 880, maxHeight: '85vh', overflowY: 'auto', textAlign: 'left' }} onClick={(e) => e.stopPropagation()}>
-        <h1 style={{ fontSize: '1.1rem', margin: '0 0 4px' }}>{t('settings_title')} · {project}</h1>
+        <h1 style={{ fontSize: '1.1rem', margin: '0 0 4px' }}>{t('settings_title')} · {raw?.name || project}</h1>
         <p style={{ color: 'var(--text2)', fontSize: '0.82rem', margin: '0 0 20px' }}>
           {t('settings_desc')}
         </p>
