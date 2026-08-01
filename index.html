@@ -213,9 +213,8 @@ footer {
 
 <!-- ═══════════ Hero ═══════════ -->
 <section class="hero">
-  <div class="badge">Whisper · edge-tts · DeepSeek · ffmpeg</div>
-  <h1 data-zh="从<span>录屏</span>到<span>成片</span>，<br>一行命令。" 
-      data-en="From <span>recording</span> to <span>final cut</span>,<br>one command."
+  <div class="badge">Playwright · Whisper · edge-tts · DeepSeek · ffmpeg</div>
+  <h1 data-zh="从<span>录屏</span>到<span>成片</span>，<br>一行命令。"
       data-en="From <span>recording</span> to <span>final cut</span>,<br>one command.">
     From <span>recording</span> to <span>final cut</span>,<br>one command.
   </h1>
@@ -241,8 +240,7 @@ footer {
 <section id="features">
   <div class="section-label" data-zh="特性" data-en="Features">特性</div>
   <h2 class="section-title" data-zh="为规模化视频制作而生" data-en="Built for video production at scale">为规模化视频制作而生</h2>
-  <p class="section-sub" data-zh="每个环节都可独立运行，也能串联成全自动流水线。一套工具，中英双语，批量出品。" 
-     data-en="Each stage runs independently or as a full pipeline. One toolkit, bilingual, batch production." 
+  <p class="section-sub" data-zh="每个环节都可独立运行，也能串联成全自动流水线。一套工具，中英双语，批量出品。"
      data-en="Every stage runs independently or as a fully automated pipeline. One toolkit, bilingual output, batch production.">
     每个环节都可独立运行，也能串联成全自动流水线。一套工具，中英双语，批量出品。
   </p>
@@ -311,6 +309,22 @@ footer {
         真烧进画面像素，不是外挂 .srt——字体/字号/颜色/描边/位置全部可配。配音手工偏移 dub_offset 微调整体快慢，字幕自动跟着同步。
       </p>
     </div>
+    <div class="card">
+      <div class="num">09 / codegen</div>
+      <h4 data-zh="Codegen 选择器草稿" data-en="Codegen Selector Draft">Codegen 选择器草稿</h4>
+      <p data-zh="vt codegen 打开中文界面的 Playwright codegen 窗口，手动走一遍操作路径即可生成选择器草稿 nav-draft.spec.js；把草稿交给 AI，vt sync 会提示 AI 把精确选择器合并进 record.spec.js 并更新 timeline.json，不用手抄。"
+         data-en="vt codegen opens a Chinese-locale Playwright codegen window — walk through the flow once to capture a selector draft (nav-draft.spec.js). Hand the draft to AI: vt sync prompts it to merge the precise selectors into record.spec.js and refresh timeline.json — no manual copy-paste.">
+        vt codegen 打开中文界面的 Playwright codegen 窗口，手动走一遍操作路径即可生成选择器草稿 nav-draft.spec.js；把草稿交给 AI，vt sync 会提示 AI 把精确选择器合并进 record.spec.js 并更新 timeline.json，不用手抄。
+      </p>
+    </div>
+    <div class="card">
+      <div class="num">10 / ImageMagick</div>
+      <h4 data-zh="封面/片头生成" data-en="Cover / Title Card">封面/片头生成</h4>
+      <p data-zh="ImageMagick 按 meta.json 里的 title/subtitle/company/logo/cover_accent_color 直接画出片头图，再编码成与正文同一套编码参数的片段，可无损拼接。vt cover 单独预览效果，不用跑完整条流水线。"
+         data-en="ImageMagick draws the title card straight from meta.json's title/subtitle/company/logo/cover_accent_color, then encodes it with the same codec params as the main clip for lossless concat. Preview it standalone with vt cover — no need to run the full pipeline.">
+        ImageMagick 按 meta.json 里的 title/subtitle/company/logo/cover_accent_color 直接画出片头图，再编码成与正文同一套编码参数的片段，可无损拼接。vt cover 单独预览效果，不用跑完整条流水线。
+      </p>
+    </div>
   </div>
 </section>
 
@@ -318,13 +332,24 @@ footer {
 <section id="pipeline">
   <div class="section-label" data-zh="流程" data-en="Pipeline">流程</div>
   <h2 class="section-title" data-zh="一条命令穿透全流程" data-en="One command through the entire pipeline">一条命令穿透全流程</h2>
-  <p class="section-sub" data-zh="每一步都可拆解、可替换、可跳过。完全掌控后期制作。" 
-     data-en="Every step decomposable, replaceable, skippable. Full control." 
+  <p class="section-sub" data-zh="每一步都可拆解、可替换、可跳过。完全掌控后期制作。"
      data-en="Every step is decomposable, replaceable, skippable. Full control over post-production.">
     每一步都可拆解、可替换、可跳过。完全掌控后期制作。
   </p>
+  <div class="arch" style="margin-bottom:4px">
+    <div class="arch-box" style="border-color:var(--orange);color:var(--orange)">nav-draft.spec.js</div>
+    <span class="arch-arrow">→</span>
+    <span style="color:var(--text3);font-size:0.82rem;font-family:var(--mono)" data-zh="AI 合并 →" data-en="AI merge →">AI 合并 →</span>
+    <div class="arch-box">record.spec.js</div>
+    <span class="arch-arrow">→</span>
+    <div class="arch-box">vt record</div>
+    <span class="arch-arrow">→</span>
+    <div class="arch-box hi">recording.mov</div>
+  </div>
+  <p style="color:var(--text3);font-size:0.82rem;margin-bottom:20px" data-zh="↑ vt codegen 手动走一遍操作路径 → vt sync 交给 AI 整理选择器 → vt record 按脚本自动录屏"
+     data-en="↑ vt codegen walks the flow once → vt sync hands selectors to AI → vt record auto-records the screen from the script">↑ vt codegen 手动走一遍操作路径 → vt sync 交给 AI 整理选择器 → vt record 按脚本自动录屏</p>
   <div class="arch">
-    <div class="arch-box">recording.mov</div>
+    <div class="arch-box hi">recording.mov</div>
     <span class="arch-arrow">→</span>
     <div class="arch-box">Whisper</div>
     <span class="arch-arrow">→</span>
@@ -437,9 +462,8 @@ footer {
 <section id="config">
   <div class="section-label" data-zh="配置" data-en="Config">配置</div>
   <h2 class="section-title" data-zh="配置文件" data-en="Configuration">配置文件</h2>
-  <p class="section-sub" data-zh="所有配置存储在 <code>~/.config/video-toolkit/config</code>，不受 git 管理。通过 <code>vt config</code> 命令读写。" 
-     data-en="Stored in <code>~/.config/video-toolkit/config</code>, not tracked by git. Use <code>vt config</code>." 
-     data-en="All config stored in <code>~/.config/video-toolkit/video-toolkit/config</code>, not tracked by git. Use <code>vt config</code> to read/write.">所有配置存储在 <code>~/.config/video-toolkit/config</code>，不受 git 管理。通过 <code>vt config</code> 命令读写。</p>
+  <p class="section-sub" data-zh="全局 CLI 默认值存储在 <code>~/.config/video-toolkit/config</code>，不受 git 管理。通过 <code>vt config</code> 命令读写。"
+     data-en="Global CLI defaults are stored in <code>~/.config/video-toolkit/config</code>, not tracked by git. Read/write with <code>vt config</code>.">全局 CLI 默认值存储在 <code>~/.config/video-toolkit/config</code>，不受 git 管理。通过 <code>vt config</code> 命令读写。</p>
   <table class="tbl">
     <thead><tr><th data-zh="配置项" data-en="Key">配置项</th><th data-zh="默认值" data-en="Default">默认值</th><th data-zh="说明" data-en="Description">说明</th></tr></thead>
     <tbody>
@@ -448,10 +472,11 @@ footer {
       <tr><td><code>VIDEO_VOICE</code></td><td>zh-CN-XiaoxiaoNeural</td><td data-zh="中文 AI 配音语音" data-en="Chinese AI voice">中文 AI 配音语音</td></tr>
       <tr><td><code>VIDEO_VOICE_EN</code></td><td>en-US-AvaNeural</td><td data-zh="英文 AI 配音语音" data-en="English AI voice">英文 AI 配音语音</td></tr>
       <tr><td><code>VIDEO_BURN_SUB</code></td><td>0</td><td data-zh="字幕烧录开关 (0=关闭 1=开启)" data-en="Subtitle burn-in (0=off 1=on)">字幕烧录开关 (0=关闭 1=开启)</td></tr>
-      <tr><td><code>VIDEO_SUB_FONTSIZE</code></td><td>18</td><td data-zh="字幕字号" data-en="Subtitle font size">字幕字号</td></tr>
-      <tr><td><code>VIDEO_SUB_COLOR</code></td><td>&am;H00FFFFFF</td><td data-zh="字幕颜色" data-en="Subtitle color">字幕颜色</td></tr>
     </tbody>
   </table>
+  <p style="color:var(--text2);font-size:0.88rem;margin-top:20px"
+     data-zh="字幕的字体/字号/颜色/描边/位置不是全局 CLI 配置，而是 <code>meta.json</code> 里的 <code>subtitle_style</code> 对象（<code>font_name</code>/<code>font_size</code>/<code>color</code>/<code>outline</code>/<code>margin_v</code>），走项目级/功能级三级合并——项目根目录的 <code>meta.json</code> 统一定好，个别功能点才需要单独覆盖。"
+     data-en="Subtitle font/size/color/outline/position aren't global CLI settings — they live in meta.json's <code>subtitle_style</code> object (<code>font_name</code>/<code>font_size</code>/<code>color</code>/<code>outline</code>/<code>margin_v</code>), merged across project- and feature-level config. Set it once in the project root's meta.json; only override per-feature when needed.">字幕的字体/字号/颜色/描边/位置不是全局 CLI 配置，而是 <code>meta.json</code> 里的 <code>subtitle_style</code> 对象（<code>font_name</code>/<code>font_size</code>/<code>color</code>/<code>outline</code>/<code>margin_v</code>），走项目级/功能级三级合并——项目根目录的 <code>meta.json</code> 统一定好，个别功能点才需要单独覆盖。</p>
 </section>
 
 <!-- ═══════════ Commands ═══════════ -->
@@ -462,8 +487,9 @@ footer {
     <thead><tr><th data-zh="命令" data-en="Command">命令</th><th data-zh="说明" data-en="Description">说明</th><th data-zh="依赖" data-en="Requires">依赖</th></tr></thead>
     <tbody>
       <tr><td><code>ui [01]</code></td><td data-zh="打开可视化管理台" data-en="Open the visual control panel"><strong data-zh="⭐ 打开可视化管理台" data-en="⭐ Open visual control panel">⭐ 打开可视化管理台</strong></td><td>node</td></tr>
-      <tr><td><code>codegen 01</code></td><td data-zh="生成录制脚本 record.spec.js（本机专用）" data-en="Generate record.spec.js (local only)">生成录制脚本 record.spec.js（本机专用）</td><td>playwright</td></tr>
-      <tr><td><code>record 01</code></td><td data-zh="按脚本自动录屏（本机专用）" data-en="Auto-record screen from script (local only)">按脚本自动录屏（本机专用）</td><td>playwright</td></tr>
+      <tr><td><code>codegen 01</code></td><td data-zh="打开 Playwright codegen，手动走一遍操作生成选择器草稿 nav-draft.spec.js（本机专用）" data-en="Open Playwright codegen — walk through the flow once to capture a selector draft, nav-draft.spec.js (local only)">打开 Playwright codegen，手动走一遍操作生成选择器草稿 nav-draft.spec.js（本机专用）</td><td>playwright</td></tr>
+      <tr><td><code>sync 01</code></td><td data-zh="把 nav-draft.spec.js 交给 AI，合并精确选择器进 record.spec.js 并更新 timeline.json" data-en="Hand nav-draft.spec.js to AI, which merges precise selectors into record.spec.js and updates timeline.json">把 nav-draft.spec.js 交给 AI，合并精确选择器进 record.spec.js 并更新 timeline.json</td><td>—</td></tr>
+      <tr><td><code>record 01</code></td><td data-zh="按 record.spec.js 自动录屏，产出 recording.mov（本机专用）" data-en="Auto-record the screen from record.spec.js, producing recording.mov (local only)">按 record.spec.js 自动录屏，产出 recording.mov（本机专用）</td><td>playwright</td></tr>
       <tr><td><code>all 01</code></td><td data-zh="全流程: 配音 → 合成（不烧字幕）" data-en="Full: dub → compose (no subtitle burn)">全流程: 配音 → 合成（<strong>不烧字幕</strong>）</td><td>ffmpeg</td></tr>
       <tr><td><code>redub 01</code></td><td data-zh="改了字幕/meta 后：重新配音（不合成）" data-en="Regenerate dub only after editing srt/meta">改了字幕/meta 后：重新配音（不合成）</td><td>edge-tts</td></tr>
       <tr><td><code>srt 01</code></td><td data-zh="仅提取字幕" data-en="Extract subtitles only">仅提取字幕</td><td>whisper</td></tr>
@@ -476,10 +502,11 @@ footer {
       <tr><td><code>en 01</code></td><td data-zh="英文全流程" data-en="English full pipeline"><strong data-zh="英文全流程" data-en="English full pipeline">英文全流程</strong></td><td>whisper + DeepSeek + edge-tts</td></tr>
       <tr><td><code>dub-en 01</code></td><td data-zh="仅生成英文配音" data-en="English dub only">仅生成英文配音</td><td>edge-tts</td></tr>
       <tr><td><code>mix-en 01</code></td><td data-zh="仅合成英文视频" data-en="Compose EN video">仅合成英文视频</td><td>ffmpeg</td></tr>
-      <tr><td><code>sync 01</code></td><td data-zh="同步 meta.json 默认字段" data-en="Sync meta.json default fields">同步 meta.json 默认字段</td><td>—</td></tr>
+      <tr><td><code>play 01 dub|final</code></td><td data-zh="试听配音 / 播放成片" data-en="Preview the dub audio / play the final cut">试听配音 / 播放成片</td><td>—</td></tr>
+      <tr><td><code>config [key=val]</code></td><td data-zh="查看/写入全局默认配置" data-en="View or set global default config">查看/写入全局默认配置</td><td>—</td></tr>
       <tr><td><code>status 01</code></td><td data-zh="查看单个功能状态" data-en="Check feature status">查看单个功能状态</td><td>—</td></tr>
       <tr><td><code>status --all</code></td><td data-zh="查看全部功能状态" data-en="Check all features">查看全部功能状态</td><td>—</td></tr>
-      <tr><td><code>upgrade</code></td><td data-zh="升级到最新版本" data-en="Upgrade to the latest version">升级到最新版本</td><td>git</td></tr>
+      <tr><td><code>upgrade</code></td><td data-zh="git pull 更新到最新版本" data-en="git pull to update to the latest version">git pull 更新到最新版本</td><td>git</td></tr>
     </tbody>
   </table>
 </section>
@@ -634,7 +661,7 @@ function applyLang(l){
     <div class="footer-brand">
       <div class="logo-text">🎬 <span>Video Toolkit</span></div>
       <p class="tagline" data-zh="从原始录屏到多语言成片，全自动流水线。" data-en="From raw recording to multilingual final cut — a fully automated pipeline.">From raw recording to multilingual final cut — a fully automated pipeline.</p>
-      <p class="tech">Whisper · edge-tts · DeepSeek · ffmpeg · macOS</p>
+      <p class="tech">Playwright · Whisper · edge-tts · DeepSeek · ffmpeg · macOS</p>
     </div>
     <div class="footer-col">
       <h5 data-zh="产品" data-en="Product">Product</h5>
@@ -653,6 +680,8 @@ function applyLang(l){
     <div class="footer-col">
       <h5 data-zh="技术栈" data-en="Stack">Stack</h5>
       <a href="https://ffmpeg.org" target="_blank">FFmpeg</a>
+      <a href="https://playwright.dev" target="_blank">Playwright</a>
+      <a href="https://imagemagick.org" target="_blank">ImageMagick</a>
       <a href="https://platform.deepseek.com" target="_blank">DeepSeek API</a>
       <a href="https://brew.sh" target="_blank">Homebrew</a>
       <a href="https://www.python.org" target="_blank">Python 3.10+</a>
