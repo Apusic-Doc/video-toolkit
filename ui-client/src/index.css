@@ -2,6 +2,9 @@
   --radius: 10px; --radius-sm: 6px;
   --font: -apple-system,BlinkMacSystemFont,"PingFang SC","Segoe UI",sans-serif;
   --mono: "SF Mono","Fira Code",monospace;
+  /* 日志面板背景故意在两套主题下都固定黑色（终端观感），文字颜色不能跟着
+     var(--text) 一起翻——light 主题下 --text 是深色，配黑底会完全看不见 */
+  --log-text: #d4d4d4; --log-text-dim: #8a8a8a;
 }
 [data-theme="dark"] {
   --bg: #09090b; --bg2: #131316; --bg3: #1a1a20;
@@ -220,6 +223,7 @@ table.datagrid tbody tr:last-child td { border-bottom: none; }
 .log-panel {
   background: #000; border: 1px solid var(--border); border-radius: var(--radius-sm);
   padding: 12px; font-family: var(--mono); font-size: 0.78rem; height: 300px; overflow-y: auto; white-space: pre-wrap;
+  color: var(--log-text);
 }
 .log-line.ok { color: var(--green); }
 .log-line.err { color: var(--red); }

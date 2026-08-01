@@ -153,7 +153,7 @@ export default function TaskPanel({ project, feature, status, onToast, runSignal
       )}
 
       <div className="log-panel" ref={logRef}>
-        {lines.length === 0 && !running && <span style={{ color: 'var(--text3)' }}>还没有运行任务，点上面的按钮开始</span>}
+        {lines.length === 0 && !running && <span style={{ color: 'var(--log-text-dim)' }}>还没有运行任务，点上面的按钮开始</span>}
         {lines.map((l, i) => <div key={i} className={`log-line ${lineClass(l)}`}>{l}</div>)}
       </div>
 

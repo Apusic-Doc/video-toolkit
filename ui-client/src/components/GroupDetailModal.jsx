@@ -121,7 +121,7 @@ export default function GroupDetailModal({ project, group, features, onClose, on
 
         {(merging || lines.length > 0) && (
           <div className="log-panel" style={{ marginTop: 16, maxHeight: 160 }}>
-            {lines.length === 0 && <span style={{ color: 'var(--text3)' }}>启动中…</span>}
+            {lines.length === 0 && <span style={{ color: 'var(--log-text-dim)' }}>启动中…</span>}
             {lines.map((l, i) => <div key={i} className={`log-line ${lineClass(l)}`}>{l}</div>)}
           </div>
         )}
