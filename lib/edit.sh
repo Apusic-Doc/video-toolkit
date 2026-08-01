@@ -164,13 +164,14 @@ cmd_recut() {
     local cuts_json="$dir/cuts.json"
     [ ! -f "$cuts_json" ] && { err "缺少 $dir/cuts.json，先写好要剪掉的时间区间，格式见 lib/edit.sh 顶部注释"; return 1; }
 
-    # 只剪最终交付的那一份（<feature>.mp4，带封面、没烧字幕的主产出）——
-    # -sub/-no-cover/-no-cover-sub 这几个变体的时间轴跟它不一致（封面时长不同、
-    # 有没有字幕烧录不同），cuts.json 里的时间点是对着最终版本定的，套到别的
-    # 变体上要么错位要么直接超出时长报错，没必要跟着剪
+    # 只剪最终交付的那一份（<feature>-sub.mp4，带封面 + 烧了字幕的成片）——
+    # .mp4/-no-cover.mp4/-no-cover-sub.mp4 这几个变体不是实际交付物，且
+    # -no-cover 系列时间轴跟它不一致（没有封面，总时长短一截），cuts.json
+    # 里的时间点是对着最终交付版本定的，套到别的变体上要么错位要么直接超出
+    # 时长报错，没必要跟着剪
     local base="$dir/$(basename "$dir")"
-    local target="$base.mp4"
-    [ ! -f "$target" ] && { err "找不到 $(basename "$target")，请先 vt mix"; return 1; }
+    local target="$base-sub.mp4"
+    [ ! -f "$target" ] && { err "找不到 $(basename "$target")，请先 vt burn 生成烧字幕版本"; return 1; }
     _recut_apply_one "$target" "$cuts_json" "$dir" || { err "剪辑失败，见上面的错误信息"; return 1; }
     ok "剪辑完成"
 }
