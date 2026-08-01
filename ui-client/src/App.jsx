@@ -42,13 +42,13 @@ function AppInner() {
   const { t } = useLang();
   const [authState, setAuthState] = useState('checking'); // checking | need-login | denied | ok
   const [projects, setProjects] = useState([]);
-  const [project, setProject] = useState(() => localStorage.getItem(PROJECT_KEY) || '');
+  const [project, setProject] = useState(() => useQueryParam('project') || localStorage.getItem(PROJECT_KEY) || '');
   const [features, setFeatures] = useState([]);
   const [selected, setSelected] = useState(useQueryParam('feature') || localStorage.getItem(FEATURE_KEY) || '');
-  const [tab, setTab] = useState('meta');
+  const [tab, setTab] = useState(() => useQueryParam('tab') || 'meta');
   const [toast, setToast] = useState(null);
   const [runSignal, setRunSignal] = useState(null);
-  const [page, setPage] = useState(() => localStorage.getItem(PAGE_KEY) || 'dashboard');
+  const [page, setPage] = useState(() => useQueryParam('page') || localStorage.getItem(PAGE_KEY) || 'dashboard');
   const [showProjectSettings, setShowProjectSettings] = useState(false);
   const [showNewProject, setShowNewProject] = useState(false);
   const [showNewFeature, setShowNewFeature] = useState(false);
@@ -172,6 +172,18 @@ function AppInner() {
   useEffect(() => { if (project) localStorage.setItem(PROJECT_KEY, project); }, [project]);
   useEffect(() => { if (selected) localStorage.setItem(FEATURE_KEY, selected); }, [selected]);
   useEffect(() => { localStorage.setItem(PAGE_KEY, page); }, [page]);
+
+  // 同步状态到 URL（replaceState 不刷新页面），每个项目/feature/页面/标签都有独立 URL
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (project) params.set('project', project);
+    if (selected) params.set('feature', selected);
+    if (page !== 'dashboard') params.set('page', page);
+    if (tab !== 'meta') params.set('tab', tab);
+    const qs = params.toString();
+    const url = qs ? `${location.pathname}?${qs}` : location.pathname;
+    history.replaceState(null, '', url);
+  }, [project, selected, page, tab]);
 
   // 列表/标题这些"给人看"的地方统一显示项目显示名称，没设置才退回目录名——
   // project 变量本身（slug）继续原样传给各组件当 API 参数，两者不要混用
