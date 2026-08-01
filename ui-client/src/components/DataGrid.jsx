@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 // 全站通用的表格组件——列定义 { key, label, sortable, render(row), sortValue(row) }，
 // 排序/空状态/行点击这几件事集中在一处实现，Dashboard 的项目表/feature 表都用它，
 // 以后要加别的表格（比如历史任务列表）也应该优先复用这个，而不是每页各写一套 <table>。
-export default function DataGrid({ columns, rows, rowKey, onRowClick, emptyText, toolbar, isSelected }) {
+export default function DataGrid({ columns, rows, rowKey, onRowClick, emptyText, toolbar }) {
   const [sortKey, setSortKey] = useState(null);
   const [sortDir, setSortDir] = useState(1); // 1 asc, -1 desc
 
@@ -44,7 +44,7 @@ export default function DataGrid({ columns, rows, rowKey, onRowClick, emptyText,
           </thead>
           <tbody>
             {sorted.map((row) => (
-              <tr key={rowKey(row)} className={isSelected?.(row) ? 'active' : ''} onClick={() => onRowClick?.(row)}>
+              <tr key={rowKey(row)} onClick={() => onRowClick?.(row)}>
                 {columns.map((c) => <td key={c.key}>{c.render ? c.render(row) : row[c.key]}</td>)}
               </tr>
             ))}

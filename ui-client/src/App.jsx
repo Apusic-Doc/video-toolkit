@@ -14,7 +14,6 @@ import ReadmeView from './components/ReadmeView.jsx';
 import ProjectSettings from './components/ProjectSettings.jsx';
 import GroupManager from './components/GroupManager.jsx';
 import Dashboard from './components/Dashboard.jsx';
-import FeatureGridSidebar from './components/FeatureGridSidebar.jsx';
 import VideoPlayerView from './components/VideoPlayerView.jsx';
 import { applyPalette, clearPaletteOverrides, DEFAULT_PALETTE } from './palettes.js';
 
@@ -236,7 +235,7 @@ function AppInner() {
         <div className="features-page">
           <div className="features-toolbar">
             <div className="features-toolbar-title">
-              {featurePageView === 'player' && selectedFeature && (
+              {selectedFeature && (
                 <>
                   <h2>{selectedFeature.title || selectedFeature.name}</h2>
                   <div className="sub">{projectLabel} / {selectedFeature.name}</div>
@@ -245,7 +244,6 @@ function AppInner() {
             </div>
             <div className="view-toggle">
               <button className={featurePageView === 'list' ? 'active' : ''} title={t('view_mode_list')} onClick={() => setFeatureView('list')}>☰</button>
-              <button className={featurePageView === 'grid' ? 'active' : ''} title={t('view_mode_grid')} onClick={() => setFeatureView('grid')}>▦</button>
               <button className={featurePageView === 'player' ? 'active' : ''} title={t('view_mode_player')} onClick={() => setFeatureView('player')}>▶</button>
             </div>
           </div>
@@ -253,20 +251,10 @@ function AppInner() {
             <VideoPlayerView project={project} features={features} selected={selected} onSelect={setSelected} />
           ) : (
             <div className="app-body">
-              {featurePageView === 'grid' ? (
-                <FeatureGridSidebar features={features} selected={selected} onSelect={setSelected} />
-              ) : (
-                <Sidebar features={features} selected={selected} onSelect={setSelected} />
-              )}
+              <Sidebar features={features} selected={selected} onSelect={setSelected} />
               <div className="main">
                 {selectedFeature ? (
                   <>
-                    <div className="main-header">
-                      <div>
-                        <h2>{selectedFeature.title || selectedFeature.name}</h2>
-                        <div className="sub">{projectLabel} / {selectedFeature.name}</div>
-                      </div>
-                    </div>
                     <div className="tabs">
                       {TAB_IDS.map((id, i) => (
                         <div key={id} className={`tab${tab === id ? ' active' : ''}`} onClick={() => setTab(id)}>
