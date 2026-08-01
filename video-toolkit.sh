@@ -1274,6 +1274,11 @@ cmd_ui() {
         else
             warn "找不到 feature: $arg，先打开首页"
         fi
+    elif ls "$BASE"/feature-* >/dev/null 2>&1; then
+        # 没传 feature 参数时，默认用当前目录所在的项目（约定：在项目目录下跑 vt ui）——
+        # 不然浏览器端只能靠 localStorage 记的上次选择，或者项目列表里排第一个的，
+        # 跟你实际 cd 进来的项目对不上（比如切了个新项目结果打开的还是上次那个/字母序第一个）
+        url="http://localhost:$port/?project=$(basename "$BASE")"
     fi
     ok "$url"
     open "$url" 2>/dev/null
