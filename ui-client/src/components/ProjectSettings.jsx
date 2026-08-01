@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
+import { useLang } from '../i18n.jsx';
 import MetaFields, { MetaPickers } from './MetaFields.jsx';
 
 // 项目级 meta.json——字体/字号/语音/封面配色这些"整个项目该统一"的设置放这里，
 // 单个 feature 没覆盖就会继承这里的值（三级合并：内置默认 → 这里 → feature 自己的 meta.json）。
 export default function ProjectSettings({ project, onClose, onToast }) {
+  const { t } = useLang();
   const [raw, setRaw] = useState(null);
   const [coverUrl, setCoverUrl] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -68,12 +70,12 @@ export default function ProjectSettings({ project, onClose, onToast }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" style={{ width: 880, maxHeight: '85vh', overflowY: 'auto', textAlign: 'left' }} onClick={(e) => e.stopPropagation()}>
-        <h1 style={{ fontSize: '1.1rem', margin: '0 0 4px' }}>项目设置 · {project}</h1>
+        <h1 style={{ fontSize: '1.1rem', margin: '0 0 4px' }}>{t('settings_title')} · {project}</h1>
         <p style={{ color: 'var(--text2)', fontSize: '0.82rem', margin: '0 0 20px' }}>
-          这里改的是整个项目统一的默认值（字体/字号/语音/封面配色等），单个 feature 没有单独设置时就会用这里的。
+          {t('settings_desc')}
         </p>
 
-        {!raw ? <div className="empty-state">加载中…</div> : (
+        {!raw ? <div className="empty-state">{t('loading')}</div> : (
           <>
             <MetaFields raw={raw} merged={null} set={set} showContent={false} />
 
@@ -89,8 +91,8 @@ export default function ProjectSettings({ project, onClose, onToast }) {
             </div>
 
             <div className="form-actions" style={{ justifyContent: 'space-between' }}>
-              <button className="btn" onClick={onClose}>关闭</button>
-              <button className="btn btn-pri" onClick={save} disabled={saving}>{saving ? '保存中…' : '保存项目设置'}</button>
+              <button className="btn" onClick={onClose}>{t('btn_close')}</button>
+              <button className="btn btn-pri" onClick={save} disabled={saving}>{saving ? t('saving') : t('btn_save')}</button>
             </div>
           </>
         )}

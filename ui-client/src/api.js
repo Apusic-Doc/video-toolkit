@@ -22,8 +22,11 @@ export const api = {
   logout: () => req('POST', '/api/logout'),
 
   projects: () => req('GET', '/api/projects'),
+  createProject: (name) => req('POST', '/api/projects', { name }),
   features: (project) => req('GET', `/api/projects/${encodeURIComponent(project)}/features`),
   feature: (project, feature) => req('GET', `/api/projects/${encodeURIComponent(project)}/features/${encodeURIComponent(feature)}`),
+  createFeature: (project, slug) => req('POST', `/api/projects/${encodeURIComponent(project)}/features`, { slug }),
+  deleteFeature: (project, feature) => req('DELETE', `/api/projects/${encodeURIComponent(project)}/features/${encodeURIComponent(feature)}`),
 
   meta: (project, feature) => req('GET', `/api/projects/${encodeURIComponent(project)}/features/${encodeURIComponent(feature)}/meta`),
   saveMeta: (project, feature, data) => req('PUT', `/api/projects/${encodeURIComponent(project)}/features/${encodeURIComponent(feature)}/meta`, data),

@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import {
   listProjects, listFeatures, resolveProjectDir, resolveFeatureDir, featureStatus,
+  createProject, createFeature, softDeleteFeature,
 } from '../lib/paths.js';
 import { readFeatureMeta, writeFeatureMeta, readMergedMeta, readProjectMeta, writeProjectMeta } from '../lib/meta.js';
 import { parseSrt, serializeSrt } from '../lib/srt.js';
@@ -69,6 +70,38 @@ router.post('/projects/:project/preview-cover', async (req, res) => {
     fs.createReadStream(tmpPng).pipe(res).on('close', () => fs.unlink(tmpPng, () => {}));
   } catch (e) {
     res.status(500).json({ error: String(e) });
+  }
+});
+
+router.post('/projects', (req, res) => {
+  const { name } = req.body || {};
+  if (!name) return res.status(400).json({ error: '缺少 name' });
+  try {
+    createProject(name);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+router.post('/projects/:project/features', (req, res) => {
+  const { slug } = req.body || {};
+  if (!slug) return res.status(400).json({ error: '缺少 slug' });
+  if (!resolveProjectDir(req.params.project)) return res.status(404).json({ error: 'project not found' });
+  try {
+    const featureName = createFeature(req.params.project, slug);
+    res.json({ ok: true, feature: featureName });
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+router.delete('/projects/:project/features/:feature', requireFeature, (req, res) => {
+  try {
+    softDeleteFeature(req.params.project, req.params.feature);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(400).json({ error: e.message });
   }
 });
 

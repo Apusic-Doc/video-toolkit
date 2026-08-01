@@ -20,6 +20,9 @@ function isFeatureDir(p) {
   try { return fs.statSync(p).isDirectory(); } catch { return false; }
 }
 
+// 判定"是不是项目"：要么已经有至少一个 feature-* 子目录（老项目，一直以来的判定标准），
+// 要么带着 .video-toolkit-project 标记文件（新建但还没加 feature 的空项目，见 createProject）——
+// 后者是为了让 vt-ui 的"新建项目"按钮建出来的空项目也能立刻出现在下拉框里
 export function listProjects() {
   const names = fs.readdirSync(VIDEOS_ROOT, { withFileTypes: true })
     .filter(d => d.isDirectory() && !d.name.startsWith('.') && d.name !== 'toolkit')
@@ -27,11 +30,75 @@ export function listProjects() {
   const projects = [];
   for (const name of names) {
     const dir = path.join(VIDEOS_ROOT, name);
-    const hasFeature = fs.readdirSync(dir, { withFileTypes: true })
-      .some(d => d.isDirectory() && d.name.startsWith('feature-'));
-    if (hasFeature) projects.push(name);
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    const hasFeature = entries.some(d => d.isDirectory() && d.name.startsWith('feature-'));
+    const isMarked = entries.some(d => d.isFile() && d.name === '.video-toolkit-project');
+    if (hasFeature || isMarked) projects.push(name);
   }
   return projects.sort();
+}
+
+const PROJECT_NAME_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
+const FEATURE_SLUG_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
+
+// 新建一个空项目目录：标记文件 + 最小 meta.json，供 listProjects() 立刻识别
+export function createProject(name) {
+  if (!PROJECT_NAME_RE.test(name)) throw new Error('项目名只能是小写字母/数字/短横线，且以字母数字开头');
+  const dir = path.join(VIDEOS_ROOT, name);
+  if (fs.existsSync(dir)) throw new Error('目录已存在');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, '.video-toolkit-project'), '');
+  fs.writeFileSync(path.join(dir, 'meta.json'), '{}\n');
+  return dir;
+}
+
+// 新建一个 feature 目录：feature-<NNN>-<slug>，NNN 是现有最大编号+1，零填充到
+// 项目 meta.json 的 feature_seq_digits（默认 3 位）——只建目录，不生成 record.spec.js/
+// meta.json，那些交给 AI 按一句话意图去写（17章的工作流），这里只负责"这个功能点存在"
+export function createFeature(project, slug) {
+  if (!FEATURE_SLUG_RE.test(slug)) throw new Error('feature 名只能是小写字母/数字/短横线，且以字母数字开头');
+  const projectDir = resolveProjectDir(project);
+  if (!projectDir) throw new Error('project not found');
+
+  const existing = listFeatures(project);
+  let maxN = 0;
+  let existingWidth = 0;
+  for (const name of existing) {
+    const m = name.match(/^feature-(\d+)-/);
+    if (m) {
+      maxN = Math.max(maxN, parseInt(m[1], 10));
+      existingWidth = Math.max(existingWidth, m[1].length);
+    }
+  }
+
+  // 位数优先级：项目 meta.json 显式配置 > 沿用这个项目已有编号的位数（老项目大多是 2 位，
+  // 不能因为新建一个 feature 就悄悄跳到 3 位，导致同一个项目里编号风格不一致）> 全新项目默认 3 位
+  let digits = existingWidth || 3;
+  try {
+    const meta = JSON.parse(fs.readFileSync(path.join(projectDir, 'meta.json'), 'utf8'));
+    if (Number.isInteger(meta.feature_seq_digits) && meta.feature_seq_digits > 0) digits = meta.feature_seq_digits;
+  } catch {}
+
+  const seq = String(maxN + 1).padStart(digits, '0');
+  const featureName = `feature-${seq}-${slug}`;
+  const dir = path.join(projectDir, featureName);
+  if (fs.existsSync(dir)) throw new Error(`目录已存在: ${featureName}`);
+  fs.mkdirSync(dir, { recursive: true });
+  return featureName;
+}
+
+// 软删除：挪进项目根目录的 _trash/，带时间戳避免重名冲突——绝不用 rm -rf，
+// 里面可能有已经花时间录好的 recording.mov
+export function softDeleteFeature(project, feature) {
+  const featureDir = resolveFeatureDir(project, feature);
+  if (!featureDir) throw new Error('feature not found');
+  const projectDir = resolveProjectDir(project);
+  const trashDir = path.join(projectDir, '_trash');
+  fs.mkdirSync(trashDir, { recursive: true });
+  const ts = new Date().toISOString().replace(/[:.]/g, '-');
+  const dest = path.join(trashDir, `${feature}-${ts}`);
+  fs.renameSync(featureDir, dest);
+  return dest;
 }
 
 // 校验 project 名字合法（必须是 listProjects() 里真实存在的一个），返回绝对路径或 null

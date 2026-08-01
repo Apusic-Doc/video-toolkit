@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, openTaskSocket } from '../api.js';
+import { useLang } from '../i18n.jsx';
 
 // 分组只是"元数据 + 合并任务"，不碰任何 feature-*/ 目录下的文件——
 // 增删分组、调整顺序都是安全的，原始成片永远不受影响，参照 lib/groups.sh 顶部注释。
 export default function GroupManager({ project, features, onClose, onToast }) {
+  const { t } = useLang();
   const [groups, setGroups] = useState(null);
   const [openId, setOpenId] = useState(null);
   const [newId, setNewId] = useState('');
@@ -43,13 +45,12 @@ export default function GroupManager({ project, features, onClose, onToast }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" style={{ width: 720, maxHeight: '85vh', overflowY: 'auto', textAlign: 'left' }} onClick={(e) => e.stopPropagation()}>
-        <h1 style={{ fontSize: '1.1rem', margin: '0 0 4px' }}>分组管理 · {project}</h1>
+        <h1 style={{ fontSize: '1.1rem', margin: '0 0 4px' }}>{t('groups_title')} · {project}</h1>
         <p style={{ color: 'var(--text2)', fontSize: '0.82rem', margin: '0 0 20px' }}>
-          把多个 feature 的成片按顺序合并成一个对外发布的大视频。只读取各 feature 现有成片来拼接，
-          不会修改或删除任何原始 feature 视频，合并结果单独存在项目下的 <code>groups/</code> 目录。
+          {t('groups_desc')}
         </p>
 
-        {groups === null ? <div className="empty-state">加载中…</div> : (
+        {groups === null ? <div className="empty-state">{t('loading')}</div> : (
           <>
             {groups.map((g) => (
               <GroupRow
@@ -72,7 +73,7 @@ export default function GroupManager({ project, features, onClose, onToast }) {
         )}
 
         <div className="form-actions" style={{ justifyContent: 'flex-end', marginTop: 20 }}>
-          <button className="btn" onClick={onClose}>关闭</button>
+          <button className="btn" onClick={onClose}>{t('btn_close')}</button>
         </div>
       </div>
     </div>
