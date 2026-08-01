@@ -71,6 +71,12 @@ info() { echo -e "${CYAN}➜${NC} $1"; }
 # 硬编码序号会导致某次录制悄悄录到错误的屏幕（实测发生过：外接屏被当成录制目标，
 # 屏幕上不管显示什么全部录了进去）。这里动态识别出内置/主屏对应哪个序号，每次录制前调用。
 detect_recording_screen() {
+    # 自动识别偶尔会认错屏（比如多屏环境下识别到的不是用户当前实际在用的那块），
+    # 留一个手工兜底：设了 VT_RECORD_SCREEN 就直接用这个序号，不跑下面的自动判断逻辑
+    if [ -n "$VT_RECORD_SCREEN" ]; then
+        echo "$VT_RECORD_SCREEN"
+        return
+    fi
     local devices count ext_res idx frame res
     devices=$(ffmpeg -f avfoundation -list_devices true -i "" 2>&1 | grep "Capture screen" | sed -E 's/.*\[([0-9]+)\].*/\1/')
     count=$(echo "$devices" | wc -l | tr -d ' ')
@@ -326,11 +332,31 @@ compose() {
         fi
     fi
 
+    # 正数 dub_offset 会让配音总时长变成 "原配音时长 + 偏移"，如果这个值超过录屏本身的
+    # 时长，下面的 -shortest 会直接把超出部分的配音截掉（配音说到一半突然没声了，
+    # 而不是报错——实测复现，dub_offset=10 配合较短的录屏就会把最后好几句配音吃掉）。
+    # 用 tpad 定格最后一帧，把画面垫长到能装下完整配音，不再依赖 -shortest 兜底截断。
+    local pad_filter=""
+    if python3 -c "exit(0 if float('$dub_offset') > 0.001 else 1)" 2>/dev/null; then
+        local video_dur=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$rec" 2>/dev/null)
+        local trimmed_video_dur="$video_dur"
+        if [ -n "${safe_offset:-}" ]; then
+            trimmed_video_dur=$(python3 -c "print(max(0, float('$video_dur') - float('$safe_offset')))")
+        fi
+        local dub_dur=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$dub" 2>/dev/null)
+        local needed_dur=$(python3 -c "print(float('$dub_dur') + float('$dub_offset'))")
+        if python3 -c "exit(0 if float('$needed_dur') > float('$trimmed_video_dur') else 1)" 2>/dev/null; then
+            local pad_secs=$(python3 -c "print(round(float('$needed_dur') - float('$trimmed_video_dur') + 0.3, 2))")
+            info "配音延后后总时长超出录屏画面，定格最后一帧延长 ${pad_secs}s，避免配音被截断"
+            pad_filter=",tpad=stop_mode=clone:stop_duration=${pad_secs}"
+        fi
+    fi
+
     # 生成 AI 配音替换后的中间视频
     info "生成 AI 配音视频..."
     local content="$dir/_dubbed.mp4"
     ffmpeg "${trim_args[@]}" -i "$rec" "${dub_input_args[@]}" -i "$dub" \
-        -c:v h264_videotoolbox -b:v 5M -r 30 -vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=black" -pix_fmt yuv420p \
+        -c:v h264_videotoolbox -b:v 5M -r 30 -vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=black${pad_filter}" -pix_fmt yuv420p \
         -c:a aac -ar 48000 -ac 2 -map 0:v:0 -map 1:a:0 "${audio_filter_args[@]}" -shortest "$content" -y 2>/dev/null
     
     # 统一走 compose_final（无 meta 时自动使用默认值）
@@ -473,12 +499,23 @@ silence_tpl = os.path.join(tmpdir, "_silence.wav")
 subprocess.run(["ffmpeg", "-f", "lavfi", "-i", "anullsrc=r=24000:cl=mono", "-t", "0.1", silence_tpl, "-y"],
               stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
 
+# edge-tts 的多音字消歧是黑盒模型，偶尔会把"行"这类多音字读错（比如"命令行工具"里的
+# "行"被读成 xíng 而不是 háng）——edge-tts 的 Python 库/CLI 都会强制转义输入文本，
+# 没有官方渠道能传 SSML <phoneme> 标签强制指定读音，实测确认过（转义后标签变成字面文本被整段读出来）。
+# 唯一可靠的办法是换一种不会触发歧义读音的措辞，这里维护一份"问题词→安全替换词"表，
+# 发现新的多音字读错，把原词和一个读音安全的替换词加进来就行，一次修复对所有 feature 生效。
+POLYPHONE_FIXES = {
+    '命令行工具': '命令行',  # "行工具"这个搭配下 edge-tts 偶尔把"行"读成 xíng，去掉"工具"更保险
+}
+
 prev_end = 0.0
 with open(concat, "w") as cl:
     for m in matches:
         idx, t1, t2, text = m
         text = text.strip().replace('\n', ' ')
         if not text: continue   # 跳过空字幕行
+        for bad, good in POLYPHONE_FIXES.items():
+            text = text.replace(bad, good)
         seg_num = int(idx)
         seg_start = to_sec(t1)
         seg_end = to_sec(t2)
@@ -678,8 +715,10 @@ cmd_record() {
         info "录制屏幕: 序号 $screen_idx（自动识别的内置/主屏）"
 
         # 运行 Playwright 自动化
-        export BASE_URL="${BASE_URL:-http://localhost:6888}"
-        export ADMIN_URL="${ADMIN_URL:-https://localhost:6848}"
+        # localhost 在部分机器上 DNS 优先解析成 IPv6，会让"当前是 IPv4/IPv6"之类的
+        # 状态角标提前露出、跟叙事对不上（实测复现），默认统一用字面 IPv4 地址
+        export BASE_URL="${BASE_URL:-http://127.0.0.1:6888}"
+        export ADMIN_URL="${ADMIN_URL:-https://127.0.0.1:6848}"
         export VT_TIMELINE="$dir/timeline.json"
         # 从 config 文件读取密码
         [ -z "$ADMIN_PW" ] && [ -f "$HOME/.config/video-toolkit/config" ] && ADMIN_PW=$(grep '^ADMIN_PW=' "$HOME/.config/video-toolkit/config" 2>/dev/null | cut -d= -f2-)
@@ -762,12 +801,55 @@ cmd_record() {
 import json
 tl = json.load(open('$dir/timeline.json'))
 lines = []
+# 跟 srt_to_dub_core 里那份 POLYPHONE_FIXES 保持同步——字幕文本和配音文本必须一致，
+# 不然观众会看到字幕写'命令行工具'、听到配音读的是'命令行'，两边对不上
+POLYPHONE_FIXES = {
+    '命令行工具': '命令行',
+}
+
+# 字幕太长一行会顶到屏幕两边（实测 font_size 44 下 55 字左右的整句会跑满 1920px 宽），
+# 超过阈值就在中点附近找标点断行；没有合适标点就按视觉宽度（中文/全角标点算 2，其余算 1）
+# 切在正中间。断行只影响字幕显示——配音那边 srt_to_dub_core 会把 \n 换成空格拼回一整句读，
+# 不会因为断行多停顿。
+def visual_width(s):
+    w = 0
+    for ch in s:
+        code = ord(ch)
+        if (0x4E00 <= code <= 0x9FFF) or (0x3000 <= code <= 0x303F) or (0xFF00 <= code <= 0xFFEF):
+            w += 2
+        else:
+            w += 1
+    return w
+
+def wrap_line(text, max_width=70):
+    if visual_width(text) <= max_width:
+        return text
+    mid = len(text) // 2
+    punct = '，。！？；、'
+    best = None
+    for i, ch in enumerate(text):
+        if ch in punct and (best is None or abs(i - mid) < abs(best - mid)):
+            best = i
+    if best is not None:
+        return text[:best+1] + '\n' + text[best+1:].lstrip()
+    half = visual_width(text) / 2
+    w = 0
+    for i, ch in enumerate(text):
+        w += visual_width(ch)
+        if w >= half:
+            return text[:i+1] + '\n' + text[i+1:]
+    return text
+
 for i, s in enumerate(tl):
     t = s['t']
     next_t = tl[i+1]['t'] if i+1 < len(tl) else t + 5
     t1 = f'{int(t//3600):02d}:{int((t%3600)//60):02d}:{int(t%60):02d},{int((t%1)*1000):03d}'
     t2 = f'{int(next_t//3600):02d}:{int((next_t%3600)//60):02d}:{int(next_t%60):02d},{int((next_t%1)*1000):03d}'
-    lines.append(f'{i+1}\n{t1} --> {t2}\n{s[\"text\"]}\n')
+    text = s['text']
+    for bad, good in POLYPHONE_FIXES.items():
+        text = text.replace(bad, good)
+    text = wrap_line(text)
+    lines.append(f'{i+1}\n{t1} --> {t2}\n{text}\n')
 with open('$srt','w') as f: f.write('\n'.join(lines))
 print(f'✅ SRT: {len(lines)} 段')
 " 2>/dev/null
@@ -787,7 +869,7 @@ print(f'✅ SRT: {len(lines)} 段')
 cmd_codegen() {
     local dir="$1"
     local out="$dir/nav-draft.spec.js"
-    local admin="${ADMIN_URL:-https://localhost:6848}"
+    local admin="${ADMIN_URL:-https://127.0.0.1:6848}"
     info "启动 Playwright codegen（中文界面，与实际录制一致）→ $admin"
     info "在弹出的窗口里手动走一遍要自动化的操作路径，关闭窗口后自动保存到:"
     info "  $out"

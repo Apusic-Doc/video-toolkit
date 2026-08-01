@@ -15,7 +15,7 @@ export default defineConfig({
     // AAS 管控台按 Accept-Language 显示语言（Windows 录制环境是靠把 Edge 首选语言设成中文做到的，
     // 这里用 Playwright locale 达到同样效果）
     locale: 'zh-CN',
-    // viewport:null + --start-maximized = 窗口最大化铺满屏幕（任务栏/地址栏仍可见），
+    // viewport:null + 显式 window-position/window-size 铺满内置屏（任务栏/地址栏仍可见），
     // 不是浏览器 Fullscreen 模式（那样会连地址栏一起隐藏，录制要求里明确要保留浏览器导航栏）
     viewport: null,
     // 用重新签名、改过 CFBundleName/CFBundleDisplayName/CFBundleExecutable 的 Chromium 副本，
@@ -25,7 +25,13 @@ export default defineConfig({
     launchOptions: {
       // --disable-features=Translate 之前只在品牌版 Chrome 上试过没用，没在自带 Chromium 上试过；
       // 这次录制发现自带 Chromium 也会弹翻译条，补上这个开关防御一下
-      args: ['--start-maximized', '--disable-features=Translate,TranslateUI'],
+      // 新窗口默认打开在哪块屏幕由系统焦点/鼠标位置决定，不是固定的。接了外接屏（比如 Mi TV）
+      // 时新窗口经常被带到外接屏上，(0,0) 是内置 Retina 屏（Main Display）的原点。用显式
+      // window-position + window-size 顶满内置屏（1680x1050 是这台 Mac 内置屏的实际逻辑分辨率），
+      // 不受外接屏是否插着影响（跟 Terminal 窗口的 bounds 修复是同一个根因）——注意不能再加
+      // --start-maximized，实测这个参数跟显式 window-position 一起给会互相冲突，Chromium 会
+      // 直接跳过最大化只按给定坐标开一个未放大的小窗口。
+      args: ['--window-position=0,0', '--window-size=1680,1050', '--disable-features=Translate,TranslateUI'],
       executablePath: '/Users/martin/Apusic/Product/ApusicAS/Videos/toolkit/rebranded-chromium/Apusic 功能验证.app/Contents/MacOS/Apusic 功能验证',
     },
   },
