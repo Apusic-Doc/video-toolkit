@@ -190,15 +190,28 @@ cmd_recut_restore() {
     local restored=0
     for variant in "$base.mp4" "$base-sub.mp4" "$base-no-cover.mp4" "$base-no-cover-sub.mp4" "${base}_en.mp4"; do
         local name; name=$(basename "$variant")
-        # 按文件名里的时间戳排序取最新一份（不会匹配到 .pristine.mp4，
-        # 那个文件名里没有 "-时间戳" 这个分隔符）
+        # 精确匹配"变体名 + 8位日期 + 6位时间"，不能用 "${name%.mp4}-"*.mp4 这种
+        # 松散前缀匹配——比如 feature-01-x.mp4 的备份前缀会把 feature-01-x-sub.mp4
+        # 的备份（feature-01-x-sub-20260801-...mp4）也匹配进来，取最新时间可能
+        # 恰好选中别的变体的备份，把烧了字幕的版本错误地当成没烧字幕的版本恢复回去。
+        local d='[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'
+        local t='[0-9][0-9][0-9][0-9][0-9][0-9]'
+        # 注意 $d/$t 必须留在双引号外面才会真正触发通配符展开——整段包在双引号里
+        # 的话 [0-9] 会被当成字面字符串，永远匹配不到任何文件（改这行时验证过这个坑）
         local latest
-        latest=$(ls -t "$backups_dir/${name%.mp4}-"*.mp4 2>/dev/null | head -1)
+        latest=$(ls -t "$backups_dir/${name%.mp4}-"$d-$t".mp4" 2>/dev/null | head -1)
         if [ -n "$latest" ]; then
             cp "$latest" "$variant"
             ok "已恢复: $name ← backups/$(basename "$latest")"
             restored=1
         fi
     done
-    [ "$restored" = "0" ] && { err "没有找到可恢复的备份"; return 1; }
+    # 不要写成 [ "$restored" = "0" ] && { ...; return 1; } 这种形式——成功时
+    # （restored=1）这个 [ ] 判断本身是假，整行的退出码就是"假"，函数会被当成
+    # 执行失败，调用方（video-toolkit.sh 开头是 set -e）可能因此提前退出。
+    if [ "$restored" = "0" ]; then
+        err "没有找到可恢复的备份"
+        return 1
+    fi
+    return 0
 }
