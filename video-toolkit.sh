@@ -367,11 +367,17 @@ compose() {
     local meta=$(load_meta "$dir" 2>/dev/null || echo "{}")
     compose_final "$content" "$meta" "$dir" "$out"
 
-    # 保留两个版本：带封面（$out）+ 不带封面（画面+配音，没有封面/封底/BGM）
+    # 默认只产出带封面这一份交付版本。关闭时（默认）主动清掉旧的 -no-cover 相关
+    # 文件，而不只是不生成新的——否则老项目里之前生成过的 -no-cover.mp4 会变成
+    # 没人刷新的僵尸文件，vt burn 还会照样拿它烧字幕，产出内容过时的 -no-cover-sub.mp4
     local no_cover="$dir/$(basename "$dir")-no-cover.mp4"
-    cp "$content" "$no_cover"
+    if [ "${VIDEO_NO_COVER:-0}" = "1" ]; then
+        cp "$content" "$no_cover"
+        ok "不带封面版本: $no_cover"
+    else
+        rm -f "$no_cover" "${no_cover%.mp4}-sub.mp4"
+    fi
     rm -f "$content"
-    ok "不带封面版本: $no_cover"
 }
 
 # ==================== Step 4: 翻译字幕（DeepSeek） ====================
@@ -1446,6 +1452,7 @@ case "${1:-}" in
         echo "  VIDEO_VOICE         中文 AI 语音 ID"
         echo "  VIDEO_VOICE_EN      英文 AI 语音 ID"
         echo "  VIDEO_BURN_SUB      字幕烧录 (0/1)"
+        echo "  VIDEO_NO_COVER      是否额外生成不带封面版本 (0/1，默认0)"
         echo "  VIDEO_FEATURES_DIR  feature 根目录"
         echo "  AAS_ADMIN_PORT      管理端口 (默认 6848)"
         echo ""
