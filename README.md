@@ -247,6 +247,14 @@ vt config VIDEO_BURN_SUB=0         # 关闭字幕烧录
 
 ## ❓ FAQ
 
+### `vt ui` 打开后项目列表是空的 / 加载的还是上次的项目
+
+`vt ui` 的项目根（VIDEOS_ROOT）按**你执行命令时的目录**推断：
+- 站在**项目目录**下（如 `cd zhejiang-mobile`）→ 项目根取它的父目录（`Videos/`）
+- 站在**项目根**下（如 `cd Videos`）→ 项目根就是当前目录
+
+**注意**：`vt ui` 每次启动都会**强制重启** ui-server（无状态服务），保证用当前目录算出的项目根——如果还显示旧列表，先确认 `~/.local/bin/vt` 已是最新（`vt upgrade`），再看启动输出里的 `项目根:` 提示是否符合预期。
+
 ### 模型下载太慢
 
 `export HF_ENDPOINT=https://hf-mirror.com` 或用 `VIDEO_ASR=funasr` 切换 SenseVoice。
