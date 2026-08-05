@@ -1318,16 +1318,39 @@ cmd_ui() {
         (cd "$client_dir" && npm run build) || { err "前端构建失败"; return 1; }
     fi
 
-    # 端口已经在跑就直接复用，不重复起进程
-    if ! lsof -i ":$port" -sTCP:LISTEN >/dev/null 2>&1; then
-        info "启动 vt-ui-server → http://localhost:$port"
-        # toolkit 装在哪（~/.local/share/video-toolkit）跟视频项目目录在哪（Videos/xxx）
-        # 是两回事，不能让 server 自己瞎猜——用当前工作目录（约定就是在项目目录下跑 vt ui）
-        # 的上一级，显式告诉它去哪找 project
-        local videos_root="$(cd "$BASE/.." && pwd)"
-        (cd "$server_dir" && VT_UI_VIDEOS_ROOT="$videos_root" nohup node index.js > /tmp/vt-ui-server.log 2>&1 &)
+    # ── 计算视频项目根（VIDEOS_ROOT）──
+    # 约定：BASE 可能是"项目目录"（zhejiang-mobile，含 feature-* 或标记文件），
+    # 也可能是"项目集合根"（Videos，子目录里有项目）。两种情况都要能识别：
+    _is_project_dir() { [ -f "$1/.video-toolkit-project" ] || ls "$1"/feature-* >/dev/null 2>&1; }
+    local videos_root
+    if _is_project_dir "$BASE"; then
+        # 当前目录本身是项目（如 zhejiang-mobile）→ 项目根 = 父目录
+        videos_root="$(cd "$BASE/.." && pwd)"
+    else
+        # 检查 BASE 的直接子目录里是否有项目（BASE 是项目集合根，如 Videos）
+        local found=""
+        for _d in "$BASE"/*/; do
+            [ -d "$_d" ] && _is_project_dir "$_d" && { found=1; break; }
+        done
+        if [ -n "$found" ]; then
+            videos_root="$(cd "$BASE" && pwd)"
+        else
+            # 都不是 → 兜底取父目录
+            videos_root="$(cd "$BASE/.." && pwd)"
+        fi
+    fi
+    info "项目根: $videos_root"
+
+    # 端口已经在跑也要先杀掉重启——ui-server 无状态，但 VIDEOS_ROOT 是启动时
+    # 从当前目录算出来的；不重启的话换了目录再 vt ui 还是旧的项目列表（踩过坑）。
+    local old_pid=$(lsof -ti ":$port" -sTCP:LISTEN 2>/dev/null)
+    if [ -n "$old_pid" ]; then
+        kill "$old_pid" 2>/dev/null
         sleep 1
     fi
+    info "启动 vt-ui-server → http://localhost:$port"
+    (cd "$server_dir" && VT_UI_VIDEOS_ROOT="$videos_root" nohup node index.js > /tmp/vt-ui-server.log 2>&1 &)
+    sleep 1
 
     local url="http://localhost:$port/"
     if [ -n "$arg" ]; then
