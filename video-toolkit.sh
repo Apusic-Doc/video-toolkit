@@ -1321,13 +1321,24 @@ cmd_ui() {
     # ── 计算视频项目根（VIDEOS_ROOT）──
     # 约定：BASE 可能是"项目目录"（zhejiang-mobile，含 feature-* 或标记文件），
     # 也可能是"项目集合根"（Videos，子目录里有项目）。两种情况都要能识别：
-    _is_project_dir() { [ -f "$1/.video-toolkit-project" ] || ls "$1"/feature-* >/dev/null 2>&1; }
+    # 注意：glob 加尾部斜杠（feature-*/）只匹配目录，避免 app/ 下 feature-01.war
+    # 这类同前缀文件把普通子目录误判成项目（踩过坑：war 包名字撞了这个前缀）
+    _is_project_dir() { [ -f "$1/.video-toolkit-project" ] || ls -d "$1"/feature-*/ >/dev/null 2>&1; }
     local videos_root
-    if _is_project_dir "$BASE"; then
-        # 当前目录本身是项目（如 zhejiang-mobile）→ 项目根 = 父目录
-        videos_root="$(cd "$BASE/.." && pwd)"
+    # 先向上走最多 6 层找"项目目录"本身，不管当前是站在项目根、feature 目录、
+    # 还是 feature 里的 app/ 子目录，都能定位到真正的项目根（踩过坑：只判断
+    # BASE 自己，站在 feature-09/app 下跑 vt ui 直接找不到项目，列表是空的）
+    local _walk="$BASE" _project_dir=""
+    for _i in 1 2 3 4 5 6; do
+        if _is_project_dir "$_walk"; then _project_dir="$_walk"; break; fi
+        local _parent; _parent="$(cd "$_walk/.." && pwd)"
+        [ "$_parent" = "$_walk" ] && break
+        _walk="$_parent"
+    done
+    if [ -n "$_project_dir" ]; then
+        videos_root="$(cd "$_project_dir/.." && pwd)"
     else
-        # 检查 BASE 的直接子目录里是否有项目（BASE 是项目集合根，如 Videos）
+        # 沿途没找到项目 → 再看 BASE 的直接子目录里是否有项目（BASE 是项目集合根，如 Videos）
         local found=""
         for _d in "$BASE"/*/; do
             [ -d "$_d" ] && _is_project_dir "$_d" && { found=1; break; }
@@ -1362,13 +1373,13 @@ cmd_ui() {
         else
             warn "找不到 feature: $arg，先打开首页"
         fi
-    elif [ -f "$BASE/.video-toolkit-project" ] || ls "$BASE"/feature-* >/dev/null 2>&1; then
-        # 没传 feature 参数时，默认用当前目录所在的项目（约定：在项目目录下跑 vt ui）——
+    elif [ -n "$_project_dir" ]; then
+        # 没传 feature 参数时，默认用当前目录所在的项目（约定：在项目目录下跑 vt ui，
+        # 但也可能是在 feature 子目录甚至更深处跑，所以用上面向上找到的 _project_dir，
+        # 不能再直接 basename "$BASE"——不然站在 feature-01/app 下跑会错选成 "app"）——
         # 不然浏览器端只能靠 localStorage 记的上次选择，或者项目列表里排第一个的，
         # 跟你实际 cd 进来的项目对不上（比如切了个新项目结果打开的还是上次那个/字母序第一个）。
-        # 判定标准跟 ui-server 的 listProjects() 一致：有 feature-* 子目录，或者带着
-        # .video-toolkit-project 标记（刚 vt init 出来、还没建 feature 的空项目）
-        url="http://localhost:$port/?project=$(basename "$BASE")"
+        url="http://localhost:$port/?project=$(basename "$_project_dir")"
     fi
     ok "$url"
     open "$url" 2>/dev/null
